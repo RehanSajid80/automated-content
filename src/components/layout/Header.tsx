@@ -1,8 +1,18 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Sparkles, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import ContentCreatorDialog from "@/components/dashboard/ContentCreatorDialog";
 
 interface HeaderProps {
   className?: string;
@@ -11,6 +21,8 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onTabChange }) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
   const handleTabClick = (tab: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     if (onTabChange) {
@@ -85,13 +97,100 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
           </a>
         </nav>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="hidden md:flex">
-            <Sparkles size={16} className="mr-2" />
-            Create Content
-          </Button>
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu size={20} />
-          </Button>
+          {/* Desktop dialog trigger */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="hidden md:flex">
+                <Sparkles size={16} className="mr-2" />
+                Create Content
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[800px]">
+              <DialogHeader>
+                <DialogTitle>Create New Content</DialogTitle>
+                <DialogDescription>
+                  Quickly generate professional content for your office space software
+                </DialogDescription>
+              </DialogHeader>
+              <ContentCreatorDialog onClose={() => setIsDialogOpen(false)} />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Mobile sheet trigger */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu size={20} />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <div className="mt-6 flex flex-col space-y-2">
+                <a 
+                  href="#dashboard" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onTabChange) onTabChange("dashboard");
+                  }}
+                  className={cn(
+                    "px-3 py-2 rounded-md",
+                    activeTab === "dashboard" ? "bg-secondary" : ""
+                  )}
+                >
+                  Dashboard
+                </a>
+                <a 
+                  href="#keywords" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onTabChange) onTabChange("keywords");
+                  }}
+                  className={cn(
+                    "px-3 py-2 rounded-md",
+                    activeTab === "keywords" ? "bg-secondary" : ""
+                  )}
+                >
+                  Keywords
+                </a>
+                <a 
+                  href="#content" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onTabChange) onTabChange("content");
+                  }}
+                  className={cn(
+                    "px-3 py-2 rounded-md",
+                    activeTab === "content" ? "bg-secondary" : ""
+                  )}
+                >
+                  Content
+                </a>
+                <a 
+                  href="#analytics" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onTabChange) onTabChange("analytics");
+                  }}
+                  className={cn(
+                    "px-3 py-2 rounded-md",
+                    activeTab === "analytics" ? "bg-secondary" : ""
+                  )}
+                >
+                  Analytics
+                </a>
+                <div className="mt-4 pt-4 border-t">
+                  <Button 
+                    onClick={() => {
+                      setIsDialogOpen(true);
+                    }} 
+                    className="w-full justify-start"
+                  >
+                    <Sparkles size={16} className="mr-2" />
+                    Create Content
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
