@@ -6,9 +6,18 @@ import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   className?: string;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ className }) => {
+const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onTabChange }) => {
+  const handleTabClick = (tab: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onTabChange) {
+      onTabChange(tab);
+    }
+  };
+
   return (
     <header 
       className={cn(
@@ -28,25 +37,49 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
         <nav className="hidden md:flex space-x-4">
           <a 
             href="#dashboard" 
-            className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors px-3 py-2"
+            onClick={handleTabClick("dashboard")}
+            className={cn(
+              "text-sm font-medium transition-colors px-3 py-2 rounded-md",
+              activeTab === "dashboard" 
+                ? "bg-secondary/80 text-foreground" 
+                : "text-foreground/80 hover:text-primary hover:bg-secondary/50"
+            )}
           >
             Dashboard
           </a>
           <a 
             href="#keywords" 
-            className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors px-3 py-2"
+            onClick={handleTabClick("keywords")}
+            className={cn(
+              "text-sm font-medium transition-colors px-3 py-2 rounded-md",
+              activeTab === "keywords" 
+                ? "bg-secondary/80 text-foreground" 
+                : "text-foreground/80 hover:text-primary hover:bg-secondary/50"
+            )}
           >
             Keywords
           </a>
           <a 
             href="#content" 
-            className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors px-3 py-2"
+            onClick={handleTabClick("content")}
+            className={cn(
+              "text-sm font-medium transition-colors px-3 py-2 rounded-md",
+              activeTab === "content" 
+                ? "bg-secondary/80 text-foreground" 
+                : "text-foreground/80 hover:text-primary hover:bg-secondary/50"
+            )}
           >
             Content
           </a>
           <a 
             href="#analytics" 
-            className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors px-3 py-2"
+            onClick={handleTabClick("analytics")}
+            className={cn(
+              "text-sm font-medium transition-colors px-3 py-2 rounded-md",
+              activeTab === "analytics" 
+                ? "bg-secondary/80 text-foreground" 
+                : "text-foreground/80 hover:text-primary hover:bg-secondary/50"
+            )}
           >
             Analytics
           </a>

@@ -7,15 +7,25 @@ import {
   TagIcon, 
   ShareIcon, 
   SettingsIcon, 
-  HelpCircleIcon
+  HelpCircleIcon,
+  BarChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   className?: string;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ className }) => {
+const Sidebar: React.FC<SidebarProps> = ({ className, activeTab = "dashboard", onTabChange }) => {
+  const handleTabClick = (tab: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onTabChange) {
+      onTabChange(tab);
+    }
+  };
+
   return (
     <aside 
       className={cn(
@@ -32,24 +42,47 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           <nav className="space-y-1">
             <a 
               href="#" 
-              className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium bg-accent text-accent-foreground"
+              onClick={handleTabClick("dashboard")}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium",
+                activeTab === "dashboard" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              )}
             >
               <HomeIcon size={16} />
               <span>Dashboard</span>
             </a>
             <a 
               href="#" 
-              className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              onClick={handleTabClick("keywords")}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium",
+                activeTab === "keywords" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              )}
             >
               <SearchIcon size={16} />
               <span>Keyword Research</span>
             </a>
             <a 
               href="#" 
-              className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              onClick={handleTabClick("content")}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium",
+                activeTab === "content" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              )}
             >
               <FileTextIcon size={16} />
               <span>Content Library</span>
+            </a>
+            <a 
+              href="#" 
+              onClick={handleTabClick("analytics")}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium",
+                activeTab === "analytics" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              )}
+            >
+              <BarChart size={16} />
+              <span>Analytics</span>
             </a>
             <a 
               href="#" 
