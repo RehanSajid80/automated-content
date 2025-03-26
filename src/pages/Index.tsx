@@ -6,7 +6,7 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import KeywordResearch from "@/components/dashboard/KeywordResearch";
 import ContentGenerator from "@/components/dashboard/ContentGenerator";
 import RecentContent from "@/components/dashboard/RecentContent";
-import { FileTextIcon, Tag, Share2, TrendingUp } from "lucide-react";
+import { FileTextIcon, Tag, Share2, TrendingUp, Building2 } from "lucide-react";
 
 const Index = () => {
   return (
@@ -17,32 +17,32 @@ const Index = () => {
       <main className="pt-[72px] md:pl-[240px] min-h-screen">
         <div className="container py-8 px-4 md:px-6 lg:px-8">
           <div className="mb-8 animate-slide-up">
-            <h1 className="text-3xl font-bold tracking-tight">Automated Content Creation</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Office Space Content Creation</h1>
             <p className="text-muted-foreground mt-1">
-              AI-powered content generation using SEMrush data and OpenAI GPT-4
+              AI-powered content generation using SEMrush data and OpenAI GPT-4 for workplace management solutions
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <StatsCard
               title="Pillar Content"
-              value="12"
+              value="8"
               icon={<FileTextIcon size={20} />}
               trend="up"
-              trendValue="4 new this week"
+              trendValue="3 new this week"
               delay="animation-delay-100"
             />
             <StatsCard
               title="Support Pages"
-              value="28"
-              icon={<FileTextIcon size={20} />}
+              value="22"
+              icon={<Building2 size={20} />}
               trend="up"
-              trendValue="7 new this week"
+              trendValue="5 new this week"
               delay="animation-delay-200"
             />
             <StatsCard
               title="Meta Tags"
-              value="64"
+              value="46"
               icon={<Tag size={20} />}
               trend="neutral"
               trendValue="Same as last week"
@@ -50,10 +50,10 @@ const Index = () => {
             />
             <StatsCard
               title="Social Posts"
-              value="122"
+              value="94"
               icon={<Share2 size={20} />}
               trend="up"
-              trendValue="32 new this week"
+              trendValue="18 new this week"
               delay="animation-delay-400"
             />
           </div>

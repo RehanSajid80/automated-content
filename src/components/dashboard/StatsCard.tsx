@@ -26,32 +26,32 @@ const StatsCard: React.FC<StatsCardProps> = ({
   return (
     <div 
       className={cn(
-        "rounded-xl bg-card border border-border p-6 animate-scale-in",
+        "rounded-xl bg-card border border-border p-5 animate-scale-in shadow-sm hover:shadow-md transition-shadow",
         delay,
         className
       )}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <h3 className="text-2xl font-semibold mt-1 tracking-tight">{value}</h3>
+          <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+          <h3 className="text-2xl font-bold tracking-tight">{value}</h3>
           {description && (
             <p className="text-sm text-muted-foreground mt-1">{description}</p>
           )}
         </div>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
+        {icon && <div className="text-primary/80">{icon}</div>}
       </div>
       
       {trend && trendValue && (
-        <div className="mt-4">
+        <div className="mt-3">
           <div className={cn(
-            "text-xs font-medium inline-flex items-center px-2 py-0.5 rounded-full",
-            trend === "up" && "bg-green-100 text-green-700",
-            trend === "down" && "bg-red-100 text-red-700", 
-            trend === "neutral" && "bg-gray-100 text-gray-700",
+            "text-xs font-medium inline-flex items-center px-2 py-1 rounded-full",
+            trend === "up" && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+            trend === "down" && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", 
+            trend === "neutral" && "bg-gray-100 text-gray-700 dark:bg-gray-800/50 dark:text-gray-400",
           )}>
-            {trend === "up" && "↑"}
-            {trend === "down" && "↓"}
+            {trend === "up" && "↑ "}
+            {trend === "down" && "↓ "}
             {trendValue}
           </div>
         </div>
