@@ -1,6 +1,6 @@
 
 import React from "react";
-import { BarChart, BarChart3, TrendingUp, Eye, Share, ThumbsUp, ExternalLink, FileText } from "lucide-react";
+import { BarChart, BarChart3, TrendingUp, Eye, Share, ThumbsUp, ExternalLink, FileText, Building2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
