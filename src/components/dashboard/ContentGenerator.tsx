@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { FileText, Tag, Share2, ArrowRight, Check, Loader2 } from "lucide-react";
+import { FileText, Tag, Share2, ArrowRight, Check, Loader2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,41 +9,41 @@ interface ContentGeneratorProps {
   className?: string;
 }
 
-// Mock content templates
+// Mock content templates for Office Space Software
 const contentTypes = [
   { 
     id: "pillar", 
     name: "Pillar Content", 
     icon: <FileText size={16} />,
-    description: "Long-form, comprehensive content that covers a topic in-depth",
-    sample: "# The Complete Guide to AI Content Generation\n\n## Introduction\nContent creation is evolving rapidly with AI technologies leading the charge...\n\n## What is AI Content Generation?\nAI content generation uses machine learning algorithms to create written content..."
+    description: "Comprehensive guides on workplace management and space optimization",
+    sample: "# The Complete Guide to Office Space Management\n\n## Introduction\nModern workplace management is evolving rapidly with new technologies leading the charge...\n\n## What is Office Space Management Software?\nOffice space management software enables businesses to efficiently organize, allocate, and optimize their physical workspaces..."
   },
   { 
     id: "support", 
     name: "Support Pages", 
-    icon: <FileText size={16} />,
-    description: "Helpful content for your website FAQ, guides, and support documentation",
-    sample: "# How to Use Our AI Content Generator\n\n## Getting Started\n1. Connect your SEMrush account\n2. Select target keywords\n3. Choose your content type\n4. Generate and review\n\n## Troubleshooting\nIf you encounter any issues..."
+    icon: <Building2 size={16} />,
+    description: "Helpful documentation for software features, implementation guides, and FAQs",
+    sample: "# How to Implement Desk Booking in Your Office\n\n## Getting Started\n1. Set up your floor plans in the admin portal\n2. Configure booking rules and restrictions\n3. Import employee data and departments\n4. Launch the booking system\n\n## Troubleshooting\nIf employees cannot see available desks..."
   },
   { 
     id: "meta", 
     name: "Meta Tags", 
     icon: <Tag size={16} />,
-    description: "SEO-optimized title tags, meta descriptions, and headers",
-    sample: "Title: Complete AI Content Generation Guide: Boost Your SEO in 2024\n\nMeta Description: Discover how AI content generation tools can transform your content strategy. Our comprehensive guide covers everything from keyword research to publishing."
+    description: "SEO-optimized title tags, meta descriptions, and headers for office software pages",
+    sample: "Title: Office Space Management Software: Optimize Your Workplace in 2024\n\nMeta Description: Discover how our advanced office space management tools can transform your workplace efficiency. Our comprehensive solution covers desk booking, space analytics, and hybrid work management."
   },
   { 
     id: "social", 
     name: "Social Posts", 
     icon: <Share2 size={16} />,
-    description: "Eye-catching social media posts optimized for each platform",
-    sample: "Twitter/X:\n📊 Struggling with content creation? Our AI tool just analyzed 1000+ top-performing articles in your industry. Here's what works now:\n\n✅ Lists over long paragraphs\n✅ Real data over generic advice\n✅ Action steps, not just theory\n\nTry our tool free: [link]"
+    description: "Professional social media content for LinkedIn, Twitter, and other platforms",
+    sample: "LinkedIn:\n📊 Are you getting the most out of your office space? Our latest workplace analytics report shows that companies are only utilizing 60% of their available space effectively.\n\n✅ Optimize desk allocation\n✅ Implement hoteling and hot-desking\n✅ Track space utilization metrics\n\nBook a demo today: [link]"
   },
 ];
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className }) => {
   const [activeTab, setActiveTab] = useState("pillar");
-  const [keywords, setKeywords] = useState("ai content generation, content marketing strategy");
+  const [keywords, setKeywords] = useState("office space management, workplace optimization, desk booking system");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
   

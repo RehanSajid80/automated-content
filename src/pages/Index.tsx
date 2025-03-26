@@ -5,6 +5,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import StatsCard from "@/components/dashboard/StatsCard";
 import KeywordResearch from "@/components/dashboard/KeywordResearch";
 import ContentGenerator from "@/components/dashboard/ContentGenerator";
+import ManualContentCreator from "@/components/dashboard/ManualContentCreator";
 import RecentContent from "@/components/dashboard/RecentContent";
 import { FileTextIcon, Tag, Share2, TrendingUp, Building2 } from "lucide-react";
 
@@ -19,7 +20,7 @@ const Index = () => {
           <div className="mb-8 animate-slide-up">
             <h1 className="text-3xl font-bold tracking-tight">Office Space Content Creation</h1>
             <p className="text-muted-foreground mt-1">
-              AI-powered content generation using SEMrush data and OpenAI GPT-4 for workplace management solutions
+              AI-powered content generation for workplace management solutions using SEMrush data and OpenAI GPT-4
             </p>
           </div>
           
@@ -62,6 +63,8 @@ const Index = () => {
             <KeywordResearch />
             <ContentGenerator />
           </div>
+          
+          <ManualContentCreator className="mb-6" />
           
           <RecentContent className="mb-8" />
         </div>

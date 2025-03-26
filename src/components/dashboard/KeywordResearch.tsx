@@ -1,20 +1,21 @@
-
 import React, { useState } from "react";
 import { Search, TrendingUp, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-// Mock SEMrush keyword data
+// Mock SEMrush keyword data for officespacesoftware.com
 const mockKeywords = [
-  { keyword: "content marketing strategy", volume: 4800, difficulty: 78, cpc: 12.5, trend: "up" },
-  { keyword: "seo content writing", volume: 3200, difficulty: 65, cpc: 8.20, trend: "up" },
-  { keyword: "ai content creation", volume: 6500, difficulty: 82, cpc: 15.75, trend: "up" },
-  { keyword: "content optimization tools", volume: 2900, difficulty: 54, cpc: 6.80, trend: "neutral" },
-  { keyword: "keyword research tools", volume: 5100, difficulty: 70, cpc: 10.25, trend: "up" },
-  { keyword: "content creation agency", volume: 3800, difficulty: 60, cpc: 9.40, trend: "neutral" },
-  { keyword: "blog content strategy", volume: 2400, difficulty: 45, cpc: 5.60, trend: "neutral" },
-  { keyword: "pillar content examples", volume: 1900, difficulty: 40, cpc: 4.90, trend: "up" },
+  { keyword: "office space management software", volume: 5400, difficulty: 78, cpc: 14.5, trend: "up" },
+  { keyword: "workspace management system", volume: 3800, difficulty: 65, cpc: 9.20, trend: "up" },
+  { keyword: "office floor plan software", volume: 6200, difficulty: 72, cpc: 12.75, trend: "up" },
+  { keyword: "desk booking system", volume: 7900, difficulty: 68, cpc: 11.50, trend: "up" },
+  { keyword: "workplace analytics tools", volume: 2900, difficulty: 54, cpc: 8.80, trend: "neutral" },
+  { keyword: "hybrid workplace management", volume: 4100, difficulty: 70, cpc: 13.25, trend: "up" },
+  { keyword: "space utilization software", volume: 3200, difficulty: 62, cpc: 10.40, trend: "neutral" },
+  { keyword: "office hoteling software", volume: 2800, difficulty: 55, cpc: 9.60, trend: "up" },
+  { keyword: "facility management software", volume: 8500, difficulty: 85, cpc: 15.90, trend: "up" },
+  { keyword: "room reservation system", volume: 5600, difficulty: 67, cpc: 10.20, trend: "neutral" },
 ];
 
 interface KeywordResearchProps {
@@ -40,7 +41,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({ className }) => {
   return (
     <div className={cn("rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-300", className)}>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold">SEMrush Keyword Research</h3>
+        <h3 className="text-lg font-semibold">Office Space SEO Keywords</h3>
         <Button variant="outline" size="sm" className="text-xs">
           Import from SEMrush <ArrowRight size={14} className="ml-1" />
         </Button>
