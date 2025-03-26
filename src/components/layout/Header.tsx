@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Sparkles, Menu } from "lucide-react";
+import { Sparkles, Menu, Server } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ContentCreatorDialog from "@/components/dashboard/ContentCreatorDialog";
+import N8nIntegration from "@/components/integrations/N8nIntegration";
 
 interface HeaderProps {
   className?: string;
@@ -22,6 +23,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onTabChange }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isN8nDialogOpen, setIsN8nDialogOpen] = useState(false);
   
   const handleTabClick = (tab: string) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -95,9 +97,40 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
           >
             Analytics
           </a>
+          <a 
+            href="#n8n" 
+            onClick={handleTabClick("n8n")}
+            className={cn(
+              "text-sm font-medium transition-colors px-3 py-2 rounded-md",
+              activeTab === "n8n" 
+                ? "bg-secondary/80 text-foreground" 
+                : "text-foreground/80 hover:text-primary hover:bg-secondary/50"
+            )}
+          >
+            n8n Integration
+          </a>
         </nav>
         <div className="flex items-center space-x-2">
-          {/* Desktop dialog trigger */}
+          {/* N8n Integration dialog */}
+          <Dialog open={isN8nDialogOpen} onOpenChange={setIsN8nDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="hidden md:flex">
+                <Server size={16} className="mr-2" />
+                n8n
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[800px]">
+              <DialogHeader>
+                <DialogTitle>n8n Integration</DialogTitle>
+                <DialogDescription>
+                  Connect your content creation system to n8n.io for workflow automation
+                </DialogDescription>
+              </DialogHeader>
+              <N8nIntegration />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Content Creation dialog */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="hidden md:flex">
@@ -177,6 +210,19 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
                 >
                   Analytics
                 </a>
+                <a 
+                  href="#n8n" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onTabChange) onTabChange("n8n");
+                  }}
+                  className={cn(
+                    "px-3 py-2 rounded-md",
+                    activeTab === "n8n" ? "bg-secondary" : ""
+                  )}
+                >
+                  n8n Integration
+                </a>
                 <div className="mt-4 pt-4 border-t">
                   <Button 
                     onClick={() => {
@@ -186,6 +232,16 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
                   >
                     <Sparkles size={16} className="mr-2" />
                     Create Content
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setIsN8nDialogOpen(true);
+                    }} 
+                    variant="n8n"
+                    className="w-full justify-start mt-2"
+                  >
+                    <Server size={16} className="mr-2" />
+                    n8n Integration
                   </Button>
                 </div>
               </div>

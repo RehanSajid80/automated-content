@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -8,7 +7,8 @@ import ContentGenerator from "@/components/dashboard/ContentGenerator";
 import ManualContentCreator from "@/components/dashboard/ManualContentCreator";
 import RecentContent from "@/components/dashboard/RecentContent";
 import ContentAnalytics from "@/components/dashboard/ContentAnalytics";
-import { FileTextIcon, Tag, Share2, TrendingUp, Building2, BarChart } from "lucide-react";
+import N8nIntegration from "@/components/integrations/N8nIntegration";
+import { FileTextIcon, Tag, Share2, TrendingUp, Building2, BarChart, Server } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
@@ -118,6 +118,56 @@ const Index = () => {
               </div>
               
               <ContentAnalytics />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="n8n" className="m-0">
+            <div className="container py-8 px-4 md:px-6 lg:px-8">
+              <div className="mb-8 animate-slide-up">
+                <h1 className="text-3xl font-bold tracking-tight">n8n Integration</h1>
+                <p className="text-muted-foreground mt-1">
+                  Connect your content generation system to n8n.io for workflow automation
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-6">
+                <N8nIntegration />
+                
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold mb-4">How n8n Integration Works</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="rounded-lg border p-4">
+                      <div className="mb-2 flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center mr-2">1</div>
+                        <h4 className="font-medium">Content Creation</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        When content is created in your system, trigger a workflow in n8n
+                      </p>
+                    </div>
+                    
+                    <div className="rounded-lg border p-4">
+                      <div className="mb-2 flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300 flex items-center justify-center mr-2">2</div>
+                        <h4 className="font-medium">n8n Workflow</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Process the content through n8n workflows, add metadata, categorize, and enhance
+                      </p>
+                    </div>
+                    
+                    <div className="rounded-lg border p-4">
+                      <div className="mb-2 flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 flex items-center justify-center mr-2">3</div>
+                        <h4 className="font-medium">Distribution</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Automatically publish to your website, CMS, social media, or send via email
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
