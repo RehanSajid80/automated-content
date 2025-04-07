@@ -1,8 +1,10 @@
+
 import React, { useState } from "react";
 import { Search, TrendingUp, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock SEMrush keyword data for officespacesoftware.com
 const mockKeywords = [
@@ -20,11 +22,16 @@ const mockKeywords = [
 
 interface KeywordResearchProps {
   className?: string;
+  onKeywordsSelected?: (keywords: string[]) => void;
 }
 
-const KeywordResearch: React.FC<KeywordResearchProps> = ({ className }) => {
+const KeywordResearch: React.FC<KeywordResearchProps> = ({ 
+  className,
+  onKeywordsSelected 
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const { toast } = useToast();
 
   const filteredKeywords = mockKeywords.filter(kw => 
     kw.keyword.toLowerCase().includes(searchTerm.toLowerCase())
@@ -35,6 +42,20 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({ className }) => {
       setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
     } else {
       setSelectedKeywords([...selectedKeywords, keyword]);
+    }
+  };
+
+  const handleGenerateContent = () => {
+    if (selectedKeywords.length === 0) {
+      return;
+    }
+    
+    if (onKeywordsSelected) {
+      onKeywordsSelected(selectedKeywords);
+      toast({
+        title: "Keywords transferred",
+        description: `${selectedKeywords.length} keywords sent to Content Generator`,
+      });
     }
   };
 
@@ -70,15 +91,19 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({ className }) => {
             <div 
               key={kw.keyword}
               className={cn(
-                "grid grid-cols-12 gap-4 px-4 py-3 text-sm hover:bg-secondary/30 transition-colors",
+                "grid grid-cols-12 gap-4 px-4 py-3 text-sm hover:bg-secondary/30 transition-colors cursor-pointer",
                 selectedKeywords.includes(kw.keyword) && "bg-secondary/50"
               )}
+              onClick={() => toggleKeywordSelection(kw.keyword)}
             >
               <div className="col-span-1">
                 <input 
                   type="checkbox"
                   checked={selectedKeywords.includes(kw.keyword)}
-                  onChange={() => toggleKeywordSelection(kw.keyword)}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    toggleKeywordSelection(kw.keyword);
+                  }}
                   className="rounded border-muted"
                 />
               </div>
@@ -119,6 +144,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({ className }) => {
           size="sm" 
           disabled={selectedKeywords.length === 0}
           className="text-xs"
+          onClick={handleGenerateContent}
         >
           Generate Content
         </Button>

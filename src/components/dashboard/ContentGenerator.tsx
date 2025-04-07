@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, ArrowRight, Check, Loader2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 interface ContentGeneratorProps {
   className?: string;
+  keywords?: string[];
 }
 
 // Mock content templates for Office Space Software
@@ -41,21 +42,41 @@ const contentTypes = [
   },
 ];
 
-const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className }) => {
+const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords: initialKeywords }) => {
   const [activeTab, setActiveTab] = useState("pillar");
-  const [keywords, setKeywords] = useState("office space management, workplace optimization, desk booking system");
+  const [keywords, setKeywords] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
   
-  // Mock content generation
+  useEffect(() => {
+    if (initialKeywords && initialKeywords.length > 0) {
+      setKeywords(initialKeywords.join(", "));
+      setActiveTab("pillar");
+      setGeneratedContent("");
+    }
+  }, [initialKeywords]);
+
   const handleGenerate = () => {
     setIsGenerating(true);
     setGeneratedContent("");
     
-    // Simulate API call delay
     setTimeout(() => {
-      const selectedContentType = contentTypes.find(type => type.id === activeTab);
-      setGeneratedContent(selectedContentType?.sample || "");
+      const keywordList = keywords.split(',').map(k => k.trim());
+      const mainKeyword = keywordList[0] || "office space management";
+      
+      let content = "";
+      
+      if (activeTab === "pillar") {
+        content = `# The Complete Guide to ${mainKeyword}\n\n## Introduction\nModern workplace management is evolving rapidly with OfficeSpaceSoftware.com leading the charge in ${mainKeyword} solutions. This comprehensive guide will explore how our platform addresses the challenges of ${keywordList.slice(1, 3).join(" and ")}.\n\n## What is ${mainKeyword}?\n${mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1)} enables businesses to efficiently organize, allocate, and optimize their physical workspaces through OfficeSpaceSoftware.com's intuitive platform.\n\n## Key Benefits for Facility Managers\n1. Improved space utilization metrics\n2. Enhanced employee experience and satisfaction\n3. Data-driven decision making for workplace strategy\n4. Reduced operational costs through optimized space usage\n\n## Implementation Strategies\nOur clients typically follow these steps when implementing ${mainKeyword} with OfficeSpaceSoftware.com:\n\n1. Assess current workspace usage patterns\n2. Configure the software to match your organizational structure\n3. Integrate with existing systems (HRIS, IoT sensors, etc.)\n4. Deploy user-friendly booking interfaces\n5. Analyze data to continuously improve workspace optimization`;
+      } else if (activeTab === "support") {
+        content = `# ${mainKeyword} Implementation Guide for OfficeSpaceSoftware.com\n\n## Getting Started with Your Implementation\n1. Set up your floor plans in the admin portal\n2. Configure booking rules and restrictions\n3. Import employee data and departments\n4. Launch the ${mainKeyword} system\n\n## Troubleshooting Common Issues\nIf employees cannot see available desks, verify that:\n- Their account has proper permissions\n- The floor plan is published and visible\n- The integration with your SSO is working correctly\n\n## Best Practices\n- Begin with a pilot group before full deployment\n- Create clear usage guidelines for employees\n- Schedule regular reviews of utilization data\n- Adjust configurations based on actual usage patterns`;
+      } else if (activeTab === "meta") {
+        content = `Title: ${mainKeyword} Software | Optimize Your Workplace with OfficeSpaceSoftware.com\n\nMeta Description: Discover how OfficeSpaceSoftware.com's advanced ${mainKeyword} tools can transform your workplace efficiency. Our comprehensive solution covers desk booking, space analytics, and hybrid work management.\n\nH1: Enterprise-Grade ${mainKeyword} Solutions\n\nH2: Why Leading Companies Choose OfficeSpaceSoftware.com for ${mainKeyword}\n\nH2: Features That Make Our ${mainKeyword} Platform Superior\n\nH2: Measurable ROI from Implementing Our ${mainKeyword} Software`;
+      } else {
+        content = `LinkedIn:\n📊 Are you getting the most out of your ${mainKeyword}? Our latest workplace analytics report from OfficeSpaceSoftware.com shows that companies are only utilizing 60% of their available space effectively.\n\n✅ Optimize desk allocation with our smart booking system\n✅ Implement hoteling and hot-desking with minimal friction\n✅ Track detailed space utilization metrics across your entire portfolio\n\nBook a demo today and see how OfficeSpaceSoftware.com can transform your ${mainKeyword} strategy: [link]\n\n#${mainKeyword.replace(/\s+/g, '')} #OfficeSpaceSoftware #WorkplaceOptimization`;
+      }
+      
+      setGeneratedContent(content);
       setIsGenerating(false);
     }, 2000);
   };

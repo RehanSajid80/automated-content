@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -13,6 +14,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+
+  const handleKeywordsSelected = (keywords: string[]) => {
+    setSelectedKeywords(keywords);
+    
+    // If we're on the dashboard, we might want to auto-switch to the content tab
+    if (activeTab === "dashboard") {
+      // Optional: auto-switch to content tab when keywords are selected
+      // setActiveTab("content");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,8 +78,8 @@ const Index = () => {
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <KeywordResearch />
-                <ContentGenerator />
+                <KeywordResearch onKeywordsSelected={handleKeywordsSelected} />
+                <ContentGenerator keywords={selectedKeywords} />
               </div>
               
               <ManualContentCreator className="mb-6" />
@@ -86,7 +98,7 @@ const Index = () => {
               </div>
               
               <div className="grid grid-cols-1 gap-6">
-                <KeywordResearch className="max-w-none" />
+                <KeywordResearch className="max-w-none" onKeywordsSelected={handleKeywordsSelected} />
               </div>
             </div>
           </TabsContent>
@@ -101,7 +113,7 @@ const Index = () => {
               </div>
               
               <div className="grid grid-cols-1 gap-6 mb-6">
-                <ContentGenerator className="max-w-none" />
+                <ContentGenerator className="max-w-none" keywords={selectedKeywords} />
                 <ManualContentCreator />
                 <RecentContent />
               </div>
