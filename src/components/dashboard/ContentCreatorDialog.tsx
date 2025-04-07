@@ -21,12 +21,12 @@ interface ContentCreatorDialogProps {
   onClose: () => void;
 }
 
-// Mock author personas
+// Updated author personas from OfficeSpaceSoftware.com
 const authorPersonas = [
-  { id: "emma", name: "Emma Roberts", role: "Workplace Strategy Director", style: "Authoritative and detailed with research focus" },
-  { id: "david", name: "David Chen", role: "Facility Management Specialist", style: "Practical with actionable advice" },
-  { id: "sarah", name: "Sarah Johnson", role: "Office Space Consultant", style: "Conversational and relatable, focuses on user experience" },
-  { id: "michael", name: "Michael Williams", role: "Technology Integration Expert", style: "Technical but accessible, innovation-focused" }
+  { id: "erica", name: "Erica Brown", role: "Chief People Officer", style: "People-focused with emphasis on workplace culture and employee experience" },
+  { id: "andres", name: "Andres Avalos", role: "Chief Product Officer", style: "Technical and solution-oriented with product innovation focus" },
+  { id: "tommy", name: "Tommy Coleman", role: "Vice President of Sales", style: "Results-driven with ROI emphasis and business benefits" },
+  { id: "jess", name: "Jess Torres", role: "VP, Chief of Staff", style: "Strategic and operational with focus on implementation and best practices" }
 ];
 
 // Content type descriptions with icons
@@ -46,7 +46,7 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
   const form = useForm({
     defaultValues: {
       keywords: "",
-      author: "emma",
+      author: "erica",
       context: "",
     }
   });
