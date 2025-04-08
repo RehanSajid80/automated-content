@@ -9,12 +9,15 @@ import ManualContentCreator from "@/components/dashboard/ManualContentCreator";
 import RecentContent from "@/components/dashboard/RecentContent";
 import ContentAnalytics from "@/components/dashboard/ContentAnalytics";
 import N8nIntegration from "@/components/integrations/N8nIntegration";
+import ContentSuggestions from "@/components/dashboard/ContentSuggestions";
 import { FileTextIcon, Tag, Share2, TrendingUp, Building2, BarChart, Server } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { KeywordData } from "@/utils/excelUtils";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const [keywordData, setKeywordData] = useState<KeywordData[]>([]);
 
   const handleKeywordsSelected = (keywords: string[]) => {
     setSelectedKeywords(keywords);
@@ -179,6 +182,24 @@ const Index = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="ai-suggestions" className="m-0">
+            <div className="container py-8 px-4 md:px-6 lg:px-8">
+              <div className="mb-8 animate-slide-up">
+                <h1 className="text-3xl font-bold tracking-tight">AI Content Suggestions</h1>
+                <p className="text-muted-foreground mt-1">
+                  Use OpenAI to analyze your keyword data and suggest content topic areas
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-6">
+                <ContentSuggestions 
+                  keywords={keywordData} 
+                  className="max-w-none" 
+                />
               </div>
             </div>
           </TabsContent>

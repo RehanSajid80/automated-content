@@ -15,6 +15,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import KeywordFilters, { FilterOptions } from "./KeywordFilters";
+import ContentSuggestions from "./ContentSuggestions";
 
 // Mock SEMrush keyword data with explicitly typed trend values
 const mockKeywords: KeywordData[] = [
@@ -48,6 +50,17 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    searchTerm: "",
+    minVolume: 0,
+    maxVolume: 10000,
+    minDifficulty: 0,
+    maxDifficulty: 100,
+    minCpc: 0,
+    maxCpc: 20,
+    trend: "all",
+  });
+  const [showContentSuggestions, setShowContentSuggestions] = useState(false);
   const { toast } = useToast();
 
   // Load saved keywords on component mount
@@ -79,9 +92,25 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   }, [keywords]);
 
-  const filteredKeywords = keywords.filter(kw => 
-    kw.keyword.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleFilterChange = (newFilters: FilterOptions) => {
+    setFilterOptions(newFilters);
+    setSearchTerm(newFilters.searchTerm);
+  };
+
+  const filteredKeywords = keywords.filter(kw => {
+    // Apply text search filter
+    const matchesSearch = kw.keyword.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Apply range filters
+    const matchesVolume = kw.volume >= filterOptions.minVolume && kw.volume <= filterOptions.maxVolume;
+    const matchesDifficulty = kw.difficulty >= filterOptions.minDifficulty && kw.difficulty <= filterOptions.maxDifficulty;
+    const matchesCpc = kw.cpc >= filterOptions.minCpc && kw.cpc <= filterOptions.maxCpc;
+    
+    // Apply trend filter
+    const matchesTrend = filterOptions.trend === "all" || kw.trend === filterOptions.trend;
+    
+    return matchesSearch && matchesVolume && matchesDifficulty && matchesCpc && matchesTrend;
+  });
 
   const toggleKeywordSelection = (keyword: string) => {
     if (selectedKeywords.includes(keyword)) {
@@ -248,71 +277,86 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
         </div>
       </div>
       
-      <div className="relative mb-6">
-        <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search for keywords..."
-          className="pl-9 bg-secondary/50"
-        />
-      </div>
-      
-      <div className="rounded-lg border border-border overflow-hidden">
-        <div className="bg-secondary/50 text-xs font-medium text-muted-foreground grid grid-cols-12 gap-4 px-4 py-3">
-          <div className="col-span-1"></div>
-          <div className="col-span-5">Keyword</div>
-          <div className="col-span-2 text-right">Volume</div>
-          <div className="col-span-2 text-right">Difficulty</div>
-          <div className="col-span-2 text-right">CPC ($)</div>
-        </div>
-        <div className="divide-y divide-border">
-          {filteredKeywords.map((kw, index) => (
-            <div 
-              key={kw.keyword}
-              className={cn(
-                "grid grid-cols-12 gap-4 px-4 py-3 text-sm hover:bg-secondary/30 transition-colors cursor-pointer",
-                selectedKeywords.includes(kw.keyword) && "bg-secondary/50"
-              )}
-              onClick={() => toggleKeywordSelection(kw.keyword)}
-            >
-              <div className="col-span-1">
-                <input 
-                  type="checkbox"
-                  checked={selectedKeywords.includes(kw.keyword)}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    toggleKeywordSelection(kw.keyword);
-                  }}
-                  className="rounded border-muted"
-                />
-              </div>
-              <div className="col-span-5 font-medium flex items-center">
-                {kw.keyword}
-                {kw.trend === "up" && (
-                  <TrendingUp size={14} className="ml-2 text-green-500" />
-                )}
-              </div>
-              <div className="col-span-2 text-right">{kw.volume.toLocaleString()}</div>
-              <div className="col-span-2 text-right">
-                <div className="inline-flex items-center">
-                  <div className="w-8 h-2 rounded-full bg-muted overflow-hidden mr-2">
-                    <div 
-                      className={cn(
-                        "h-full",
-                        kw.difficulty > 70 ? "bg-red-500" : 
-                        kw.difficulty > 50 ? "bg-orange-500" : 
-                        "bg-green-500"
-                      )}
-                      style={{ width: `${kw.difficulty}%` }}
-                    ></div>
-                  </div>
-                  {kw.difficulty}
-                </div>
-              </div>
-              <div className="col-span-2 text-right">{kw.cpc.toFixed(2)}</div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="md:col-span-3">
+          <div className="relative mb-6">
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search for keywords..."
+              className="pl-9 bg-secondary/50"
+            />
+          </div>
+          
+          <div className="rounded-lg border border-border overflow-hidden">
+            <div className="bg-secondary/50 text-xs font-medium text-muted-foreground grid grid-cols-12 gap-4 px-4 py-3">
+              <div className="col-span-1"></div>
+              <div className="col-span-5">Keyword</div>
+              <div className="col-span-2 text-right">Volume</div>
+              <div className="col-span-2 text-right">Difficulty</div>
+              <div className="col-span-2 text-right">CPC ($)</div>
             </div>
-          ))}
+            
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+              {filteredKeywords.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground">
+                  No keywords match your filters
+                </div>
+              ) : (
+                filteredKeywords.map((kw, index) => (
+                  <div 
+                    key={kw.keyword}
+                    className={cn(
+                      "grid grid-cols-12 gap-4 px-4 py-3 text-sm hover:bg-secondary/30 transition-colors cursor-pointer",
+                      selectedKeywords.includes(kw.keyword) && "bg-secondary/50"
+                    )}
+                    onClick={() => toggleKeywordSelection(kw.keyword)}
+                  >
+                    <div className="col-span-1">
+                      <input 
+                        type="checkbox"
+                        checked={selectedKeywords.includes(kw.keyword)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleKeywordSelection(kw.keyword);
+                        }}
+                        className="rounded border-muted"
+                      />
+                    </div>
+                    <div className="col-span-5 font-medium flex items-center">
+                      {kw.keyword}
+                      {kw.trend === "up" && (
+                        <TrendingUp size={14} className="ml-2 text-green-500" />
+                      )}
+                    </div>
+                    <div className="col-span-2 text-right">{kw.volume.toLocaleString()}</div>
+                    <div className="col-span-2 text-right">
+                      <div className="inline-flex items-center">
+                        <div className="w-8 h-2 rounded-full bg-muted overflow-hidden mr-2">
+                          <div 
+                            className={cn(
+                              "h-full",
+                              kw.difficulty > 70 ? "bg-red-500" : 
+                              kw.difficulty > 50 ? "bg-orange-500" : 
+                              "bg-green-500"
+                            )}
+                            style={{ width: `${kw.difficulty}%` }}
+                          ></div>
+                        </div>
+                        {kw.difficulty}
+                      </div>
+                    </div>
+                    <div className="col-span-2 text-right">{kw.cpc.toFixed(2)}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="md:col-span-1">
+          <KeywordFilters onFiltersChange={handleFilterChange} />
         </div>
       </div>
       
@@ -320,15 +364,31 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
         <div className="text-sm text-muted-foreground">
           {selectedKeywords.length} keywords selected
         </div>
-        <Button 
-          size="sm" 
-          disabled={selectedKeywords.length === 0}
-          className="text-xs"
-          onClick={handleGenerateContent}
-        >
-          Generate Content
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            size="sm" 
+            className="text-xs"
+            onClick={() => setShowContentSuggestions(!showContentSuggestions)}
+          >
+            {showContentSuggestions ? "Hide AI Suggestions" : "Show AI Suggestions"}
+          </Button>
+          <Button 
+            size="sm" 
+            disabled={selectedKeywords.length === 0}
+            className="text-xs"
+            onClick={handleGenerateContent}
+          >
+            Generate Content
+          </Button>
+        </div>
       </div>
+      
+      {showContentSuggestions && (
+        <div className="mt-6">
+          <ContentSuggestions keywords={keywords} />
+        </div>
+      )}
     </div>
   );
 };
