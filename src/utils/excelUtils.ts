@@ -31,15 +31,24 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
         
         // Transform to match our keyword data structure
         const keywordData: KeywordData[] = jsonData.map((row: any) => {
+          // Extract trend value and normalize it
+          const rawTrend = String(row.Trend || row.trend || 'neutral').toLowerCase();
+          
+          // Ensure trend is one of the allowed values
+          let normalizedTrend: "up" | "neutral" | "down" = "neutral";
+          if (rawTrend === "up" || rawTrend === "increasing" || rawTrend === "growth" || rawTrend === "positive") {
+            normalizedTrend = "up";
+          } else if (rawTrend === "down" || rawTrend === "decreasing" || rawTrend === "decline" || rawTrend === "negative") {
+            normalizedTrend = "down";
+          }
+          
           // Map Excel columns to our data structure
-          // Adjust these mappings based on your Excel file structure
           return {
-            keyword: row.Keyword || row.keyword || '',
-            volume: parseInt(row.Volume || row.volume || '0', 10),
-            difficulty: parseInt(row.Difficulty || row.difficulty || '0', 10),
-            cpc: parseFloat(row.CPC || row.cpc || '0'),
-            // Default to neutral if trend isn't specified
-            trend: (row.Trend || row.trend || 'neutral').toLowerCase() as "up" | "neutral" | "down"
+            keyword: String(row.Keyword || row.keyword || ''),
+            volume: parseInt(String(row.Volume || row.volume || '0'), 10),
+            difficulty: parseInt(String(row.Difficulty || row.difficulty || '0'), 10),
+            cpc: parseFloat(String(row.CPC || row.cpc || '0')),
+            trend: normalizedTrend
           };
         });
         
