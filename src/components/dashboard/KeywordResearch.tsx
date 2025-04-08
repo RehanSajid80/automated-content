@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Search, TrendingUp, ArrowRight, Upload, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 // Mock SEMrush keyword data with explicitly typed trend values
 const mockKeywords: KeywordData[] = [
@@ -25,7 +28,7 @@ const mockKeywords: KeywordData[] = [
   { keyword: "office hoteling software", volume: 2800, difficulty: 55, cpc: 9.60, trend: "up" },
   { keyword: "facility management software", volume: 8500, difficulty: 85, cpc: 15.90, trend: "up" },
   { keyword: "room reservation system", volume: 5600, difficulty: 67, cpc: 10.20, trend: "neutral" },
-] as const;
+];
 
 interface KeywordResearchProps {
   className?: string;
@@ -38,8 +41,10 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-  const [keywords, setKeywords] = useState<KeywordData[]>(mockKeywords as unknown as KeywordData[]);
+  const [keywords, setKeywords] = useState<KeywordData[]>(mockKeywords);
   const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const filteredKeywords = keywords.filter(kw => 
@@ -68,35 +73,45 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
+  const validateFile = (file: File): boolean => {
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+      setImportError("Please upload an Excel file (.xlsx or .xls)");
+      return false;
+    }
+    return true;
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImportError(null);
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file extension first
+    if (!validateFile(file)) {
+      return;
+    }
 
     setIsImporting(true);
     
     try {
-      // Check if file is Excel
-      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-        throw new Error('Please upload an Excel file (.xlsx or .xls)');
-      }
-      
+      console.log("Processing Excel file:", file.name, file.type);
       const keywordData = await processExcelFile(file);
-      console.log("Imported keyword data:", keywordData);
+      console.log("Import successful, keyword data:", keywordData);
       
       setKeywords(keywordData);
+      setImportDialogOpen(false);
       toast({
         title: "Import successful",
         description: `Imported ${keywordData.length} keywords from SEMrush`,
       });
     } catch (error) {
-      console.error(error);
-      toast({
-        title: "Import failed",
-        description: error instanceof Error ? error.message : "Failed to import keywords",
-        variant: "destructive",
-      });
+      console.error("Import failed:", error);
+      setImportError(error instanceof Error ? error.message : "Failed to import keywords");
     } finally {
       setIsImporting(false);
+      // Reset the file input
+      e.target.value = '';
     }
   };
 
@@ -104,7 +119,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     <div className={cn("rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-300", className)}>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold">Office Space SEO Keywords</h3>
-        <Dialog>
+        <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="text-xs">
               Import from SEMrush <ArrowRight size={14} className="ml-1" />
@@ -113,8 +128,18 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Import SEMrush Keywords</DialogTitle>
+              <DialogDescription>
+                Export your data from SEMrush as Excel and upload it here
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              {importError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTitle>Import Error</AlertTitle>
+                  <AlertDescription>{importError}</AlertDescription>
+                </Alert>
+              )}
+              
               <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 text-center">
                 <FileSpreadsheet className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
                 <h3 className="text-lg font-medium mb-2">Upload Excel File</h3>
@@ -140,6 +165,8 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
               <div className="text-sm text-muted-foreground">
                 <p className="font-medium">Expected format:</p>
                 <p>Excel file with columns for Keyword, Volume, Difficulty, CPC, and Trend</p>
+                <p className="mt-2 font-medium">Accepted trend values:</p>
+                <p>Up, Increasing, Growth, Positive, Down, Decreasing, Decline, Negative, Neutral, Stable</p>
               </div>
             </div>
           </DialogContent>
