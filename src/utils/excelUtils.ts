@@ -30,7 +30,7 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
         
         // Transform to match our keyword data structure
-        const keywordData: KeywordData[] = jsonData.map((row: any) => {
+        const keywordData = jsonData.map((row: any) => {
           // Extract trend value and normalize it
           const rawTrend = String(row.Trend || row.trend || 'neutral').toLowerCase();
           
@@ -49,7 +49,7 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
             difficulty: parseInt(String(row.Difficulty || row.difficulty || '0'), 10),
             cpc: parseFloat(String(row.CPC || row.cpc || '0')),
             trend: normalizedTrend
-          };
+          } as KeywordData; // Add explicit type assertion here
         });
         
         resolve(keywordData);
