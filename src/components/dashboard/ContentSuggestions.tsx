@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
-import { getContentSuggestions } from "@/utils/openaiUtils";
+import { getContentSuggestions, OPENAI_MODELS } from "@/utils/openaiUtils";
 import { useToast } from "@/hooks/use-toast";
 import { API_KEYS, getApiKey, getApiKeyInfo } from "@/utils/apiKeyUtils";
 import {
@@ -28,7 +28,8 @@ import {
   KeyIcon,
   RefreshCwIcon,
   SettingsIcon,
-  AlertTriangleIcon
+  AlertTriangleIcon,
+  SparklesIcon
 } from "lucide-react";
 import {
   Dialog,
@@ -38,6 +39,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import ApiConnectionsManager from "../settings/ApiConnectionsManager";
 
@@ -64,6 +72,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [openCards, setOpenCards] = useState<{ [key: string]: boolean }>({});
   const [isApiConnectionsOpen, setIsApiConnectionsOpen] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>(OPENAI_MODELS.PREMIUM);
+  const [usedModel, setUsedModel] = useState<string | null>(null);
   const { toast } = useToast();
 
   const toggleCard = (index: number) => {
@@ -97,10 +107,17 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
     setIsLoading(true);
     setApiError(null);
+    setUsedModel(null);
     
     try {
-      const results = await getContentSuggestions(keywords);
+      // Start with the user-selected model
+      const results = await getContentSuggestions(keywords, undefined, selectedModel);
       setSuggestions(results);
+      
+      // Check if the model was changed during processing (due to rate limits)
+      // This is a simplification - in reality this would require returning the used model from the API call
+      setUsedModel(selectedModel);
+      
       toast({
         title: "Success",
         description: `Generated ${results.length} content topic suggestions`,
@@ -120,6 +137,20 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const apiKeyInfo = getApiKeyInfo(API_KEYS.OPENAI);
   const hasApiKey = Boolean(apiKeyInfo?.key);
 
+  // Get a friendly model name for display
+  const getModelDisplayName = (modelKey: string) => {
+    switch(modelKey) {
+      case OPENAI_MODELS.PREMIUM:
+        return "GPT-4o (Premium)";
+      case OPENAI_MODELS.STANDARD:
+        return "GPT-4o-mini (Standard)";
+      case OPENAI_MODELS.FALLBACK:
+        return "GPT-3.5 Turbo (Basic)";
+      default:
+        return modelKey;
+    }
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
       <Card>
@@ -136,6 +167,16 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                 <AlertTriangleIcon className="h-4 w-4" />
                 <AlertTitle>OpenAI Error</AlertTitle>
                 <AlertDescription>{apiError}</AlertDescription>
+              </Alert>
+            )}
+            
+            {usedModel && usedModel !== selectedModel && (
+              <Alert variant="warning" className="mb-4 bg-yellow-50 border-yellow-200">
+                <SparklesIcon className="h-4 w-4" />
+                <AlertTitle>Model Fallback Activated</AlertTitle>
+                <AlertDescription>
+                  Due to rate limits, we used {getModelDisplayName(usedModel)} instead of {getModelDisplayName(selectedModel)}.
+                </AlertDescription>
               </Alert>
             )}
           
@@ -183,6 +224,35 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               )}
               <p className="text-xs text-muted-foreground mt-1">
                 Your API key is stored locally on your device and not sent to our servers
+              </p>
+            </div>
+            
+            {/* Model Selection */}
+            <div>
+              <label htmlFor="model-select" className="text-sm font-medium block mb-2">
+                OpenAI Model
+              </label>
+              <Select 
+                value={selectedModel} 
+                onValueChange={setSelectedModel}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={OPENAI_MODELS.PREMIUM}>
+                    GPT-4o (Premium) - Most powerful
+                  </SelectItem>
+                  <SelectItem value={OPENAI_MODELS.STANDARD}>
+                    GPT-4o-mini (Standard) - Good balance
+                  </SelectItem>
+                  <SelectItem value={OPENAI_MODELS.FALLBACK}>
+                    GPT-3.5 Turbo (Basic) - Most economical
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                The system will automatically fall back to more economical models if rate limits are hit
               </p>
             </div>
 

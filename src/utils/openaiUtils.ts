@@ -12,10 +12,17 @@ interface ContentSuggestion {
   reasoning: string;
 }
 
+// Define available models in order of preference and cost
+export const OPENAI_MODELS = {
+  PREMIUM: "gpt-4o",
+  STANDARD: "gpt-4o-mini",
+  FALLBACK: "gpt-3.5-turbo" // Ultimate fallback if needed
+};
+
 export async function getContentSuggestions(
   keywords: KeywordData[],
   customApiKey?: string,
-  model: string = "gpt-4o"
+  model: string = OPENAI_MODELS.PREMIUM
 ): Promise<ContentSuggestion[]> {
   try {
     // Use provided API key or get from storage
@@ -66,7 +73,7 @@ export async function getContentSuggestions(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: model,  // Use the passed model or default
+        model: model,  // Use the passed model
         messages: [
           {
             role: "system",
@@ -94,12 +101,20 @@ export async function getContentSuggestions(
         const waitTime = retryAfter ? parseInt(retryAfter) : 60;
         const waitMinutes = Math.ceil(waitTime / 60);
         
-        // Fallback to a cheaper model if rate limited
-        if (model === "gpt-4o") {
-          console.warn("Rate limited on gpt-4o, attempting with gpt-4o-mini");
-          return getContentSuggestions(keywords, customApiKey, "gpt-4o-mini");
+        console.warn(`Rate limited on model: ${model}`);
+        
+        // Implement cascading model fallback
+        if (model === OPENAI_MODELS.PREMIUM) {
+          // First fallback: try the standard model
+          console.warn(`Rate limited on ${OPENAI_MODELS.PREMIUM}, falling back to ${OPENAI_MODELS.STANDARD}`);
+          return getContentSuggestions(keywords, customApiKey, OPENAI_MODELS.STANDARD);
+        } else if (model === OPENAI_MODELS.STANDARD) {
+          // Second fallback: try the ultimate fallback model
+          console.warn(`Rate limited on ${OPENAI_MODELS.STANDARD}, falling back to ${OPENAI_MODELS.FALLBACK}`);
+          return getContentSuggestions(keywords, customApiKey, OPENAI_MODELS.FALLBACK);
         }
         
+        // If we're already on the lowest tier model or other models also failed
         throw new Error(
           `Rate limit exceeded. Your OpenAI account has reached its request limit. ` + 
           `Current balance might be low. ` +
@@ -143,4 +158,3 @@ export async function getContentSuggestions(
     throw error;
   }
 }
-
