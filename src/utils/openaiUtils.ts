@@ -88,7 +88,16 @@ export async function getContentSuggestions(
       if (response.status === 401) {
         throw new Error("Invalid API key. Please check your OpenAI API key and try again.");
       } else if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please wait a moment and try again.");
+        // More specific rate limit error handling
+        const retryAfter = response.headers.get("retry-after");
+        const waitTime = retryAfter ? parseInt(retryAfter) : 60;
+        const waitMinutes = Math.ceil(waitTime / 60);
+        
+        throw new Error(
+          `Rate limit exceeded. Your OpenAI account has reached its request limit. ` + 
+          `Please wait approximately ${waitMinutes} ${waitMinutes === 1 ? 'minute' : 'minutes'} before trying again, ` +
+          `or check your OpenAI usage limits at https://platform.openai.com/account/usage.`
+        );
       } else {
         throw new Error(errorMessage);
       }

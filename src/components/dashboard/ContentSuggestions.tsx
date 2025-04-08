@@ -27,7 +27,8 @@ import {
   PenTool,
   KeyIcon,
   RefreshCwIcon,
-  SettingsIcon
+  SettingsIcon,
+  AlertTriangleIcon
 } from "lucide-react";
 import {
   Dialog,
@@ -37,6 +38,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import ApiConnectionsManager from "../settings/ApiConnectionsManager";
 
 interface ContentSuggestion {
@@ -61,6 +63,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
   const [openCards, setOpenCards] = useState<{ [key: string]: boolean }>({});
   const [isApiConnectionsOpen, setIsApiConnectionsOpen] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const toggleCard = (index: number) => {
@@ -93,6 +96,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     }
 
     setIsLoading(true);
+    setApiError(null);
+    
     try {
       const results = await getContentSuggestions(keywords);
       setSuggestions(results);
@@ -102,6 +107,11 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       });
     } catch (error) {
       console.error("Error generating suggestions:", error);
+      if (error instanceof Error) {
+        setApiError(error.message);
+      } else {
+        setApiError("An unknown error occurred");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +131,14 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {apiError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertTriangleIcon className="h-4 w-4" />
+                <AlertTitle>OpenAI Error</AlertTitle>
+                <AlertDescription>{apiError}</AlertDescription>
+              </Alert>
+            )}
+          
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-medium">
