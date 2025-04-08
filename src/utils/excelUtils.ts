@@ -22,7 +22,8 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/octet-stream',  // Some browsers may use this for Excel files
-      'application/wps-office.xlsx' // WPS Office Excel files
+      'application/wps-office.xlsx', // WPS Office Excel files
+      'text/csv'  // CSV files
     ];
     
     const fileName = file.name.toLowerCase();
@@ -30,7 +31,7 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
     const validExcelExtensions = ['xlsx', 'xls', 'csv'];
     
     const isValidExtension = validExcelExtensions.includes(fileExtension);
-    const isValidMimeType = validExcelMimeTypes.includes(file.type);
+    const isValidMimeType = validExcelMimeTypes.includes(file.type) || file.type === '';
     
     console.log("File validation:", { 
       name: fileName,

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, ArrowRight, Upload, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,9 @@ const mockKeywords: KeywordData[] = [
   { keyword: "room reservation system", volume: 5600, difficulty: 67, cpc: 10.20, trend: "neutral" },
 ];
 
+// Local storage key for persisting data
+const STORAGE_KEY = 'office-space-keywords';
+
 interface KeywordResearchProps {
   className?: string;
   onKeywordsSelected?: (keywords: string[]) => void;
@@ -41,11 +44,40 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-  const [keywords, setKeywords] = useState<KeywordData[]>(mockKeywords);
+  const [keywords, setKeywords] = useState<KeywordData[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  // Load saved keywords on component mount
+  useEffect(() => {
+    const savedKeywords = localStorage.getItem(STORAGE_KEY);
+    if (savedKeywords) {
+      try {
+        const parsedKeywords = JSON.parse(savedKeywords) as KeywordData[];
+        setKeywords(parsedKeywords);
+        toast({
+          title: "Keywords Loaded",
+          description: `Loaded ${parsedKeywords.length} keywords from your saved data.`,
+        });
+      } catch (error) {
+        console.error("Error loading saved keywords:", error);
+        // If there's an error parsing the saved data, use the mock data as fallback
+        setKeywords(mockKeywords);
+      }
+    } else {
+      // If no saved keywords exist, use the mock data
+      setKeywords(mockKeywords);
+    }
+  }, [toast]);
+
+  // Save keywords to localStorage whenever they change
+  useEffect(() => {
+    if (keywords.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(keywords));
+    }
+  }, [keywords]);
 
   const filteredKeywords = keywords.filter(kw => 
     kw.keyword.toLowerCase().includes(searchTerm.toLowerCase())
@@ -136,62 +168,84 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
+  const clearKeywordData = () => {
+    if (window.confirm("Are you sure you want to clear all keyword data? This cannot be undone.")) {
+      localStorage.removeItem(STORAGE_KEY);
+      setKeywords(mockKeywords);
+      setSelectedKeywords([]);
+      toast({
+        title: "Data Cleared",
+        description: "All keyword data has been reset to default values.",
+      });
+    }
+  };
+
   return (
     <div className={cn("rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-300", className)}>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold">Office Space SEO Keywords</h3>
-        <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="text-xs">
-              Import from SEMrush <ArrowRight size={14} className="ml-1" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Import SEMrush Keywords</DialogTitle>
-              <DialogDescription>
-                Export your data from SEMrush as Excel and upload it here
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              {importError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTitle>Import Error</AlertTitle>
-                  <AlertDescription>{importError}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 text-center">
-                <FileSpreadsheet className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">Upload Excel File</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs" 
+            onClick={clearKeywordData}
+          >
+            Reset Data
+          </Button>
+          <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-xs">
+                Import from SEMrush <ArrowRight size={14} className="ml-1" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import SEMrush Keywords</DialogTitle>
+                <DialogDescription>
                   Export your data from SEMrush as Excel and upload it here
-                </p>
-                <label htmlFor="excel-upload" className="cursor-pointer">
-                  <div className="bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded-md inline-flex items-center gap-2">
-                    <Upload size={16} />
-                    <span>{isImporting ? 'Importing...' : 'Upload Excel'}</span>
-                  </div>
-                  <input
-                    id="excel-upload"
-                    type="file"
-                    accept=".xlsx,.xls,.csv"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    disabled={isImporting}
-                  />
-                </label>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                {importError && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertTitle>Import Error</AlertTitle>
+                    <AlertDescription>{importError}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 text-center">
+                  <FileSpreadsheet className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
+                  <h3 className="text-lg font-medium mb-2">Upload Excel File</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Export your data from SEMrush as Excel and upload it here
+                  </p>
+                  <label htmlFor="excel-upload" className="cursor-pointer">
+                    <div className="bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded-md inline-flex items-center gap-2">
+                      <Upload size={16} />
+                      <span>{isImporting ? 'Importing...' : 'Upload Excel'}</span>
+                    </div>
+                    <input
+                      id="excel-upload"
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      disabled={isImporting}
+                    />
+                  </label>
+                </div>
+                
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium">Expected format:</p>
+                  <p>Excel file with columns for Keyword, Volume, Difficulty, CPC, and Trend</p>
+                  <p className="mt-2 font-medium">Accepted trend values:</p>
+                  <p>Up, Increasing, Growth, Positive, Down, Decreasing, Decline, Negative, Neutral, Stable</p>
+                </div>
               </div>
-              
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium">Expected format:</p>
-                <p>Excel file with columns for Keyword, Volume, Difficulty, CPC, and Trend</p>
-                <p className="mt-2 font-medium">Accepted trend values:</p>
-                <p>Up, Increasing, Growth, Positive, Down, Decreasing, Decline, Negative, Neutral, Stable</p>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
       <div className="relative mb-6">
