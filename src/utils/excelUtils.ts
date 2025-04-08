@@ -30,35 +30,51 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
         
         // Transform to match our keyword data structure
-        const keywordData = jsonData.map((row: any) => {
-          // Extract trend value and normalize it
-          const rawTrend = String(row.Trend || row.trend || 'neutral').toLowerCase();
+        const keywordData: KeywordData[] = [];
+        
+        for (const row of jsonData as Record<string, any>[]) {
+          // Extract and normalize the trend value
+          const rawTrend = String(row.Trend || row.trend || 'neutral').toLowerCase().trim();
           
-          // Ensure trend is one of the allowed values
+          // Determine the normalized trend value
           let normalizedTrend: "up" | "neutral" | "down" = "neutral";
-          if (rawTrend === "up" || rawTrend === "increasing" || rawTrend === "growth" || rawTrend === "positive") {
+          
+          if (["up", "increasing", "growth", "positive", "+", "increase", "rising", "higher"].includes(rawTrend)) {
             normalizedTrend = "up";
-          } else if (rawTrend === "down" || rawTrend === "decreasing" || rawTrend === "decline" || rawTrend === "negative") {
+          } else if (["down", "decreasing", "decline", "negative", "-", "decrease", "falling", "lower"].includes(rawTrend)) {
             normalizedTrend = "down";
           }
           
-          return {
+          // Create the keyword data object
+          const keywordItem: KeywordData = {
             keyword: String(row.Keyword || row.keyword || ''),
             volume: parseInt(String(row.Volume || row.volume || '0'), 10),
             difficulty: parseInt(String(row.Difficulty || row.difficulty || '0'), 10),
             cpc: parseFloat(String(row.CPC || row.cpc || '0')),
             trend: normalizedTrend
-          } as KeywordData;
-        });
+          };
+          
+          keywordData.push(keywordItem);
+        }
         
         resolve(keywordData);
       } catch (error) {
         console.error('Error processing Excel file:', error);
+        toast({
+          title: "Import Error",
+          description: "Failed to process the Excel file. Please check the format.",
+          variant: "destructive",
+        });
         reject(error);
       }
     };
     
     reader.onerror = (error) => {
+      toast({
+        title: "Import Error",
+        description: "Failed to read the file.",
+        variant: "destructive",
+      });
       reject(error);
     };
     

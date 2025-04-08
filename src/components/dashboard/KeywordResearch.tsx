@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// Mock SEMrush keyword data for officespacesoftware.com
+// Mock SEMrush keyword data with explicitly typed trend values
 const mockKeywords: KeywordData[] = [
   { keyword: "office space management software", volume: 5400, difficulty: 78, cpc: 14.5, trend: "up" },
   { keyword: "workspace management system", volume: 3800, difficulty: 65, cpc: 9.20, trend: "up" },
@@ -25,7 +25,7 @@ const mockKeywords: KeywordData[] = [
   { keyword: "office hoteling software", volume: 2800, difficulty: 55, cpc: 9.60, trend: "up" },
   { keyword: "facility management software", volume: 8500, difficulty: 85, cpc: 15.90, trend: "up" },
   { keyword: "room reservation system", volume: 5600, difficulty: 67, cpc: 10.20, trend: "neutral" },
-];
+] as const;
 
 interface KeywordResearchProps {
   className?: string;
@@ -38,7 +38,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-  const [keywords, setKeywords] = useState<KeywordData[]>(mockKeywords);
+  const [keywords, setKeywords] = useState<KeywordData[]>(mockKeywords as unknown as KeywordData[]);
   const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
 
@@ -81,6 +81,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
       }
       
       const keywordData = await processExcelFile(file);
+      console.log("Imported keyword data:", keywordData);
       
       setKeywords(keywordData);
       toast({
