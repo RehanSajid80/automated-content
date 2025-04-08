@@ -1,6 +1,7 @@
 
 import { KeywordData } from "./excelUtils";
 import { toast } from "@/hooks/use-toast";
+import { getApiKey, API_KEYS } from "./apiKeyUtils";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -13,9 +14,16 @@ interface ContentSuggestion {
 
 export async function getContentSuggestions(
   keywords: KeywordData[],
-  apiKey: string
+  customApiKey?: string
 ): Promise<ContentSuggestion[]> {
   try {
+    // Use provided API key or get from storage
+    const apiKey = customApiKey || getApiKey(API_KEYS.OPENAI);
+    
+    if (!apiKey) {
+      throw new Error("No OpenAI API key provided");
+    }
+
     // Prepare the data for OpenAI
     const keywordData = keywords.map((kw) => ({
       keyword: kw.keyword,

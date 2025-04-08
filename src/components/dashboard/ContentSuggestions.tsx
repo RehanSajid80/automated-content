@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { KeywordData } from "@/utils/excelUtils";
 import { getContentSuggestions } from "@/utils/openaiUtils";
 import { useToast } from "@/hooks/use-toast";
+import { API_KEYS, getApiKey, getApiKeyInfo } from "@/utils/apiKeyUtils";
 import {
   Card,
   CardContent,
@@ -25,36 +25,19 @@ import {
   Tag, 
   MessageSquare, 
   PenTool,
-  EyeIcon,
-  EyeOffIcon,
   KeyIcon,
-  RefreshCwIcon
+  RefreshCwIcon,
+  SettingsIcon
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-
-// Local storage key for API key
-const API_KEY_STORAGE = 'office-space-openai-key';
+import ApiConnectionsManager from "../settings/ApiConnectionsManager";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -70,50 +53,15 @@ interface ContentSuggestionsProps {
   className?: string;
 }
 
-// Form schema for API key
-const apiKeyFormSchema = z.object({
-  apiKey: z.string().min(20, "API key is too short").max(200, "API key is too long"),
-});
-
 const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   keywords,
   className,
 }) => {
-  const [apiKey, setApiKey] = useState("");
-  const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
-  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
-  const [isApiKeySet, setIsApiKeySet] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
   const [openCards, setOpenCards] = useState<{ [key: string]: boolean }>({});
+  const [isApiConnectionsOpen, setIsApiConnectionsOpen] = useState(false);
   const { toast } = useToast();
-
-  // Initialize form with zod resolver
-  const form = useForm<z.infer<typeof apiKeyFormSchema>>({
-    resolver: zodResolver(apiKeyFormSchema),
-    defaultValues: {
-      apiKey: "",
-    },
-  });
-
-  // Load API key from local storage on component mount
-  useEffect(() => {
-    const savedApiKey = localStorage.getItem(API_KEY_STORAGE);
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-      setIsApiKeySet(true);
-      // Pre-fill the form
-      form.setValue("apiKey", savedApiKey);
-      toast({
-        title: "API Key Loaded",
-        description: "Your saved OpenAI API key has been loaded securely",
-      });
-    }
-  }, [toast]);
-
-  const toggleApiKeyVisibility = () => {
-    setIsApiKeyVisible(!isApiKeyVisible);
-  };
 
   const toggleCard = (index: number) => {
     setOpenCards({
@@ -122,40 +70,16 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     });
   };
 
-  const onSubmitApiKey = (values: z.infer<typeof apiKeyFormSchema>) => {
-    const newApiKey = values.apiKey.trim();
-    // Save to local storage
-    localStorage.setItem(API_KEY_STORAGE, newApiKey);
-    setApiKey(newApiKey);
-    setIsApiKeySet(true);
-    setIsApiKeyDialogOpen(false);
-    toast({
-      title: "API Key Saved",
-      description: "Your OpenAI API key has been saved securely",
-    });
-  };
-
-  const clearApiKey = () => {
-    if (window.confirm("Are you sure you want to remove your saved API key?")) {
-      localStorage.removeItem(API_KEY_STORAGE);
-      setApiKey("");
-      form.reset({ apiKey: "" });
-      setIsApiKeySet(false);
-      toast({
-        title: "API Key Removed",
-        description: "Your OpenAI API key has been removed",
-      });
-    }
-  };
-
   const generateSuggestions = async () => {
+    const apiKey = getApiKey(API_KEYS.OPENAI);
+    
     if (!apiKey) {
       toast({
         title: "API Key Required",
-        description: "Please enter your OpenAI API key",
+        description: "Please set up your OpenAI API connection",
         variant: "destructive",
       });
-      setIsApiKeyDialogOpen(true);
+      setIsApiConnectionsOpen(true);
       return;
     }
 
@@ -170,7 +94,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
     setIsLoading(true);
     try {
-      const results = await getContentSuggestions(keywords, apiKey);
+      const results = await getContentSuggestions(keywords);
       setSuggestions(results);
       toast({
         title: "Success",
@@ -182,6 +106,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       setIsLoading(false);
     }
   };
+
+  const apiKeyInfo = getApiKeyInfo(API_KEYS.OPENAI);
+  const hasApiKey = Boolean(apiKeyInfo?.key);
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -197,60 +124,43 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-medium">
-                  OpenAI API Key
+                  OpenAI API Connection
                 </label>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleApiKeyVisibility}
-                    className="h-8 px-2"
-                  >
-                    {isApiKeyVisible ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsApiKeyDialogOpen(true)}
-                    className="h-8"
-                  >
-                    {isApiKeySet ? "Update Key" : "Set Key"}
-                  </Button>
-                  {isApiKeySet && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={clearApiKey}
-                      className="h-8"
-                    >
-                      Clear Key
-                    </Button>
-                  )}
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsApiConnectionsOpen(true)}
+                  className="h-8"
+                >
+                  <SettingsIcon className="h-4 w-4 mr-1.5" />
+                  Manage Connections
+                </Button>
               </div>
 
-              {/* API Key Display */}
-              {isApiKeySet ? (
+              {/* API Key Status Display */}
+              {hasApiKey ? (
                 <div className="bg-secondary/30 p-3 rounded-md flex items-center justify-between">
-                  <div className="font-mono text-sm truncate flex-1">
-                    {isApiKeyVisible 
-                      ? apiKey 
-                      : `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`}
+                  <div className="font-medium text-sm flex items-center">
+                    <KeyIcon className="h-4 w-4 mr-2 text-primary" />
+                    <span>{apiKeyInfo?.name || "OpenAI API"}</span>
                   </div>
                   <div className="text-green-600 text-xs font-medium flex items-center">
                     <span className="w-2 h-2 bg-green-600 rounded-full mr-1.5"></span>
-                    Key Saved
+                    Connected
                   </div>
                 </div>
               ) : (
                 <div 
                   className="bg-secondary/30 p-3 rounded-md flex items-center justify-between cursor-pointer hover:bg-secondary/50"
-                  onClick={() => setIsApiKeyDialogOpen(true)}
+                  onClick={() => setIsApiConnectionsOpen(true)}
                 >
                   <div className="text-muted-foreground flex items-center">
                     <KeyIcon className="h-4 w-4 mr-2" />
-                    <span>Click to set your OpenAI API key</span>
+                    <span>Set up your OpenAI API connection</span>
                   </div>
+                  <Button size="sm" variant="secondary" className="h-7 text-xs">
+                    Set Up
+                  </Button>
                 </div>
               )}
               <p className="text-xs text-muted-foreground mt-1">
@@ -260,7 +170,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
             <Button
               onClick={generateSuggestions}
-              disabled={isLoading || keywords.length === 0}
+              disabled={isLoading || keywords.length === 0 || !hasApiKey}
               className="w-full"
             >
               {isLoading
@@ -271,65 +181,18 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         </CardContent>
       </Card>
 
-      {/* API Key Dialog */}
-      <Dialog open={isApiKeyDialogOpen} onOpenChange={setIsApiKeyDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* API Connections Manager Dialog */}
+      <Dialog open={isApiConnectionsOpen} onOpenChange={setIsApiConnectionsOpen}>
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Set OpenAI API Key</DialogTitle>
+            <DialogTitle>API Connections</DialogTitle>
             <DialogDescription>
-              Enter your OpenAI API key to enable content suggestions
+              Manage your API connections for integration with external services
             </DialogDescription>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmitApiKey)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="apiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>API Key</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          {...field}
-                          type={isApiKeyVisible ? "text" : "password"}
-                          placeholder="sk-..."
-                          className="pr-10 font-mono"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={toggleApiKeyVisibility}
-                        >
-                          {isApiKeyVisible ? (
-                            <EyeOffIcon className="h-4 w-4" />
-                          ) : (
-                            <EyeIcon className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Your key begins with &apos;sk-&apos; and is stored only in your browser
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter className="gap-2 sm:gap-0">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsApiKeyDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Save API Key</Button>
-              </DialogFooter>
-            </form>
-          </Form>
+          <div className="mt-4">
+            <ApiConnectionsManager />
+          </div>
         </DialogContent>
       </Dialog>
 
