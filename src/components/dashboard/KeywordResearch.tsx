@@ -1,10 +1,18 @@
 
 import React, { useState } from "react";
-import { Search, TrendingUp, ArrowRight } from "lucide-react";
+import { Search, TrendingUp, ArrowRight, Upload, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { processExcelFile, KeywordData } from "@/utils/excelUtils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Mock SEMrush keyword data for officespacesoftware.com
 const mockKeywords = [
@@ -31,9 +39,11 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<KeywordData[]>(mockKeywords);
+  const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
 
-  const filteredKeywords = mockKeywords.filter(kw => 
+  const filteredKeywords = keywords.filter(kw => 
     kw.keyword.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -59,13 +69,81 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    
+    try {
+      // Check if file is Excel
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        throw new Error('Please upload an Excel file (.xlsx or .xls)');
+      }
+      
+      const keywordData = await processExcelFile(file);
+      
+      setKeywords(keywordData);
+      toast({
+        title: "Import successful",
+        description: `Imported ${keywordData.length} keywords from SEMrush`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Import failed",
+        description: error instanceof Error ? error.message : "Failed to import keywords",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className={cn("rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-300", className)}>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold">Office Space SEO Keywords</h3>
-        <Button variant="outline" size="sm" className="text-xs">
-          Import from SEMrush <ArrowRight size={14} className="ml-1" />
-        </Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="text-xs">
+              Import from SEMrush <ArrowRight size={14} className="ml-1" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Import SEMrush Keywords</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 text-center">
+                <FileSpreadsheet className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">Upload Excel File</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Export your data from SEMrush as Excel and upload it here
+                </p>
+                <label htmlFor="excel-upload" className="cursor-pointer">
+                  <div className="bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded-md inline-flex items-center gap-2">
+                    <Upload size={16} />
+                    <span>{isImporting ? 'Importing...' : 'Upload Excel'}</span>
+                  </div>
+                  <input
+                    id="excel-upload"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={isImporting}
+                  />
+                </label>
+              </div>
+              
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium">Expected format:</p>
+                <p>Excel file with columns for Keyword, Volume, Difficulty, CPC, and Trend</p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       
       <div className="relative mb-6">
