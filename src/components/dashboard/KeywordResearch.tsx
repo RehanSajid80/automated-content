@@ -74,21 +74,42 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   };
 
   const validateFile = (file: File): boolean => {
+    console.log("Validating file:", file.name, file.type);
+    
     const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
-      setImportError("Please upload an Excel file (.xlsx or .xls)");
+    const fileExtension = fileName.substring(fileName.lastIndexOf('.') + 1);
+    const validExcelExtensions = ['xlsx', 'xls', 'csv'];
+    
+    if (!validExcelExtensions.includes(fileExtension)) {
+      const errorMsg = `Invalid file extension: .${fileExtension}. Please use .xlsx, .xls, or .csv files.`;
+      setImportError(errorMsg);
+      toast({
+        title: "Invalid File Format",
+        description: errorMsg,
+        variant: "destructive",
+      });
       return false;
     }
+    
     return true;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setImportError(null);
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+    const files = e.target.files;
+    
+    if (!files || files.length === 0) {
+      console.log("No files selected");
+      return;
+    }
+    
+    const file = files[0];
+    console.log("File selected:", file.name, file.type, file.size);
+    
     // Validate file extension first
     if (!validateFile(file)) {
+      // Reset the file input
+      e.target.value = '';
       return;
     }
 
@@ -154,7 +175,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
                   <input
                     id="excel-upload"
                     type="file"
-                    accept=".xlsx,.xls"
+                    accept=".xlsx,.xls,.csv"
                     className="hidden"
                     onChange={handleFileUpload}
                     disabled={isImporting}

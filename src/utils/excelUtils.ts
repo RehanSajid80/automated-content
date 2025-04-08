@@ -15,15 +15,40 @@ export interface KeywordData {
  */
 export const processExcelFile = (file: File): Promise<KeywordData[]> => {
   return new Promise((resolve, reject) => {
-    // Validate file type more thoroughly
+    console.log("Processing file:", file.name, file.type);
+    
+    // More thorough file type validation
+    const validExcelMimeTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/octet-stream',  // Some browsers may use this for Excel files
+      'application/wps-office.xlsx' // WPS Office Excel files
+    ];
+    
     const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+    const fileExtension = fileName.substring(fileName.lastIndexOf('.') + 1);
+    const validExcelExtensions = ['xlsx', 'xls', 'csv'];
+    
+    const isValidExtension = validExcelExtensions.includes(fileExtension);
+    const isValidMimeType = validExcelMimeTypes.includes(file.type);
+    
+    console.log("File validation:", { 
+      name: fileName,
+      type: file.type,
+      extension: fileExtension,
+      isValidExtension,
+      isValidMimeType
+    });
+    
+    if (!isValidExtension) {
+      const error = `Invalid file extension: .${fileExtension}. Please use .xlsx, .xls, or .csv files.`;
+      console.error(error);
       toast({
         title: "Invalid File Format",
-        description: "Please upload an Excel file (.xlsx or .xls)",
+        description: error,
         variant: "destructive",
       });
-      reject(new Error("Please upload an Excel file (.xlsx or .xls)"));
+      reject(new Error(error));
       return;
     }
 
@@ -31,9 +56,15 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
     
     reader.onload = (e) => {
       try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        if (!e.target?.result) {
+          throw new Error("Failed to read file data");
+        }
+        
+        console.log("File read successful, converting to array buffer");
+        const data = new Uint8Array(e.target.result as ArrayBuffer);
         
         // Try to read the workbook - this will fail if it's not a proper Excel file
+        console.log("Parsing Excel data with XLSX library");
         const workbook = XLSX.read(data, { type: 'array' });
         
         // Check if there are any sheets
