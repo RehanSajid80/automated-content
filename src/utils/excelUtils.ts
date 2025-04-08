@@ -42,14 +42,13 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
             normalizedTrend = "down";
           }
           
-          // Map Excel columns to our data structure
           return {
             keyword: String(row.Keyword || row.keyword || ''),
             volume: parseInt(String(row.Volume || row.volume || '0'), 10),
             difficulty: parseInt(String(row.Difficulty || row.difficulty || '0'), 10),
             cpc: parseFloat(String(row.CPC || row.cpc || '0')),
             trend: normalizedTrend
-          } as KeywordData; // Add explicit type assertion here
+          } as KeywordData;
         });
         
         resolve(keywordData);
