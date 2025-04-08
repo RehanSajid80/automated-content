@@ -14,7 +14,8 @@ interface ContentSuggestion {
 
 export async function getContentSuggestions(
   keywords: KeywordData[],
-  customApiKey?: string
+  customApiKey?: string,
+  model: string = "gpt-4o"
 ): Promise<ContentSuggestion[]> {
   try {
     // Use provided API key or get from storage
@@ -65,7 +66,7 @@ export async function getContentSuggestions(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: model,  // Use the passed model or default
         messages: [
           {
             role: "system",
@@ -93,10 +94,17 @@ export async function getContentSuggestions(
         const waitTime = retryAfter ? parseInt(retryAfter) : 60;
         const waitMinutes = Math.ceil(waitTime / 60);
         
+        // Fallback to a cheaper model if rate limited
+        if (model === "gpt-4o") {
+          console.warn("Rate limited on gpt-4o, attempting with gpt-4o-mini");
+          return getContentSuggestions(keywords, customApiKey, "gpt-4o-mini");
+        }
+        
         throw new Error(
           `Rate limit exceeded. Your OpenAI account has reached its request limit. ` + 
+          `Current balance might be low. ` +
           `Please wait approximately ${waitMinutes} ${waitMinutes === 1 ? 'minute' : 'minutes'} before trying again, ` +
-          `or check your OpenAI usage limits at https://platform.openai.com/account/usage.`
+          `or check your usage at https://platform.openai.com/account/usage.`
         );
       } else {
         throw new Error(errorMessage);
@@ -135,3 +143,4 @@ export async function getContentSuggestions(
     throw error;
   }
 }
+
