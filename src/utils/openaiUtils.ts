@@ -74,7 +74,16 @@ export async function getContentSuggestions(
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || "Failed to get suggestions from OpenAI");
+      const errorMessage = errorData.error?.message || `API error (${response.status})`;
+      
+      // Check for common API key issues
+      if (response.status === 401) {
+        throw new Error("Invalid API key. Please check your OpenAI API key and try again.");
+      } else if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please wait a moment and try again.");
+      } else {
+        throw new Error(errorMessage);
+      }
     }
 
     const data = await response.json();
