@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ const N8nIntegration = () => {
         },
         mode: "no-cors", // Handle CORS issues with webhooks
         body: JSON.stringify({
+          keywords: "Content generation for Office Space Software", // Example question/keyword
           contentType: "pillar",
           timestamp: new Date().toISOString(),
           source: "Office Space Software Content Generator",
@@ -343,3 +345,4 @@ const N8nIntegration = () => {
 };
 
 export default N8nIntegration;
+
