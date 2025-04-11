@@ -41,6 +41,12 @@ export async function getContentSuggestions(
       trend: kw.trend,
     }));
 
+    // Check if this is a custom n8n AI agent key
+    // Custom n8n keys start with "n8n-agent-"
+    if (customApiKey && customApiKey.startsWith("n8n-agent-")) {
+      return await getContentSuggestionsFromN8n(keywordData, customApiKey);
+    }
+
     // Create the prompt for OpenAI
     const prompt = `
       I have the following keyword data for office space management content:
@@ -153,6 +159,70 @@ export async function getContentSuggestions(
     toast({
       title: "OpenAI Error",
       description: error instanceof Error ? error.message : "Failed to get content suggestions",
+      variant: "destructive",
+    });
+    throw error;
+  }
+}
+
+// New function to handle n8n AI agent requests
+async function getContentSuggestionsFromN8n(
+  keywordData: any[],
+  agentKey: string
+): Promise<ContentSuggestion[]> {
+  try {
+    // Get the agent details from storage
+    const agentInfo = JSON.parse(localStorage.getItem(agentKey) || "{}");
+    
+    if (!agentInfo || !agentInfo.metadata || !agentInfo.metadata.url) {
+      throw new Error("Invalid n8n AI agent configuration");
+    }
+    
+    const agentUrl = agentInfo.metadata.url;
+    const agentApiKey = agentInfo.key;
+    
+    console.log(`Using n8n AI agent at ${agentUrl}`);
+    
+    // Make the request to the n8n agent
+    const response = await fetch(agentUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(agentApiKey ? { "Authorization": `Bearer ${agentApiKey}` } : {})
+      },
+      body: JSON.stringify({
+        keywords: keywordData,
+        action: "generateContentSuggestions",
+        format: "json"
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`n8n AI agent error: ${response.status} ${response.statusText}`);
+    }
+    
+    // Parse the response
+    const data = await response.json();
+    
+    // Ensure the response is in the expected format
+    if (!data || !Array.isArray(data.suggestions)) {
+      throw new Error("Invalid response format from n8n AI agent");
+    }
+    
+    // Map the response to match our ContentSuggestion interface
+    return data.suggestions.map((suggestion: any) => ({
+      topicArea: suggestion.topicArea || suggestion.topic || "",
+      pillarContent: Array.isArray(suggestion.pillarContent) ? suggestion.pillarContent : [],
+      supportPages: Array.isArray(suggestion.supportPages) ? suggestion.supportPages : [],
+      metaTags: Array.isArray(suggestion.metaTags) ? suggestion.metaTags : [],
+      socialMedia: Array.isArray(suggestion.socialMedia) ? suggestion.socialMedia : [],
+      reasoning: suggestion.reasoning || ""
+    }));
+  } catch (error) {
+    console.error("Error getting content suggestions from n8n:", error);
+    toast({
+      title: "n8n AI Agent Error",
+      description: error instanceof Error ? error.message : "Failed to get content suggestions from n8n",
       variant: "destructive",
     });
     throw error;

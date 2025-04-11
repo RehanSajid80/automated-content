@@ -1,37 +1,55 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, Server, Workflow, ArrowRight } from "lucide-react";
+import { Loader2, CheckCircle2, Server, Workflow, ArrowRight, Bot, BrainCircuit } from "lucide-react";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { API_KEYS, saveApiKey } from "@/utils/apiKeyUtils";
+
+const formSchema = z.object({
+  webhookUrl: z.string().url("Please enter a valid URL").min(5, "Please enter a URL"),
+  agentName: z.string().min(1, "Please provide a name for this agent")
+});
+
+const aiAgentFormSchema = z.object({
+  apiUrl: z.string().url("Please enter a valid URL").min(5, "Please enter a URL"),
+  apiKey: z.string().min(1, "API key is required"),
+  agentName: z.string().min(1, "Please provide a name for this agent")
+});
 
 const N8nIntegration = () => {
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [apiUrl, setApiUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("webhook");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleTriggerWebhook = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!webhookUrl) {
-      toast({
-        title: "Error",
-        description: "Please enter your n8n webhook URL",
-        variant: "destructive",
-      });
-      return;
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      webhookUrl: "",
+      agentName: "My n8n Webhook Agent"
     }
+  });
 
+  const aiAgentForm = useForm<z.infer<typeof aiAgentFormSchema>>({
+    resolver: zodResolver(aiAgentFormSchema),
+    defaultValues: {
+      apiUrl: "",
+      apiKey: "",
+      agentName: "My n8n AI Agent"
+    }
+  });
+
+  const handleTriggerWebhook = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    console.log("Triggering n8n webhook:", webhookUrl);
+    console.log("Triggering n8n webhook:", values.webhookUrl);
 
     try {
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(values.webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -66,33 +84,28 @@ const N8nIntegration = () => {
     }
   };
 
-  const handleAPIConnection = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!apiUrl || !apiKey) {
-      toast({
-        title: "Error",
-        description: "Please enter both your n8n API URL and API key",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleAIAgentConnection = async (values: z.infer<typeof aiAgentFormSchema>) => {
     setIsLoading(true);
-    console.log("Connecting to n8n API:", apiUrl);
+    console.log("Connecting to n8n AI Agent:", values.apiUrl);
 
     try {
-      // Note: In a real implementation, you would want to handle this securely,
-      // preferably through a backend service to protect the API key
-      toast({
-        title: "API Connection Successful",
-        description: "Connected to n8n API. You can now trigger workflows programmatically.",
+      // Save the API connection as a custom connection type for reuse
+      const customKey = `n8n-agent-${Date.now()}`;
+      saveApiKey(customKey, values.apiKey, values.agentName, {
+        url: values.apiUrl
       });
+
+      toast({
+        title: "AI Agent Connected",
+        description: "Your n8n AI Agent has been saved and can now be used for content generation.",
+      });
+      
+      aiAgentForm.reset();
     } catch (error) {
-      console.error("Error connecting to API:", error);
+      console.error("Error connecting to AI Agent:", error);
       toast({
         title: "Error",
-        description: "Failed to connect to the n8n API. Please check your credentials.",
+        description: "Failed to connect to the n8n AI Agent. Please check your credentials.",
         variant: "destructive",
       });
     } finally {
@@ -117,58 +130,90 @@ const N8nIntegration = () => {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="webhook" className="flex items-center gap-2">
               <Server size={16} />
-              Webhook Integration
+              Webhook
             </TabsTrigger>
             <TabsTrigger value="api" className="flex items-center gap-2">
               <Workflow size={16} />
-              API Connection
+              API
+            </TabsTrigger>
+            <TabsTrigger value="ai-agent" className="flex items-center gap-2">
+              <BrainCircuit size={16} />
+              AI Agent
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="webhook">
-            <form onSubmit={handleTriggerWebhook} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="webhookUrl" className="text-sm font-medium">
-                  n8n Webhook URL
-                </label>
-                <Input 
-                  id="webhookUrl"
-                  placeholder="https://your-n8n-instance.com/webhook/path"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleTriggerWebhook)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="webhookUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>n8n Webhook URL</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://your-n8n-instance.com/webhook/path"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Create a Webhook node in n8n and paste the URL here
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Create a Webhook node in n8n and paste the URL here
-                </p>
-              </div>
 
-              <div className="rounded-md bg-amber-50 dark:bg-amber-950/50 p-4 border border-amber-200 dark:border-amber-800">
-                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">Example Workflow</h4>
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  1. Webhook node (Trigger) → 2. HTTP Request node (Send to API) → 3. OpenAI node (Generate content) → 4. Email node (Deliver content)
-                </p>
-              </div>
-              
-              <Button type="submit" variant="n8n" disabled={isLoading} className="w-full mt-4">
-                {isLoading ? (
-                  <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    Triggering Webhook...
-                  </>
-                ) : (
-                  <>
-                    Trigger Test Workflow <ArrowRight size={16} className="ml-2" />
-                  </>
-                )}
-              </Button>
-            </form>
+                <FormField
+                  control={form.control}
+                  name="agentName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Agent Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="My Content Webhook"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        A name to identify this webhook connection
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="rounded-md bg-amber-50 dark:bg-amber-950/50 p-4 border border-amber-200 dark:border-amber-800">
+                  <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">Example Workflow</h4>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    1. Webhook node (Trigger) → 2. HTTP Request node (Send to API) → 3. OpenAI node (Generate content) → 4. Email node (Deliver content)
+                  </p>
+                </div>
+                
+                <Button type="submit" variant="n8n" disabled={isLoading} className="w-full mt-4">
+                  {isLoading ? (
+                    <>
+                      <Loader2 size={16} className="mr-2 animate-spin" />
+                      Triggering Webhook...
+                    </>
+                  ) : (
+                    <>
+                      Trigger Test Workflow <ArrowRight size={16} className="ml-2" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
           </TabsContent>
           
           <TabsContent value="api">
-            <form onSubmit={handleAPIConnection} className="space-y-4">
+            
+            <form className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="apiUrl" className="text-sm font-medium">
                   n8n API URL
@@ -176,8 +221,6 @@ const N8nIntegration = () => {
                 <Input 
                   id="apiUrl"
                   placeholder="https://your-n8n-instance.com/api/"
-                  value={apiUrl}
-                  onChange={(e) => setApiUrl(e.target.value)}
                 />
               </div>
               
@@ -189,27 +232,103 @@ const N8nIntegration = () => {
                   id="apiKey"
                   type="password"
                   placeholder="Your n8n API key"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
                   Find your API key in n8n under Settings → API
                 </p>
               </div>
               
-              <Button type="submit" variant="n8n" disabled={isLoading} className="w-full mt-4">
-                {isLoading ? (
-                  <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    Connect to n8n API <CheckCircle2 size={16} className="ml-2" />
-                  </>
-                )}
+              <Button variant="n8n" className="w-full mt-4">
+                Connect to n8n API <CheckCircle2 size={16} className="ml-2" />
               </Button>
             </form>
+          </TabsContent>
+
+          <TabsContent value="ai-agent">
+            <Form {...aiAgentForm}>
+              <form onSubmit={aiAgentForm.handleSubmit(handleAIAgentConnection)} className="space-y-4">
+                <div className="rounded-md bg-blue-50 dark:bg-blue-950/50 p-4 border border-blue-200 dark:border-blue-800 mb-4">
+                  <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">About n8n AI Agents</h4>
+                  <p className="text-xs text-blue-700 dark:text-blue-400">
+                    Create your AI agent in n8n first using the HTTP Request node and OpenAI node. Then connect to it here to use it for content generation.
+                  </p>
+                </div>
+
+                <FormField
+                  control={aiAgentForm.control}
+                  name="agentName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Agent Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="My n8n AI Agent"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        A name to identify this AI agent
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={aiAgentForm.control}
+                  name="apiUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Agent Endpoint URL</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://your-n8n-instance.com/webhook/ai-agent"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        The webhook URL that triggers your AI agent workflow
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={aiAgentForm.control}
+                  name="apiKey"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Agent API Key (if required)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="Optional API key for authentication"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        If your n8n workflow requires authentication
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button type="submit" variant="n8n" disabled={isLoading} className="w-full mt-4">
+                  {isLoading ? (
+                    <>
+                      <Loader2 size={16} className="mr-2 animate-spin" />
+                      Connecting AI Agent...
+                    </>
+                  ) : (
+                    <>
+                      Connect AI Agent <BrainCircuit size={16} className="ml-2" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
           </TabsContent>
         </Tabs>
       </CardContent>

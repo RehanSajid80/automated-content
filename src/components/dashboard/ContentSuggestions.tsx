@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -110,12 +109,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     setUsedModel(null);
     
     try {
-      // Start with the user-selected model
       const results = await getContentSuggestions(keywords, undefined, selectedModel);
       setSuggestions(results);
       
-      // Check if the model was changed during processing (due to rate limits)
-      // This is a simplification - in reality this would require returning the used model from the API call
       setUsedModel(selectedModel);
       
       toast({
@@ -137,7 +133,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const apiKeyInfo = getApiKeyInfo(API_KEYS.OPENAI);
   const hasApiKey = Boolean(apiKeyInfo?.key);
 
-  // Get a friendly model name for display
   const getModelDisplayName = (modelKey: string) => {
     switch(modelKey) {
       case OPENAI_MODELS.PREMIUM:
@@ -171,7 +166,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
             )}
             
             {usedModel && usedModel !== selectedModel && (
-              <Alert variant="warning" className="mb-4 bg-yellow-50 border-yellow-200">
+              <Alert variant="destructive" className="mb-4 bg-yellow-50 border-yellow-200 text-yellow-800">
                 <SparklesIcon className="h-4 w-4" />
                 <AlertTitle>Model Fallback Activated</AlertTitle>
                 <AlertDescription>
@@ -196,7 +191,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                 </Button>
               </div>
 
-              {/* API Key Status Display */}
               {hasApiKey ? (
                 <div className="bg-secondary/30 p-3 rounded-md flex items-center justify-between">
                   <div className="font-medium text-sm flex items-center">
@@ -227,7 +221,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               </p>
             </div>
             
-            {/* Model Selection */}
             <div>
               <label htmlFor="model-select" className="text-sm font-medium block mb-2">
                 OpenAI Model
@@ -269,7 +262,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         </CardContent>
       </Card>
 
-      {/* API Connections Manager Dialog */}
       <Dialog open={isApiConnectionsOpen} onOpenChange={setIsApiConnectionsOpen}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
