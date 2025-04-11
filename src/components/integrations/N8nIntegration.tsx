@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +25,7 @@ const aiAgentFormSchema = z.object({
 const N8nIntegration = () => {
   const [activeTab, setActiveTab] = useState("webhook");
   const [isLoading, setIsLoading] = useState(false);
+  const [targetKeywords, setTargetKeywords] = useState("");
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -57,7 +57,7 @@ const N8nIntegration = () => {
         },
         mode: "no-cors", // Handle CORS issues with webhooks
         body: JSON.stringify({
-          keywords: "Content generation for Office Space Software", // Example question/keyword
+          keywords: "Content generation for Office Space Software",
           contentType: "pillar",
           timestamp: new Date().toISOString(),
           source: "Office Space Software Content Generator",
@@ -91,7 +91,6 @@ const N8nIntegration = () => {
     console.log("Connecting to n8n AI Agent:", values.apiUrl);
 
     try {
-      // Save the API connection as a custom connection type for reuse
       const customKey = `n8n-agent-${Date.now()}`;
       saveApiKey(customKey, values.apiKey, values.agentName, {
         url: values.apiUrl
@@ -108,6 +107,51 @@ const N8nIntegration = () => {
       toast({
         title: "Error",
         description: "Failed to connect to the n8n AI Agent. Please check your credentials.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTriggerWebhookWithKeywords = async () => {
+    if (!targetKeywords) {
+      toast({
+        title: "Error",
+        description: "Please enter target keywords",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    console.log("Triggering n8n webhook with keywords:", targetKeywords);
+
+    try {
+      const response = await fetch(form.getValues('webhookUrl'), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        mode: "no-cors", // Handle CORS issues with webhooks
+        body: JSON.stringify({
+          keywords: targetKeywords,
+          contentType: "pillar",
+          timestamp: new Date().toISOString(),
+          source: "Office Space Software Content Generator",
+          triggerType: "manual"
+        }),
+      });
+
+      toast({
+        title: "Workflow Triggered",
+        description: `The request was sent to n8n with keywords: ${targetKeywords}. Check your n8n dashboard.`,
+      });
+    } catch (error) {
+      console.error("Error triggering webhook:", error);
+      toast({
+        title: "Error",
+        description: "Failed to trigger the n8n webhook. Please check the URL and try again.",
         variant: "destructive",
       });
     } finally {
@@ -197,15 +241,37 @@ const N8nIntegration = () => {
                   </p>
                 </div>
                 
-                <Button type="submit" variant="n8n" disabled={isLoading} className="w-full mt-4">
+                <div className="space-y-4">
+                  <FormItem>
+                    <FormLabel>Target Keywords for Pillar Content</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter keywords for pillar content generation"
+                        value={targetKeywords}
+                        onChange={(e) => setTargetKeywords(e.target.value)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Keywords that will be used to generate pillar content in n8n
+                    </FormDescription>
+                  </FormItem>
+                </div>
+                
+                <Button 
+                  type="button" 
+                  variant="n8n" 
+                  disabled={isLoading || !targetKeywords} 
+                  className="w-full mt-4"
+                  onClick={handleTriggerWebhookWithKeywords}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 size={16} className="mr-2 animate-spin" />
-                      Triggering Webhook...
+                      Triggering Workflow...
                     </>
                   ) : (
                     <>
-                      Trigger Test Workflow <ArrowRight size={16} className="ml-2" />
+                      Generate Pillar Content <ArrowRight size={16} className="ml-2" />
                     </>
                   )}
                 </Button>
@@ -345,4 +411,3 @@ const N8nIntegration = () => {
 };
 
 export default N8nIntegration;
-
