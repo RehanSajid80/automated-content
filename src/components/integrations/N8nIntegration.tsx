@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -289,19 +290,17 @@ const N8nIntegration = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  <FormField>
+                  <div>
                     <FormLabel>Target Keywords for Pillar Content</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter keywords for pillar content generation"
-                        value={targetKeywords}
-                        onChange={(e) => setTargetKeywords(e.target.value)}
-                      />
-                    </FormControl>
+                    <Input 
+                      placeholder="Enter keywords for pillar content generation"
+                      value={targetKeywords}
+                      onChange={(e) => setTargetKeywords(e.target.value)}
+                    />
                     <FormDescription>
                       Keywords that will be used to generate pillar content in n8n
                     </FormDescription>
-                  </FormField>
+                  </div>
                 </div>
                 
                 <Button 
