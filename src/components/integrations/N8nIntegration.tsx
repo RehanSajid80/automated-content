@@ -196,7 +196,7 @@ const N8nIntegration = () => {
         
         toast({
           title: "Content Generated",
-          description: `AI agent has processed your keywords: ${targetKeywords}`,
+          description: `AI agent has processed your keywords: ${targetKeywords}`
         });
       }, 3000);
       
