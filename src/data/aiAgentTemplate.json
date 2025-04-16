@@ -1,0 +1,48 @@
+
+{
+  "requestFormat": {
+    "keywords": "desk booking, hybrid work",
+    "contentType": "pillar",
+    "timestamp": "2024-04-16T14:30:00.000Z",
+    "source": "Office Space Software Content Generator",
+    "triggerType": "manual",
+    "metadata": {
+      "userId": "user_123",
+      "companySize": "medium",
+      "industry": "technology"
+    },
+    "generationParams": {
+      "wordCount": 1500,
+      "tone": "professional",
+      "targetAudience": "facility managers",
+      "languageStyle": "technical"
+    }
+  },
+  "responseFormat": {
+    "status": "success",
+    "generatedContent": {
+      "title": "Comprehensive Guide to Desk Booking and Hybrid Work Solutions",
+      "sections": [
+        {
+          "heading": "Introduction to Desk Booking Systems",
+          "content": "In today's evolving workplace, desk booking systems have become essential tools for managing office spaces efficiently...",
+          "keywords": ["desk booking", "office management"]
+        },
+        {
+          "heading": "Benefits of Hybrid Work Models",
+          "content": "Hybrid work arrangements offer organizations unprecedented flexibility while providing employees with improved work-life balance...",
+          "keywords": ["hybrid work", "employee satisfaction"]
+        }
+      ],
+      "metaData": {
+        "wordCount": 1542,
+        "readingTime": "7 minutes",
+        "seoScore": 87
+      },
+      "callToAction": "Implement our desk booking solution for seamless hybrid workplace management."
+    },
+    "timestamp": "2024-04-16T14:32:45.000Z",
+    "processingTime": "2.45s",
+    "agentVersion": "1.0.0"
+  }
+}

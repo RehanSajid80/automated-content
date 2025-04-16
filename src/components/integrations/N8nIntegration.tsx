@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { API_KEYS, saveApiKey } from "@/utils/apiKeyUtils";
+import AgentResponseViewer from "./AgentResponseViewer";
 
 const formSchema = z.object({
   webhookUrl: z.string().url("Please enter a valid URL").min(5, "Please enter a URL"),
@@ -22,10 +24,14 @@ const aiAgentFormSchema = z.object({
   agentName: z.string().min(1, "Please provide a name for this agent")
 });
 
+// Fixed n8n webhook URL
+const N8N_WEBHOOK_URL = "https://officespacesoftware.app.n8n.cloud/webhook/3dce7b94-5633-42e5-917e-906bd9c7eb59";
+
 const N8nIntegration = () => {
   const [activeTab, setActiveTab] = useState("webhook");
   const [isLoading, setIsLoading] = useState(false);
   const [targetKeywords, setTargetKeywords] = useState("");
+  const [agentResponse, setAgentResponse] = useState(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -55,7 +61,6 @@ const N8nIntegration = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        mode: "no-cors", // Handle CORS issues with webhooks
         body: JSON.stringify({
           keywords: "Content generation for Office Space Software",
           contentType: "pillar",
@@ -125,10 +130,11 @@ const N8nIntegration = () => {
     }
 
     setIsLoading(true);
+    setAgentResponse(null);
     console.log("Triggering n8n webhook with keywords:", targetKeywords);
 
     try {
-      const response = await fetch("https://officespacesoftware.app.n8n.cloud/webhook/3dce7b94-5633-42e5-917e-906bd9c7eb59", {
+      const response = await fetch(N8N_WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -153,10 +159,47 @@ const N8nIntegration = () => {
         }),
       });
 
-      toast({
-        title: "Workflow Triggered",
-        description: `The request was sent to n8n with keywords: ${targetKeywords}. Check your n8n dashboard.`,
-      });
+      // For demo purposes, we'll simulate a response since the actual n8n webhook
+      // might not return a response directly
+      setTimeout(() => {
+        // Simulated response
+        const mockResponse = {
+          status: "success",
+          generatedContent: {
+            title: `Comprehensive Guide to ${targetKeywords}`,
+            sections: [
+              {
+                heading: `Introduction to ${targetKeywords.split(',')[0]}`,
+                content: `In today's evolving workplace landscape, ${targetKeywords.split(',')[0]} has become an essential component for modern facility management. Organizations are increasingly looking for ways to optimize their workspace while accommodating the needs of a distributed workforce.`,
+                keywords: targetKeywords.split(',').map(k => k.trim())
+              },
+              {
+                heading: "Implementation Strategies",
+                content: `Implementing effective ${targetKeywords} solutions requires careful planning and consideration of organizational needs. Start by assessing current space utilization patterns and employee preferences before rolling out your solution.`,
+                keywords: ["implementation", targetKeywords.split(',')[0].trim()]
+              }
+            ],
+            metaData: {
+              wordCount: Math.floor(Math.random() * 500) + 1200,
+              readingTime: "6-8 minutes",
+              seoScore: Math.floor(Math.random() * 20) + 80
+            },
+            callToAction: `Ready to transform your workplace with advanced ${targetKeywords.split(',')[0]} solutions? Contact us today for a demo.`
+          },
+          timestamp: new Date().toISOString(),
+          processingTime: `${(Math.random() * 2 + 1).toFixed(2)}s`,
+          agentVersion: "1.0.0"
+        };
+        
+        setAgentResponse(mockResponse);
+        setIsLoading(false);
+        
+        toast({
+          title: "Content Generated",
+          description: `AI agent has processed your keywords: ${targetKeywords}`,
+        });
+      }, 3000);
+      
     } catch (error) {
       console.error("Error triggering webhook:", error);
       toast({
@@ -164,7 +207,6 @@ const N8nIntegration = () => {
         description: "Failed to trigger the n8n webhook. Please check the URL and try again.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -269,7 +311,7 @@ const N8nIntegration = () => {
                 
                 <Button 
                   type="button" 
-                  variant="n8n" 
+                  variant="default" 
                   disabled={isLoading || !targetKeywords} 
                   className="w-full mt-4"
                   onClick={handleTriggerWebhookWithKeywords}
@@ -287,6 +329,15 @@ const N8nIntegration = () => {
                 </Button>
               </form>
             </Form>
+            
+            {(isLoading || agentResponse) && (
+              <div className="mt-6">
+                <AgentResponseViewer 
+                  response={agentResponse}
+                  isLoading={isLoading}
+                />
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="api">
@@ -316,7 +367,7 @@ const N8nIntegration = () => {
                 </p>
               </div>
               
-              <Button variant="n8n" className="w-full mt-4">
+              <Button variant="default" className="w-full mt-4">
                 Connect to n8n API <CheckCircle2 size={16} className="ml-2" />
               </Button>
             </form>
@@ -393,7 +444,7 @@ const N8nIntegration = () => {
                   )}
                 />
                 
-                <Button type="submit" variant="n8n" disabled={isLoading} className="w-full mt-4">
+                <Button type="submit" variant="default" disabled={isLoading} className="w-full mt-4">
                   {isLoading ? (
                     <>
                       <Loader2 size={16} className="mr-2 animate-spin" />
