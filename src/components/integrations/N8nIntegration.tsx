@@ -128,18 +128,28 @@ const N8nIntegration = () => {
     console.log("Triggering n8n webhook with keywords:", targetKeywords);
 
     try {
-      const response = await fetch(form.getValues('webhookUrl'), {
+      const response = await fetch("https://officespacesoftware.app.n8n.cloud/webhook/3dce7b94-5633-42e5-917e-906bd9c7eb59", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        mode: "no-cors", // Handle CORS issues with webhooks
         body: JSON.stringify({
           keywords: targetKeywords,
           contentType: "pillar",
           timestamp: new Date().toISOString(),
           source: "Office Space Software Content Generator",
-          triggerType: "manual"
+          triggerType: "manual",
+          metadata: {
+            userId: "user_123",
+            companySize: "medium",
+            industry: "technology"
+          },
+          generationParams: {
+            wordCount: 1500,
+            tone: "professional",
+            targetAudience: "facility managers",
+            languageStyle: "technical"
+          }
         }),
       });
 
