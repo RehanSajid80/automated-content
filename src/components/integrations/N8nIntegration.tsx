@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,6 @@ const aiAgentFormSchema = z.object({
   agentName: z.string().min(1, "Please provide a name for this agent")
 });
 
-// Fixed n8n webhook URL
 const N8N_WEBHOOK_URL = "https://officespacesoftware.app.n8n.cloud/webhook/3dce7b94-5633-42e5-917e-906bd9c7eb59";
 
 const N8nIntegration = () => {
@@ -159,10 +157,7 @@ const N8nIntegration = () => {
         }),
       });
 
-      // For demo purposes, we'll simulate a response since the actual n8n webhook
-      // might not return a response directly
       setTimeout(() => {
-        // Simulated response
         const mockResponse = {
           status: "success",
           generatedContent: {
@@ -294,7 +289,7 @@ const N8nIntegration = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  <FormItem>
+                  <FormField>
                     <FormLabel>Target Keywords for Pillar Content</FormLabel>
                     <FormControl>
                       <Input 
@@ -306,7 +301,7 @@ const N8nIntegration = () => {
                     <FormDescription>
                       Keywords that will be used to generate pillar content in n8n
                     </FormDescription>
-                  </FormItem>
+                  </FormField>
                 </div>
                 
                 <Button 
