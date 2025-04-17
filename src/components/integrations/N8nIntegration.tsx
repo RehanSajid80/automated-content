@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ const aiAgentFormSchema = z.object({
   agentName: z.string().min(1, "Please provide a name for this agent")
 });
 
-const N8N_WEBHOOK_URL = "https://officespacesoftware.app.n8n.cloud/webhook/3dce7b94-5633-42e5-917e-906bd9c7eb59";
+const N8N_WEBHOOK_URL = "https://officespacesoftware.app.n8n.cloud/webhook/22ea22b6-bbff-4376-9c94-469463ffd1e7";
 
 const N8nIntegration = () => {
   const [activeTab, setActiveTab] = useState("webhook");
