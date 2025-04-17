@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -234,11 +235,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
   const storeContentInLibrary = async (suggestion: ContentSuggestion) => {
     try {
+      console.log("Storing content in library:", suggestion);
       const insertPromises = [];
       
       // Store pillar content
       for (const content of suggestion.pillarContent) {
         const title = content;
+        console.log("Inserting pillar content:", title);
         insertPromises.push(
           supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
@@ -256,6 +259,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       // Store support pages
       for (const content of suggestion.supportPages) {
         const title = content;
+        console.log("Inserting support page:", title);
         insertPromises.push(
           supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
@@ -273,6 +277,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       // Store meta tags
       for (const content of suggestion.metaTags) {
         const title = content;
+        console.log("Inserting meta tag:", title);
         insertPromises.push(
           supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
@@ -290,6 +295,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       // Store social media content
       for (const content of suggestion.socialMedia) {
         const title = content;
+        console.log("Inserting social media content:", title);
         insertPromises.push(
           supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
@@ -305,12 +311,16 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       }
 
       // Execute all insert promises
+      console.log("Executing insert promises...");
       const results = await Promise.all(insertPromises);
       
       // Check for errors
       const errors = results.filter(result => result.error);
       if (errors.length > 0) {
         console.error('Errors storing content:', errors);
+        errors.forEach((err, index) => {
+          console.error(`Error ${index + 1}:`, err.error);
+        });
         throw new Error(`Failed to store ${errors.length} content items`);
       }
 
@@ -327,7 +337,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       console.error('Error storing content:', error);
       toast({
         title: "Storage Error",
-        description: "Failed to store content in library",
+        description: `Failed to store content in library: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -616,11 +626,17 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                       size="sm" 
                       className="ml-auto"
                       onClick={() => {
-                        storeContentInLibrary(suggestion);
-                        toast({
-                          title: "Content Selected",
-                          description: `Content topic "${suggestion.topicArea}" selected for creation`,
-                        });
+                        console.log("Use This Content clicked for:", suggestion.topicArea);
+                        storeContentInLibrary(suggestion)
+                          .then(() => {
+                            toast({
+                              title: "Content Selected",
+                              description: `Content topic "${suggestion.topicArea}" selected for creation`,
+                            });
+                          })
+                          .catch(err => {
+                            console.error("Error in storeContentInLibrary handler:", err);
+                          });
                       }}
                     >
                       <CheckSquare2Icon className="h-4 w-4 mr-2" />
