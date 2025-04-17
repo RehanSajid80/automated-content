@@ -70,7 +70,13 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
     try {
       setIsCreating(true);
       
-      // First, mark the items as selected in the database
+      // First, show a toast to indicate the process is starting
+      toast({
+        title: "Creating Content",
+        description: `Starting to create ${selectedItems.length} content items...`,
+      });
+
+      // Mark the items as selected in the database
       const { error } = await supabase
         .from('content_library')
         .update({ is_selected: true })
@@ -78,7 +84,7 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
 
       if (error) throw error;
       
-      // Fetch the selected content items to display in the confirmation toast
+      // Fetch the selected content items for the confirmation
       const { data: selectedContentData, error: fetchError } = await supabase
         .from('content_library')
         .select('title, content_type')
@@ -86,7 +92,7 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
         
       if (fetchError) throw fetchError;
       
-      // Group content by type for a better toast message
+      // Group content by type for the toast message
       const contentSummary = selectedContentData.reduce((acc, item) => {
         const type = item.content_type;
         if (!acc[type]) acc[type] = 0;
@@ -98,40 +104,36 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
         .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
         .join(', ');
 
+      // Show success toast with content details
       toast({
-        title: "Content Created",
-        description: `Successfully created ${summaryText} for "${topicArea}"`,
+        title: "Content Created Successfully",
+        description: `Created ${summaryText} for "${topicArea}". Your content is now ready to view.`,
       });
 
-      // Refresh the content items to show updated state
+      // Refresh the content items
       await loadContentItems();
       
-      // Clear selection after successful creation
+      // Clear selection
       setSelectedItems([]);
       
-      // Dispatch event to notify other components about content creation
+      // Dispatch content creation event for other components
       window.dispatchEvent(new CustomEvent('content-created', { 
         detail: { selectedItems, topicArea } 
       }));
       
-      // Also dispatch the standard content-selected event for compatibility
+      // Also dispatch content-selected event for compatibility
       window.dispatchEvent(new CustomEvent('content-selected', { 
         detail: { selectedItems, topicArea } 
       }));
       
-      // Force a refresh of any components that show content from Supabase
+      // Force refresh components showing Supabase content
       window.dispatchEvent(new CustomEvent('content-updated'));
-
-      // Navigate back to the dashboard after content creation
-      window.dispatchEvent(new CustomEvent('navigate-to-tab', { 
-        detail: { tab: 'dashboard' } 
-      }));
 
     } catch (error) {
       console.error('Error creating content:', error);
       toast({
         title: "Error",
-        description: "Failed to create content items",
+        description: "Failed to create content items. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -156,7 +158,15 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
 
   return (
     <div className="space-y-6">
-      <div className="text-xl font-semibold">{topicArea}</div>
+      <div className="flex justify-between items-center">
+        <div className="text-xl font-semibold">{topicArea}</div>
+        {selectedItems.length > 0 && (
+          <div className="text-sm text-muted-foreground">
+            {selectedItems.length} item{selectedItems.length > 1 ? 's' : ''} selected
+          </div>
+        )}
+      </div>
+
       {Object.entries(contentTypes).map(([type, title]) => (
         <Card key={type}>
           <CardHeader>
@@ -209,3 +219,4 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
     </div>
   );
 };
+
