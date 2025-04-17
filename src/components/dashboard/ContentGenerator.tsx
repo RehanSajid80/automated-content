@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from "react";
-import { FileText, Tag, Share2, ArrowRight, Check, Loader2, Building2, Globe } from "lucide-react";
+import { FileText, Tag, Share2, ArrowRight, Check, Loader2, Building2, Globe, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContentGeneratorProps {
   className?: string;
@@ -59,6 +61,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
   const [targetUrl, setTargetUrl] = useState(suggestedUrls[0]);
+  const [urlExists, setUrlExists] = useState(true);
+  const [existingMetaTags, setExistingMetaTags] = useState(false);
+  const [isCheckingExistence, setIsCheckingExistence] = useState(false);
   
   useEffect(() => {
     if (initialKeywords && initialKeywords.length > 0) {
@@ -67,6 +72,107 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
       setGeneratedContent("");
     }
   }, [initialKeywords]);
+
+  // Function to check if meta tags already exist in the database
+  const checkExistingMetaTags = async (url: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('content_type', 'meta')
+        .ilike('content', `%${url}%`)
+        .limit(1);
+      
+      if (error) {
+        console.error("Error checking for existing meta tags:", error);
+        return false;
+      }
+      
+      return data && data.length > 0;
+    } catch (e) {
+      console.error("Error in checkExistingMetaTags:", e);
+      return false;
+    }
+  };
+
+  // Function to check if a URL exists (mock implementation)
+  const checkUrlExists = (url: string) => {
+    // Simplified check - you might want to implement a more comprehensive solution
+    // such as an actual HTTP request to verify if the URL exists
+    const mainKeyword = keywords.split(',')[0]?.trim().toLowerCase() || "";
+    
+    // Check if the URL or the keyword is reflected in any of the suggested URLs
+    const urlMatch = suggestedUrls.some(suggestedUrl => {
+      const urlParts = suggestedUrl.toLowerCase().split('/');
+      const lastPart = urlParts[urlParts.length - 1].replace(/-/g, ' ');
+      
+      return suggestedUrl.toLowerCase() === url.toLowerCase() ||
+             lastPart.includes(mainKeyword.toLowerCase());
+    });
+    
+    return urlMatch;
+  };
+
+  const suggestNewUrl = () => {
+    const mainKeyword = keywords.split(',')[0]?.trim() || "office space management";
+    const keywordSlug = mainKeyword.toLowerCase().replace(/\s+/g, '-');
+    
+    // Create a new suggested URL based on the main keyword
+    let newUrl = "";
+    
+    if (mainKeyword.includes("management")) {
+      newUrl = `https://officespacesoftware.com/solutions/${keywordSlug}`;
+    } else if (mainKeyword.includes("booking") || mainKeyword.includes("analytics") || 
+               mainKeyword.includes("scheduling")) {
+      newUrl = `https://officespacesoftware.com/features/${keywordSlug}`;
+    } else {
+      newUrl = `https://officespacesoftware.com/blog/${keywordSlug}`;
+    }
+    
+    setTargetUrl(newUrl);
+    setUrlExists(false);
+    
+    return newUrl;
+  };
+
+  const handleSuggestUrl = async () => {
+    setIsCheckingExistence(true);
+    
+    // Generate a URL based on the main keyword
+    const mainKeyword = keywords.split(',')[0]?.trim() || "office space management";
+    const keywordSlug = mainKeyword.toLowerCase().replace(/\s+/g, '-');
+    
+    // First, try existing URLs
+    let foundUrl = suggestedUrls.find(url => 
+      url.toLowerCase().includes(keywordSlug) || 
+      url.toLowerCase().includes(mainKeyword.replace(/\s+/g, ''))
+    );
+    
+    if (foundUrl) {
+      setTargetUrl(foundUrl);
+      setUrlExists(true);
+    } else {
+      foundUrl = suggestNewUrl();
+    }
+    
+    // Check if meta tags already exist for this URL
+    const tagsExist = await checkExistingMetaTags(foundUrl);
+    setExistingMetaTags(tagsExist);
+    
+    setIsCheckingExistence(false);
+    
+    if (!urlExists) {
+      toast("New page suggestion", {
+        description: "We suggest creating a new target page for this keyword."
+      });
+    }
+    
+    if (tagsExist) {
+      toast("Meta tags already exist", {
+        description: "Meta tags for this URL already exist in the content library."
+      });
+    }
+  };
 
   const handleGenerate = () => {
     setIsGenerating(true);
@@ -87,6 +193,14 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
         const formattedUrlPath = urlPath.replace(/-/g, ' ');
         
         content = `## Meta Tags for: ${targetUrl}\n\n**Title Tag (60 chars):**\n${mainKeyword} - OfficeSpaceSoftware.com ${formattedUrlPath ? `| ${formattedUrlPath.charAt(0).toUpperCase() + formattedUrlPath.slice(1)}` : ''}\n\n**Meta Description (150-160 chars):**\nDiscover how OfficeSpaceSoftware.com's ${mainKeyword} solution transforms workplace efficiency. Get data-driven insights, optimize space utilization, and enhance employee experience.\n\n**H1 Heading:**\nEnterprise-Grade ${mainKeyword} for Modern Workplaces\n\n**H2 Headings:**\n- How ${mainKeyword} Drives Workplace Efficiency\n- Key Features of Our ${mainKeyword} Platform\n- Why Companies Choose OfficeSpaceSoftware for ${mainKeyword}\n- Implementing ${mainKeyword} With Minimal Disruption\n\n**Focus Keywords:**\n${keywordList.join(', ')}\n\n**Image Alt Tags:**\n1. "${mainKeyword} dashboard interface screenshot"\n2. "${mainKeyword} analytics and reporting features"\n3. "OfficeSpaceSoftware ${mainKeyword} mobile app"\n\n**URL Structure:**\n${targetUrl}`;
+        
+        if (!urlExists) {
+          content += `\n\n**NOTE: NEW PAGE RECOMMENDATION**\nThis keyword requires a new page to be created at the URL above. There is currently no existing page that adequately targets this keyword.`;
+        }
+        
+        if (existingMetaTags) {
+          content += `\n\n**ALERT: META TAGS ALREADY EXIST**\nMeta tags for this URL already exist in the content library. Please review existing content before saving.`;
+        }
       } else {
         content = `LinkedIn:\n📊 Are you getting the most out of your ${mainKeyword}? Our latest workplace analytics report from OfficeSpaceSoftware.com shows that companies are only utilizing 60% of their available space effectively.\n\n✅ Optimize desk allocation with our smart booking system\n✅ Implement hoteling and hot-desking with minimal friction\n✅ Track detailed space utilization metrics across your entire portfolio\n\nBook a demo today and see how OfficeSpaceSoftware.com can transform your ${mainKeyword} strategy: [link]\n\n#${mainKeyword.replace(/\s+/g, '')} #OfficeSpaceSoftware #WorkplaceOptimization`;
       }
@@ -156,13 +270,32 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
                       variant="outline" 
                       size="sm"
                       className="whitespace-nowrap"
-                      onClick={() => {
-                        const randomUrl = suggestedUrls[Math.floor(Math.random() * suggestedUrls.length)];
-                        setTargetUrl(randomUrl);
-                      }}
+                      onClick={handleSuggestUrl}
+                      disabled={isCheckingExistence}
                     >
-                      Suggest URL
+                      {isCheckingExistence ? (
+                        <>
+                          <Loader2 size={14} className="mr-2 animate-spin" />
+                          Checking...
+                        </>
+                      ) : (
+                        <>Suggest URL</>
+                      )}
                     </Button>
+                  </div>
+                  <div className="flex items-center mt-2 text-xs">
+                    {!urlExists && !isCheckingExistence && (
+                      <div className="text-amber-500 flex items-center">
+                        <AlertTriangle size={14} className="mr-1" />
+                        <span>New page recommendation for this keyword</span>
+                      </div>
+                    )}
+                    {existingMetaTags && !isCheckingExistence && (
+                      <div className="text-blue-500 flex items-center ml-auto">
+                        <Tag size={14} className="mr-1" />
+                        <span>Meta tags already exist for this URL</span>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Enter an OfficeSpaceSoftware.com URL to generate optimized meta tags
