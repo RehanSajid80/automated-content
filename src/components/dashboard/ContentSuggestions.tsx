@@ -4,6 +4,7 @@ import { KeywordData } from "@/utils/excelUtils";
 import { getContentSuggestions, OPENAI_MODELS } from "@/utils/openaiUtils";
 import { useToast } from "@/hooks/use-toast";
 import { API_KEYS, getApiKey, getApiKeyInfo, ApiKeyInfo } from "@/utils/apiKeyUtils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Card,
   CardContent,
@@ -51,7 +52,6 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import ApiConnectionsManager from "../settings/ApiConnectionsManager";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -229,6 +229,86 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         return "GPT-3.5 Turbo (Basic)";
       default:
         return modelKey;
+    }
+  };
+
+  const storeContentInLibrary = async (suggestion: ContentSuggestion) => {
+    try {
+      const pillarInsert = await Promise.all(
+        suggestion.pillarContent.map(async (content) => {
+          const { error } = await supabase.from('content_library').insert({
+            topic_area: suggestion.topicArea,
+            content_type: 'pillar',
+            content: content,
+            reasoning: suggestion.reasoning,
+            keywords: keywords
+              .filter(kw => selectedKeywords.includes(kw.keyword))
+              .map(kw => kw.keyword)
+          });
+
+          if (error) throw error;
+        })
+      );
+
+      const supportInsert = await Promise.all(
+        suggestion.supportPages.map(async (content) => {
+          const { error } = await supabase.from('content_library').insert({
+            topic_area: suggestion.topicArea,
+            content_type: 'support',
+            content: content,
+            reasoning: suggestion.reasoning,
+            keywords: keywords
+              .filter(kw => selectedKeywords.includes(kw.keyword))
+              .map(kw => kw.keyword)
+          });
+
+          if (error) throw error;
+        })
+      );
+
+      const metaInsert = await Promise.all(
+        suggestion.metaTags.map(async (content) => {
+          const { error } = await supabase.from('content_library').insert({
+            topic_area: suggestion.topicArea,
+            content_type: 'meta',
+            content: content,
+            reasoning: suggestion.reasoning,
+            keywords: keywords
+              .filter(kw => selectedKeywords.includes(kw.keyword))
+              .map(kw => kw.keyword)
+          });
+
+          if (error) throw error;
+        })
+      );
+
+      const socialInsert = await Promise.all(
+        suggestion.socialMedia.map(async (content) => {
+          const { error } = await supabase.from('content_library').insert({
+            topic_area: suggestion.topicArea,
+            content_type: 'social',
+            content: content,
+            reasoning: suggestion.reasoning,
+            keywords: keywords
+              .filter(kw => selectedKeywords.includes(kw.keyword))
+              .map(kw => kw.keyword)
+          });
+
+          if (error) throw error;
+        })
+      );
+
+      toast({
+        title: "Content Stored",
+        description: `Successfully stored content for "${suggestion.topicArea}"`,
+      });
+    } catch (error) {
+      console.error('Error storing content:', error);
+      toast({
+        title: "Storage Error",
+        description: "Failed to store content in library",
+        variant: "destructive"
+      });
     }
   };
 
@@ -515,6 +595,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                       size="sm" 
                       className="ml-auto"
                       onClick={() => {
+                        storeContentInLibrary(suggestion);
                         toast({
                           title: "Content Selected",
                           description: `Content topic "${suggestion.topicArea}" selected for creation`,
