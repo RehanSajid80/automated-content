@@ -11,6 +11,7 @@ import {
   BarChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
 interface SidebarProps {
   className?: string;
@@ -106,13 +107,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className, activeTab = "dashboard", o
             Settings
           </div>
           <nav className="space-y-1">
-            <a 
-              href="#" 
+            <Link 
+              to="/api-connections" 
               className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
               <SettingsIcon size={16} />
               <span>API Connections</span>
-            </a>
+            </Link>
             <a 
               href="#" 
               className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
