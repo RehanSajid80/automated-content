@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,13 +60,12 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
       toast({
         title: "No Items Selected",
         description: "Please select at least one content item to create",
-        variant: "warning",
+        variant: "default",
       });
       return;
     }
 
     try {
-      // Update the selected items in the database
       const { error } = await supabase
         .from('content_library')
         .update({ is_selected: true })
@@ -80,7 +78,6 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
         description: `${selectedItems.length} content item(s) marked for creation`,
       });
 
-      // Dispatch event to potentially trigger content creation workflow
       window.dispatchEvent(new CustomEvent('content-selected', { 
         detail: { selectedItems, topicArea } 
       }));
