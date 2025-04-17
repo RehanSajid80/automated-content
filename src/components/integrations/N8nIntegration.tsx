@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +95,8 @@ const N8nIntegration = () => {
     console.log("Connecting to n8n AI Agent:", values.apiUrl);
 
     try {
+      // Here was the issue - saveApiKey expected 3 arguments but was receiving 4
+      // The correct usage is: saveApiKey(keyName, keyValue, displayName, metadata?)
       const customKey = `n8n-agent-${Date.now()}`;
       saveApiKey(customKey, values.apiKey, values.agentName, {
         url: values.apiUrl
