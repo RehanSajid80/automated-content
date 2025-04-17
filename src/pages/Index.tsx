@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import StatsCard from "@/components/dashboard/StatsCard";
@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
 import { ContentSelectionView } from "@/components/dashboard/ContentSelectionView";
 import ContentDetailView from "@/components/dashboard/ContentDetailView";
+import { clearCache } from "@/utils/contentLifecycleUtils";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -21,16 +22,26 @@ const Index = () => {
   const [selectedTopicArea, setSelectedTopicArea] = useState<string | null>(null);
   const [contentViewMode, setContentViewMode] = useState<"selection" | "detail">("selection");
   const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
+  const [contentRefreshTrigger, setContentRefreshTrigger] = useState(0);
+
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+    if (tab === 'content') {
+      setContentRefreshTrigger(prev => prev + 1);
+    }
+  }, []);
 
   useEffect(() => {
     const handleNavigateToContent = (event: CustomEvent<{ topicArea: string }>) => {
       setActiveTab('content');
       setSelectedTopicArea(event.detail.topicArea);
       setContentViewMode("selection");
+      
+      clearCache(`content_${event.detail.topicArea.toLowerCase().replace(/\s+/g, '_')}`);
     };
     
     const handleNavigateToTab = (event: CustomEvent<{ tab: string }>) => {
-      setActiveTab(event.detail.tab);
+      handleTabChange(event.detail.tab);
       if (event.detail.tab === 'dashboard') {
         setSelectedTopicArea(null);
       }
@@ -41,18 +52,26 @@ const Index = () => {
       setContentViewMode("detail");
       setSelectedContentIds(event.detail.contentIds);
       setSelectedTopicArea(event.detail.topicArea);
+      
+      clearCache(`content_detail_${event.detail.contentIds.sort().join('_')}`);
+    };
+
+    const handleContentUpdated = () => {
+      setContentRefreshTrigger(prev => prev + 1);
     };
 
     window.addEventListener('navigate-to-content', handleNavigateToContent as EventListener);
     window.addEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
     window.addEventListener('navigate-to-content-details', handleNavigateToContentDetails as EventListener);
+    window.addEventListener('content-updated', handleContentUpdated as EventListener);
     
     return () => {
       window.removeEventListener('navigate-to-content', handleNavigateToContent as EventListener);
       window.removeEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
       window.removeEventListener('navigate-to-content-details', handleNavigateToContentDetails as EventListener);
+      window.removeEventListener('content-updated', handleContentUpdated as EventListener);
     };
-  }, []);
+  }, [handleTabChange]);
 
   const handleKeywordsSelected = (keywords: string[]) => {
     setSelectedKeywords(keywords);
@@ -64,11 +83,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header activeTab={activeTab} onTabChange={handleTabChange} />
+      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
       
       <main className="pt-[72px] md:pl-[240px] min-h-screen">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsContent value="dashboard" className="m-0">
             <div className="container py-8 px-4 md:px-6 lg:px-8">
               <div className="mb-8 animate-slide-up">
@@ -175,12 +194,13 @@ const Index = () => {
                 {selectedTopicArea ? (
                   <div className="rounded-xl border border-border bg-card p-6">
                     {contentViewMode === "selection" ? (
-                      <ContentSelectionView topicArea={selectedTopicArea} />
+                      <ContentSelectionView topicArea={selectedTopicArea} key={`selection-${selectedTopicArea}-${contentRefreshTrigger}`} />
                     ) : (
                       <ContentDetailView 
                         contentIds={selectedContentIds} 
                         topicArea={selectedTopicArea}
                         onBack={() => setContentViewMode("selection")}
+                        key={`detail-${selectedContentIds.join('-')}-${contentRefreshTrigger}`}
                       />
                     )}
                   </div>
@@ -191,7 +211,7 @@ const Index = () => {
                       <ContentGenerator className="max-w-none" keywords={selectedKeywords} />
                     </div>
                     <ManualContentCreator />
-                    <RecentContent />
+                    <RecentContent key={`recent-${contentRefreshTrigger}`} />
                   </>
                 )}
               </div>
