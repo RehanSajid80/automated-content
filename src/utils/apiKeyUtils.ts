@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 /**
  * Utility for managing API keys in the application
  * Supports both localStorage (for development/testing) and 
@@ -21,30 +23,43 @@ export interface ApiKeyInfo {
 
 /**
  * Determines if Supabase is connected and available for use
- * This will be replaced with actual Supabase connection check
- * once the Supabase integration is complete
+ * Checks if the Supabase client is properly initialized
  */
-export function isSupabaseConnected(): boolean {
-  // This is a placeholder. Will be replaced with actual check
-  // when Supabase integration is enabled
-  return false;
+export async function isSupabaseConnected(): Promise<boolean> {
+  try {
+    // Test connection by making a simple request
+    const { error } = await supabase.from('_dummy_query_for_connection_test').select('*').limit(1).maybeSingle();
+    
+    // If the error is about the table not existing, but not about connection issues,
+    // then Supabase is properly connected
+    if (error && error.code === '42P01') { // 42P01 is the Postgres error code for "relation does not exist"
+      return true;
+    }
+    
+    // Check if we can access the auth API as another way to verify connection
+    const { data, error: authError } = await supabase.auth.getSession();
+    return !authError;
+  } catch (error) {
+    console.error("Error checking Supabase connection:", error);
+    return false;
+  }
 }
 
 /**
- * Saves an API key to localStorage with metadata
- * In future, will save to Supabase if connected and useSupabase is true
+ * Saves an API key to storage with metadata
+ * Uses Supabase if connected and useSupabase is true, otherwise uses localStorage
  * 
  * @param storageKey - Unique identifier for the API key
  * @param apiKey - The actual API key value to store
  * @param name - Display name for this API connection (optional)
  * @param useSupabase - Whether to use Supabase storage when available (optional)
  */
-export function saveApiKey(
+export async function saveApiKey(
   storageKey: string, 
   apiKey: string, 
   name: string = 'Default',
   useSupabase: boolean = false
-): void {
+): Promise<void> {
   const info: ApiKeyInfo = {
     key: apiKey,
     name,
@@ -53,55 +68,139 @@ export function saveApiKey(
     useSupabase
   };
   
-  if (useSupabase && isSupabaseConnected()) {
-    // This will be implemented when Supabase is connected
-    console.log('Supabase storage is not yet implemented');
-    // For now, still save to localStorage as fallback
+  if (useSupabase) {
+    const isConnected = await isSupabaseConnected();
+    if (isConnected) {
+      try {
+        // Store in Supabase private user metadata if user is authenticated
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (user && !userError) {
+          // Store in user metadata
+          const { error } = await supabase.auth.updateUser({
+            data: { 
+              apiKeys: { 
+                ...user.user_metadata?.apiKeys,
+                [storageKey]: info 
+              } 
+            }
+          });
+          
+          if (error) {
+            console.error("Error storing API key in Supabase:", error);
+            // Fallback to localStorage if there's an error
+            localStorage.setItem(storageKey, JSON.stringify(info));
+          }
+        } else {
+          // Fallback to localStorage if user not authenticated
+          localStorage.setItem(storageKey, JSON.stringify(info));
+        }
+      } catch (error) {
+        console.error("Error storing API key in Supabase:", error);
+        // Fallback to localStorage
+        localStorage.setItem(storageKey, JSON.stringify(info));
+      }
+    } else {
+      // Fallback to localStorage if Supabase not connected
+      localStorage.setItem(storageKey, JSON.stringify(info));
+    }
+  } else {
+    // Store in localStorage
+    localStorage.setItem(storageKey, JSON.stringify(info));
   }
-  
-  localStorage.setItem(storageKey, JSON.stringify(info));
 }
 
 /**
  * Retrieves an API key info object from storage
  * Will check Supabase first if the key is flagged for Supabase storage
  */
-export function getApiKeyInfo(storageKey: string): ApiKeyInfo | null {
-  // First try localStorage (always available)
-  const data = localStorage.getItem(storageKey);
-  if (!data) return null;
+export async function getApiKeyInfo(storageKey: string): Promise<ApiKeyInfo | null> {
+  // First check localStorage to see if we have the info and whether it's flagged for Supabase
+  const localData = localStorage.getItem(storageKey);
+  let localInfo: ApiKeyInfo | null = null;
   
-  try {
-    const info = JSON.parse(data) as ApiKeyInfo;
-    
-    // In future: If this key is meant to use Supabase and Supabase is connected,
-    // we would retrieve from Supabase instead and update localStorage
-    
-    return info;
-  } catch (error) {
-    console.error(`Error parsing API key info for ${storageKey}:`, error);
-    return null;
+  if (localData) {
+    try {
+      localInfo = JSON.parse(localData) as ApiKeyInfo;
+      
+      // If this key is meant to use Supabase, try getting from Supabase
+      if (localInfo?.useSupabase) {
+        const isConnected = await isSupabaseConnected();
+        
+        if (isConnected) {
+          try {
+            // Get from Supabase private user metadata
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            
+            if (user && !userError) {
+              const supabaseInfo = user.user_metadata?.apiKeys?.[storageKey] as ApiKeyInfo;
+              
+              if (supabaseInfo) {
+                // Update localStorage with the data from Supabase
+                localStorage.setItem(storageKey, JSON.stringify(supabaseInfo));
+                return supabaseInfo;
+              }
+              
+              // If we couldn't find in Supabase but it's flagged for Supabase,
+              // save the local copy to Supabase
+              await saveApiKey(storageKey, localInfo.key, localInfo.name, true);
+            }
+          } catch (error) {
+            console.error("Error retrieving API key from Supabase:", error);
+          }
+        }
+      }
+      
+      return localInfo;
+    } catch (error) {
+      console.error(`Error parsing API key info for ${storageKey}:`, error);
+      return null;
+    }
   }
+  
+  // If nothing in localStorage, check Supabase as a last resort
+  try {
+    const isConnected = await isSupabaseConnected();
+    
+    if (isConnected) {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (user && !userError) {
+        const supabaseInfo = user.user_metadata?.apiKeys?.[storageKey] as ApiKeyInfo;
+        
+        if (supabaseInfo) {
+          // Update localStorage with the data from Supabase
+          localStorage.setItem(storageKey, JSON.stringify(supabaseInfo));
+          return supabaseInfo;
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error retrieving API key from Supabase:", error);
+  }
+  
+  return null;
 }
 
 /**
  * Retrieves just the API key from storage
+ * Simplified version of getApiKeyInfo that returns just the key
  */
-export function getApiKey(storageKey: string): string | null {
-  const info = getApiKeyInfo(storageKey);
+export async function getApiKey(storageKey: string): Promise<string | null> {
+  const info = await getApiKeyInfo(storageKey);
   return info?.key || null;
 }
 
 /**
  * Updates an existing API key with new information
  */
-export function updateApiKey(
+export async function updateApiKey(
   storageKey: string, 
   apiKey: string, 
   name?: string,
   useSupabase?: boolean
-): void {
-  const existingInfo = getApiKeyInfo(storageKey);
+): Promise<void> {
+  const existingInfo = await getApiKeyInfo(storageKey);
   
   if (existingInfo) {
     const updatedInfo: ApiKeyInfo = {
@@ -112,53 +211,135 @@ export function updateApiKey(
       ...(useSupabase !== undefined && { useSupabase })
     };
     
-    if (updatedInfo.useSupabase && isSupabaseConnected()) {
-      // This will be implemented when Supabase is connected
-      console.log('Supabase storage update is not yet implemented');
-      // For now, still save to localStorage as fallback
+    if (updatedInfo.useSupabase) {
+      const isConnected = await isSupabaseConnected();
+      if (isConnected) {
+        try {
+          // Update in Supabase
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (user && !userError) {
+            const { error } = await supabase.auth.updateUser({
+              data: { 
+                apiKeys: { 
+                  ...user.user_metadata?.apiKeys,
+                  [storageKey]: updatedInfo 
+                } 
+              }
+            });
+            
+            if (error) {
+              console.error("Error updating API key in Supabase:", error);
+              // Fallback to localStorage
+              localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
+            }
+          } else {
+            // Fallback to localStorage
+            localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
+          }
+        } catch (error) {
+          console.error("Error updating API key in Supabase:", error);
+          // Fallback to localStorage
+          localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
+        }
+      } else {
+        // Fallback to localStorage
+        localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
+      }
+    } else {
+      // Update in localStorage
+      localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
     }
-    
-    localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
   } else {
-    saveApiKey(storageKey, apiKey, name || 'Default', useSupabase);
+    await saveApiKey(storageKey, apiKey, name || 'Default', useSupabase);
   }
 }
 
 /**
  * Removes an API key from storage
  */
-export function removeApiKey(storageKey: string): void {
-  const info = getApiKeyInfo(storageKey);
+export async function removeApiKey(storageKey: string): Promise<void> {
+  const info = await getApiKeyInfo(storageKey);
   
-  if (info?.useSupabase && isSupabaseConnected()) {
-    // This will be implemented when Supabase is connected
-    console.log('Supabase key removal is not yet implemented');
+  if (info?.useSupabase) {
+    const isConnected = await isSupabaseConnected();
+    
+    if (isConnected) {
+      try {
+        // Remove from Supabase
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (user && !userError && user.user_metadata?.apiKeys) {
+          const apiKeys = { ...user.user_metadata.apiKeys };
+          delete apiKeys[storageKey];
+          
+          const { error } = await supabase.auth.updateUser({
+            data: { apiKeys }
+          });
+          
+          if (error) {
+            console.error("Error removing API key from Supabase:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error removing API key from Supabase:", error);
+      }
+    }
   }
   
+  // Always remove from localStorage
   localStorage.removeItem(storageKey);
 }
 
 /**
  * Lists all stored API keys (without exposing the actual keys)
  */
-export function listApiKeys(): { [key: string]: Omit<ApiKeyInfo, 'key'> & { id: string, hasKey: boolean } } {
+export async function listApiKeys(): Promise<{ [key: string]: Omit<ApiKeyInfo, 'key'> & { id: string, hasKey: boolean } }> {
   const result: { [key: string]: any } = {};
   
-  // For now, just get keys from localStorage
+  // First get keys from localStorage
   Object.values(API_KEYS).forEach(storageKey => {
-    const info = getApiKeyInfo(storageKey);
-    if (info) {
-      // Create a safe version without the actual key
-      const { key, ...safeInfo } = info;
-      result[storageKey] = {
-        ...safeInfo,
-        id: storageKey,
-        hasKey: Boolean(key)
-      };
+    const localData = localStorage.getItem(storageKey);
+    if (localData) {
+      try {
+        const info = JSON.parse(localData) as ApiKeyInfo;
+        // Create a safe version without the actual key
+        const { key, ...safeInfo } = info;
+        result[storageKey] = {
+          ...safeInfo,
+          id: storageKey,
+          hasKey: Boolean(key)
+        };
+      } catch (error) {
+        console.error(`Error parsing API key info for ${storageKey}:`, error);
+      }
     }
   });
   
-  // In future: Combine with keys from Supabase
+  // Check Supabase for additional keys
+  try {
+    const isConnected = await isSupabaseConnected();
+    
+    if (isConnected) {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (user && !userError && user.user_metadata?.apiKeys) {
+        // Add keys from Supabase, overriding duplicates
+        Object.entries(user.user_metadata.apiKeys).forEach(([storageKey, info]) => {
+          const apiInfo = info as ApiKeyInfo;
+          // Create a safe version without the actual key
+          const { key, ...safeInfo } = apiInfo;
+          result[storageKey] = {
+            ...safeInfo,
+            id: storageKey,
+            hasKey: Boolean(key)
+          };
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error retrieving API keys from Supabase:", error);
+  }
   
   return result;
 }
@@ -166,11 +347,11 @@ export function listApiKeys(): { [key: string]: Omit<ApiKeyInfo, 'key'> & { id: 
 /**
  * Sets the preference to use Supabase for a specific API key
  */
-export function setSupabasePreference(storageKey: string, useSupabase: boolean): void {
-  const existingInfo = getApiKeyInfo(storageKey);
+export async function setSupabasePreference(storageKey: string, useSupabase: boolean): Promise<void> {
+  const existingInfo = await getApiKeyInfo(storageKey);
   
   if (existingInfo) {
-    updateApiKey(storageKey, existingInfo.key, existingInfo.name, useSupabase);
+    await updateApiKey(storageKey, existingInfo.key, existingInfo.name, useSupabase);
   }
 }
 
@@ -178,20 +359,20 @@ export function setSupabasePreference(storageKey: string, useSupabase: boolean):
  * Migrates all API keys to Supabase once connected
  * This would be called when Supabase connection is established
  */
-export function migrateKeysToSupabase(): void {
-  if (!isSupabaseConnected()) {
+export async function migrateKeysToSupabase(): Promise<void> {
+  const isConnected = await isSupabaseConnected();
+  
+  if (!isConnected) {
     console.warn('Cannot migrate keys: Supabase is not connected');
     return;
   }
   
   // Get all keys from localStorage
-  Object.values(API_KEYS).forEach(storageKey => {
-    const info = getApiKeyInfo(storageKey);
+  for (const storageKey of Object.values(API_KEYS)) {
+    const info = await getApiKeyInfo(storageKey);
     if (info) {
-      // Update the useSupabase flag
-      updateApiKey(storageKey, info.key, info.name, true);
-      
-      // Future: actual migration to Supabase
+      // Update the useSupabase flag and migrate
+      await updateApiKey(storageKey, info.key, info.name, true);
     }
-  });
+  }
 }

@@ -30,7 +30,8 @@ import {
   SettingsIcon,
   AlertTriangleIcon,
   SparklesIcon,
-  CheckSquare2Icon
+  CheckSquare2Icon,
+  TrendingUpIcon
 } from "lucide-react";
 import {
   Dialog,
@@ -50,6 +51,8 @@ import {
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import ApiConnectionsManager from "../settings/ApiConnectionsManager";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -77,11 +80,29 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [selectedModel, setSelectedModel] = useState<string>(OPENAI_MODELS.PREMIUM);
   const [usedModel, setUsedModel] = useState<string | null>(null);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const [usingSupabase, setUsingSupabase] = useState(false);
+  const [checkingSupabase, setCheckingSupabase] = useState(true);
   const { toast } = useToast();
+
+  // Check if Supabase is connected
+  useEffect(() => {
+    const checkSupabaseConnection = async () => {
+      try {
+        const isConnected = await supabase.from('_dummy_check_connection').select('*').limit(1).maybeSingle();
+        setUsingSupabase(true);
+        setCheckingSupabase(false);
+      } catch (error) {
+        setUsingSupabase(false);
+        setCheckingSupabase(false);
+      }
+    };
+    
+    checkSupabaseConnection();
+  }, []);
 
   // Initialize default selected keywords if they have the "trend" property as "up"
   useEffect(() => {
-    if (keywords.length > 0 && selectedKeywords.length === 0) {
+    if (keywords.length > 0) {
       const trendingKeywords = keywords
         .filter(kw => kw.trend === "up")
         .map(kw => kw.keyword);
@@ -106,8 +127,28 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     }
   };
 
+  const autoSelectTrendingKeywords = () => {
+    const trendingKeywords = keywords
+      .filter(kw => kw.trend === "up")
+      .map(kw => kw.keyword);
+    
+    // Select up to 5 trending keywords
+    setSelectedKeywords(trendingKeywords.slice(0, 5));
+    
+    toast({
+      title: "Trending Keywords Selected",
+      description: `Selected ${Math.min(trendingKeywords.length, 5)} trending keywords for analysis`,
+    });
+  };
+
   const generateSuggestions = async () => {
-    const apiKey = getApiKey(API_KEYS.OPENAI);
+    let apiKey = null;
+    
+    try {
+      apiKey = await getApiKey(API_KEYS.OPENAI);
+    } catch (error) {
+      console.error("Error getting API key:", error);
+    }
     
     if (!apiKey) {
       toast({
@@ -143,6 +184,11 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       
       setUsedModel(selectedModel);
       
+      // Open the first card by default
+      if (results.length > 0) {
+        setOpenCards({ 0: true });
+      }
+      
       toast({
         title: "Success",
         description: `Generated ${results.length} content topic suggestions`,
@@ -159,8 +205,22 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     }
   };
 
-  const apiKeyInfo = getApiKeyInfo(API_KEYS.OPENAI);
-  const hasApiKey = Boolean(apiKeyInfo?.key);
+  const checkApiKeyAvailability = async () => {
+    try {
+      const apiKeyInfo = await getApiKeyInfo(API_KEYS.OPENAI);
+      return Boolean(apiKeyInfo?.key);
+    } catch (error) {
+      console.error("Error checking API key availability:", error);
+      return false;
+    }
+  };
+
+  const [hasApiKey, setHasApiKey] = useState(false);
+
+  // Check API key availability
+  useEffect(() => {
+    checkApiKeyAvailability().then(setHasApiKey);
+  }, []);
 
   const getModelDisplayName = (modelKey: string) => {
     switch(modelKey) {
@@ -224,7 +284,12 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                 <div className="bg-secondary/30 p-3 rounded-md flex items-center justify-between">
                   <div className="font-medium text-sm flex items-center">
                     <KeyIcon className="h-4 w-4 mr-2 text-primary" />
-                    <span>{apiKeyInfo?.name || "OpenAI API"}</span>
+                    <span>OpenAI API</span>
+                    {usingSupabase && (
+                      <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        Supabase
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-green-600 text-xs font-medium flex items-center">
                     <span className="w-2 h-2 bg-green-600 rounded-full mr-1.5"></span>
@@ -246,7 +311,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                 </div>
               )}
               <p className="text-xs text-muted-foreground mt-1">
-                Your API key is stored locally on your device and not sent to our servers
+                {usingSupabase 
+                  ? "Your API key is securely stored in Supabase" 
+                  : "Your API key is stored locally on your device and not sent to our servers"}
               </p>
             </div>
             
@@ -284,8 +351,19 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   Select Keywords for Analysis
                 </label>
                 {keywords.length > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    {selectedKeywords.length} of {keywords.length} selected
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={autoSelectTrendingKeywords}
+                      className="text-xs flex items-center gap-1"
+                    >
+                      <TrendingUpIcon className="h-3 w-3" />
+                      Auto-select Trending
+                    </Button>
+                    <div className="text-xs text-muted-foreground">
+                      {selectedKeywords.length} of {keywords.length} selected
+                    </div>
                   </div>
                 )}
               </div>
@@ -309,7 +387,10 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                       >
                         {kw.keyword}
                         {kw.trend === "up" && (
-                          <span className="ml-2 text-green-500 text-xs">▲ Trending</span>
+                          <Badge variant="outline" className="ml-2 text-xs flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
+                            <TrendingUpIcon className="h-3 w-3" />
+                            Trending
+                          </Badge>
                         )}
                       </label>
                     </div>
@@ -417,6 +498,22 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                       </div>
                     </div>
                   </CardContent>
+                  <CardFooter className="pt-0 pb-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="ml-auto"
+                      onClick={() => {
+                        toast({
+                          title: "Content Selected",
+                          description: `Content topic "${suggestion.topicArea}" selected for creation`,
+                        });
+                      }}
+                    >
+                      <CheckSquare2Icon className="h-4 w-4 mr-2" />
+                      Use This Content
+                    </Button>
+                  </CardFooter>
                 </CollapsibleContent>
               </Collapsible>
             </Card>

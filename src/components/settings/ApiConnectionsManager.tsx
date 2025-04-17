@@ -41,9 +41,14 @@ import {
   ShieldIcon,
   TrashIcon,
   DatabaseIcon,
-  CloudIcon
+  CloudIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  LoaderIcon
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ApiConnection {
   id: string;
@@ -70,50 +75,90 @@ const ApiConnectionsManager: React.FC = () => {
   const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
   const [useSupabase, setUseSupabase] = useState(false);
   const [supabaseAvailable, setSupabaseAvailable] = useState(false);
+  const [checkingSupabase, setCheckingSupabase] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     // Check if Supabase is connected
-    setSupabaseAvailable(isSupabaseConnected());
+    const checkSupabaseConnection = async () => {
+      try {
+        const isConnected = await isSupabaseConnected();
+        setSupabaseAvailable(isConnected);
+        setCheckingSupabase(false);
+      } catch (error) {
+        console.error("Error checking Supabase connection:", error);
+        setSupabaseAvailable(false);
+        setCheckingSupabase(false);
+      }
+    };
+    
+    checkSupabaseConnection();
     loadConnections();
   }, []);
 
-  const loadConnections = () => {
-    const apiConnections = listApiKeys();
-    setConnections(apiConnections);
+  const loadConnections = async () => {
+    try {
+      const apiConnections = await listApiKeys();
+      setConnections(apiConnections);
+    } catch (error) {
+      console.error("Error loading API connections:", error);
+      toast({
+        title: "Error Loading Connections",
+        description: "There was a problem loading your API connections",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddNew = () => {
     setCurrentConnectionId(API_KEYS.OPENAI);
     setConnectionName("OpenAI API");
     setApiKeyValue("");
-    setUseSupabase(false);
+    setUseSupabase(supabaseAvailable);
     setIsDialogOpen(true);
   };
 
-  const handleEditConnection = (connectionId: string) => {
-    const connection = getApiKeyInfo(connectionId);
-    if (connection) {
-      setCurrentConnectionId(connectionId);
-      setConnectionName(connection.name);
-      setApiKeyValue(connection.key);
-      setUseSupabase(connection.useSupabase || false);
-      setIsDialogOpen(true);
-    }
-  };
-
-  const handleDeleteConnection = (connectionId: string) => {
-    if (window.confirm("Are you sure you want to delete this API connection?")) {
-      removeApiKey(connectionId);
-      loadConnections();
+  const handleEditConnection = async (connectionId: string) => {
+    try {
+      const connection = await getApiKeyInfo(connectionId);
+      if (connection) {
+        setCurrentConnectionId(connectionId);
+        setConnectionName(connection.name);
+        setApiKeyValue(connection.key);
+        setUseSupabase(connection.useSupabase || false);
+        setIsDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Error editing connection:", error);
       toast({
-        title: "API Connection Removed",
-        description: "Your API connection has been successfully removed.",
+        title: "Error",
+        description: "Failed to load connection details",
+        variant: "destructive",
       });
     }
   };
 
-  const handleSaveConnection = () => {
+  const handleDeleteConnection = async (connectionId: string) => {
+    if (window.confirm("Are you sure you want to delete this API connection?")) {
+      try {
+        await removeApiKey(connectionId);
+        await loadConnections();
+        toast({
+          title: "API Connection Removed",
+          description: "Your API connection has been successfully removed.",
+        });
+      } catch (error) {
+        console.error("Error removing API connection:", error);
+        toast({
+          title: "Error",
+          description: "Failed to remove API connection",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleSaveConnection = async () => {
     if (!currentConnectionId || !apiKeyValue.trim()) {
       toast({
         title: "Error",
@@ -123,34 +168,52 @@ const ApiConnectionsManager: React.FC = () => {
       return;
     }
 
-    const existingConnection = getApiKeyInfo(currentConnectionId);
-    if (existingConnection) {
-      updateApiKey(currentConnectionId, apiKeyValue.trim(), connectionName, useSupabase);
-    } else {
-      saveApiKey(currentConnectionId, apiKeyValue.trim(), connectionName, useSupabase);
-    }
+    try {
+      const existingConnection = await getApiKeyInfo(currentConnectionId);
+      if (existingConnection) {
+        await updateApiKey(currentConnectionId, apiKeyValue.trim(), connectionName, useSupabase);
+      } else {
+        await saveApiKey(currentConnectionId, apiKeyValue.trim(), connectionName, useSupabase);
+      }
 
-    loadConnections();
-    setIsDialogOpen(false);
-    toast({
-      title: "API Connection Saved",
-      description: "Your API connection has been successfully saved.",
-    });
+      await loadConnections();
+      setIsDialogOpen(false);
+      toast({
+        title: "API Connection Saved",
+        description: "Your API connection has been successfully saved.",
+      });
+    } catch (error) {
+      console.error("Error saving API connection:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save API connection",
+        variant: "destructive",
+      });
+    }
   };
 
   const toggleApiKeyVisibility = () => {
     setIsApiKeyVisible(!isApiKeyVisible);
   };
 
-  const toggleSupabaseStorage = (connectionId: string, useSupabaseValue: boolean) => {
-    setSupabasePreference(connectionId, useSupabaseValue);
-    loadConnections();
-    toast({
-      title: useSupabaseValue ? "Using Supabase Storage" : "Using Local Storage",
-      description: useSupabaseValue 
-        ? "This API key will be stored in Supabase when connected" 
-        : "This API key will be stored locally",
-    });
+  const toggleSupabaseStorage = async (connectionId: string, useSupabaseValue: boolean) => {
+    try {
+      await setSupabasePreference(connectionId, useSupabaseValue);
+      await loadConnections();
+      toast({
+        title: useSupabaseValue ? "Using Supabase Storage" : "Using Local Storage",
+        description: useSupabaseValue 
+          ? "This API key will be stored in Supabase" 
+          : "This API key will be stored locally",
+      });
+    } catch (error) {
+      console.error("Error toggling Supabase storage:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update storage preference",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDate = (isoDate: string) => {
@@ -166,9 +229,19 @@ const ApiConnectionsManager: React.FC = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">API Connections</h2>
         <div className="flex gap-2">
-          {!supabaseAvailable && (
+          {checkingSupabase ? (
+            <div className="text-xs text-blue-500 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md">
+              <LoaderIcon className="h-3 w-3 animate-spin" />
+              <span>Checking Supabase...</span>
+            </div>
+          ) : supabaseAvailable ? (
+            <div className="text-xs text-green-500 flex items-center gap-1 bg-green-50 px-2 py-1 rounded-md">
+              <CheckCircleIcon className="h-3 w-3" />
+              <span>Supabase connected</span>
+            </div>
+          ) : (
             <div className="text-xs text-orange-500 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-md">
-              <DatabaseIcon className="h-3 w-3" />
+              <XCircleIcon className="h-3 w-3" />
               <span>Supabase not connected</span>
             </div>
           )}
@@ -207,6 +280,11 @@ const ApiConnectionsManager: React.FC = () => {
                     <div className="flex items-center gap-2">
                       {serviceInfo.icon}
                       <CardTitle>{serviceInfo.name}</CardTitle>
+                      {connection.useSupabase && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          Supabase
+                        </Badge>
+                      )}
                     </div>
                     {connection.hasKey && (
                       <div className="text-xs font-medium text-green-600 bg-green-100 rounded-full px-2 py-1 flex items-center">
@@ -231,12 +309,21 @@ const ApiConnectionsManager: React.FC = () => {
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-xs mt-1">
-                      <CloudIcon className="h-3 w-3" />
-                      <span>
-                        {connection.useSupabase 
-                          ? "Stored in Supabase (secure cloud storage)" 
-                          : "Stored locally in browser"}
-                      </span>
+                      {connection.useSupabase ? (
+                        <>
+                          <CloudIcon className="h-3 w-3 text-blue-500" />
+                          <span className="text-blue-700">
+                            Stored in Supabase (secure cloud storage)
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <DatabaseIcon className="h-3 w-3" />
+                          <span>
+                            Stored locally in browser
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -260,7 +347,7 @@ const ApiConnectionsManager: React.FC = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {getApiKeyInfo(currentConnectionId || "") ? "Update API Connection" : "Add API Connection"}
+              {connections[currentConnectionId || ""] ? "Update API Connection" : "Add API Connection"}
             </DialogTitle>
             <DialogDescription>
               {API_SERVICES[currentConnectionId || ""]?.description || 
