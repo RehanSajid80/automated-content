@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { CheckSquare2Icon, ArrowRightIcon } from "lucide-react";
 
 interface ContentItem {
   id: string;
@@ -20,6 +21,7 @@ interface ContentSelectionViewProps {
 
 export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) => {
   const [contentItems, setContentItems] = React.useState<ContentItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -46,27 +48,51 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
     setContentItems(data || []);
   };
 
-  const toggleItemSelection = async (id: string, currentValue: boolean) => {
-    const { error } = await supabase
-      .from('content_library')
-      .update({ is_selected: !currentValue })
-      .eq('id', id);
+  const toggleItemSelection = (id: string) => {
+    setSelectedItems(current => 
+      current.includes(id)
+        ? current.filter(itemId => itemId !== id)
+        : [...current, id]
+    );
+  };
 
-    if (error) {
-      console.error('Error updating selection:', error);
+  const createSelectedContent = async () => {
+    if (selectedItems.length === 0) {
       toast({
-        title: "Error",
-        description: "Failed to update selection",
-        variant: "destructive",
+        title: "No Items Selected",
+        description: "Please select at least one content item to create",
+        variant: "warning",
       });
       return;
     }
 
-    setContentItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, is_selected: !currentValue } : item
-      )
-    );
+    try {
+      // Update the selected items in the database
+      const { error } = await supabase
+        .from('content_library')
+        .update({ is_selected: true })
+        .in('id', selectedItems);
+
+      if (error) throw error;
+
+      toast({
+        title: "Content Selected",
+        description: `${selectedItems.length} content item(s) marked for creation`,
+      });
+
+      // Dispatch event to potentially trigger content creation workflow
+      window.dispatchEvent(new CustomEvent('content-selected', { 
+        detail: { selectedItems, topicArea } 
+      }));
+
+    } catch (error) {
+      console.error('Error selecting content:', error);
+      toast({
+        title: "Error",
+        description: "Failed to select content items",
+        variant: "destructive",
+      });
+    }
   };
 
   const groupedContent = contentItems.reduce((acc, item) => {
@@ -97,10 +123,8 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
               {groupedContent[type]?.map((item) => (
                 <div key={item.id} className="flex items-start space-x-3">
                   <Checkbox
-                    checked={item.is_selected}
-                    onCheckedChange={(checked) => 
-                      toggleItemSelection(item.id, item.is_selected)
-                    }
+                    checked={selectedItems.includes(item.id)}
+                    onCheckedChange={() => toggleItemSelection(item.id)}
                     id={item.id}
                   />
                   <label
@@ -115,6 +139,19 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
           </CardContent>
         </Card>
       ))}
+      
+      {selectedItems.length > 0 && (
+        <div className="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+          <Button 
+            onClick={createSelectedContent}
+            className="flex items-center gap-2 shadow-lg"
+          >
+            <CheckSquare2Icon className="h-5 w-5" />
+            Create {selectedItems.length} Selected Content Items
+            <ArrowRightIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
