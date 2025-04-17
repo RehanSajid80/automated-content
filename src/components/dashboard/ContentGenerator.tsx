@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, ArrowRight, Check, Loader2, Building2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -82,10 +81,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
       if (activeTab === "pillar") {
         content = `# The Complete Guide to ${mainKeyword}\n\n## Introduction\nModern workplace management is evolving rapidly with OfficeSpaceSoftware.com leading the charge in ${mainKeyword} solutions. This comprehensive guide will explore how our platform addresses the challenges of ${keywordList.slice(1, 3).join(" and ")}.\n\n## What is ${mainKeyword}?\n${mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1)} enables businesses to efficiently organize, allocate, and optimize their physical workspaces through OfficeSpaceSoftware.com's intuitive platform.\n\n## Key Benefits for Facility Managers\n1. Improved space utilization metrics\n2. Enhanced employee experience and satisfaction\n3. Data-driven decision making for workplace strategy\n4. Reduced operational costs through optimized space usage\n\n## Implementation Strategies\nOur clients typically follow these steps when implementing ${mainKeyword} with OfficeSpaceSoftware.com:\n\n1. Assess current workspace usage patterns\n2. Configure the software to match your organizational structure\n3. Integrate with existing systems (HRIS, IoT sensors, etc.)\n4. Deploy user-friendly booking interfaces\n5. Analyze data to continuously improve workspace optimization`;
       } else if (activeTab === "support") {
-        // Updated support page content
         content = `# ${mainKeyword} Troubleshooting and Support Guide\n\n## Common Issues & Solutions\n\n### Issue: Users cannot access the booking system\n**Solution:** Verify user permissions in the admin dashboard. Navigate to Users > Permissions and ensure the appropriate access levels are set.\n\n### Issue: Floor plans not displaying correctly\n**Solution:** Check that floor plan files are in the proper format (.jpg, .png, or .svg) and under 5MB in size. Re-upload if necessary.\n\n### Issue: Integration with Google Calendar not syncing\n**Solution:** Ensure OAuth credentials are valid and that scopes include both read and write permissions for calendar events.\n\n## FAQ for ${mainKeyword}\n\n**Q: How do I set up recurring bookings?**\nA: Navigate to Bookings > New Booking and toggle the "Recurring" option. You can then set daily, weekly, or monthly patterns.\n\n**Q: Can I limit the number of bookings per user?**\nA: Yes, this setting is available under Admin > Policies > Booking Limits. Customize per department or role.\n\n**Q: How do we handle visitors and guests?**\nA: The Visitor Management module allows employees to pre-register guests, who will receive automated check-in instructions via email.\n\n## Installation & Setup\n\n1. **Initial Setup**\n   - Configure your domain settings\n   - Set primary admin contacts\n   - Import employee directory\n\n2. **Floor Plan Configuration**\n   - Upload building plans\n   - Mark bookable and non-bookable areas\n   - Set capacity and distancing rules\n\n3. **User Onboarding**\n   - Schedule training sessions\n   - Distribute quick-start guides\n   - Set up help desk resources`;
       } else if (activeTab === "meta") {
-        // Updated meta tag content with URL focus
         const urlPath = targetUrl.split('/').pop() || '';
         const formattedUrlPath = urlPath.replace(/-/g, ' ');
         
@@ -107,9 +104,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
   };
 
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-400", className)}>
-      <h3 className="text-lg font-semibold mb-6">Content Generator</h3>
-      
+    <div className={cn("", className)}>
       <Tabs defaultValue="pillar" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-4 mb-6">
           {contentTypes.map(type => (
@@ -119,7 +114,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
               className="flex items-center"
             >
               {type.icon}
-              <span className="ml-2">{type.name}</span>
+              <span className="ml-2 hidden sm:inline">{type.name}</span>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -149,25 +144,25 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
                   <label htmlFor="targetUrl" className="text-sm font-medium mb-1.5 block flex items-center">
                     <Globe size={16} className="mr-2" /> Target URL
                   </label>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <Input
                       id="targetUrl"
                       placeholder="Enter target URL for meta tags"
                       value={targetUrl}
                       onChange={(e) => setTargetUrl(e.target.value)}
+                      className="flex-1"
                     />
-                    <div className="relative">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          const randomUrl = suggestedUrls[Math.floor(Math.random() * suggestedUrls.length)];
-                          setTargetUrl(randomUrl);
-                        }}
-                      >
-                        Suggest URL
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        const randomUrl = suggestedUrls[Math.floor(Math.random() * suggestedUrls.length)];
+                        setTargetUrl(randomUrl);
+                      }}
+                    >
+                      Suggest URL
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Enter an OfficeSpaceSoftware.com URL to generate optimized meta tags
@@ -192,9 +187,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
               
               {generatedContent && activeTab === type.id && (
                 <div className="rounded-lg border border-border p-4 mt-4 animate-fade-in">
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <div className="text-sm font-medium">Generated Content</div>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="ghost" className="h-8 text-xs px-2">
                         Regenerate
                       </Button>

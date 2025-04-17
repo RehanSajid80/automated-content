@@ -77,15 +77,23 @@ const Index = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <KeywordResearch 
-                  onKeywordsSelected={handleKeywordsSelected} 
-                  onKeywordDataUpdate={handleKeywordDataUpdated}
-                />
-                <ContentGenerator keywords={selectedKeywords} />
+              {/* Updated layout with more visual separation */}
+              <div className="space-y-8">
+                <div className="rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-300">
+                  <h3 className="text-lg font-semibold mb-4">Office Space SEO Keywords</h3>
+                  <KeywordResearch 
+                    onKeywordsSelected={handleKeywordsSelected} 
+                    onKeywordDataUpdate={handleKeywordDataUpdated}
+                  />
+                </div>
+                
+                <div className="rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-400">
+                  <h3 className="text-lg font-semibold mb-4">AI Content Generator</h3>
+                  <ContentGenerator keywords={selectedKeywords} />
+                </div>
               </div>
               
-              <ManualContentCreator className="mb-6" />
+              <ManualContentCreator className="mt-8 mb-6" />
               
               <RecentContent className="mb-8" />
             </div>
@@ -100,7 +108,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 gap-6">
+              <div className="rounded-xl border border-border bg-card p-6">
                 <KeywordResearch 
                   className="max-w-none" 
                   onKeywordsSelected={handleKeywordsSelected}
@@ -119,8 +127,12 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 gap-6 mb-6">
-                <ContentGenerator className="max-w-none" keywords={selectedKeywords} />
+              <div className="space-y-8">
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <h3 className="text-lg font-semibold mb-4">Content Generator</h3>
+                  <ContentGenerator className="max-w-none" keywords={selectedKeywords} />
+                </div>
+                
                 <ManualContentCreator />
                 <RecentContent />
               </div>
@@ -149,7 +161,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 gap-6">
+              <div className="rounded-xl border border-border bg-card p-6">
                 <ContentSuggestions 
                   keywords={keywordData} 
                   className="max-w-none" 

@@ -17,7 +17,6 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import KeywordFilters, { FilterOptions } from "./KeywordFilters";
 import ContentSuggestions from "./ContentSuggestions";
 
-// Mock SEMrush keyword data with explicitly typed trend values
 const mockKeywords: KeywordData[] = [
   { keyword: "office space management software", volume: 5400, difficulty: 78, cpc: 14.5, trend: "up" },
   { keyword: "workspace management system", volume: 3800, difficulty: 65, cpc: 9.20, trend: "up" },
@@ -31,7 +30,6 @@ const mockKeywords: KeywordData[] = [
   { keyword: "room reservation system", volume: 5600, difficulty: 67, cpc: 10.20, trend: "neutral" },
 ];
 
-// Local storage key for persisting data
 const STORAGE_KEY = 'office-space-keywords';
 
 interface KeywordResearchProps {
@@ -64,7 +62,6 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   const [showContentSuggestions, setShowContentSuggestions] = useState(false);
   const { toast } = useToast();
 
-  // Load saved keywords on component mount
   useEffect(() => {
     const savedKeywords = localStorage.getItem(STORAGE_KEY);
     if (savedKeywords) {
@@ -77,23 +74,19 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
         });
       } catch (error) {
         console.error("Error loading saved keywords:", error);
-        // If there's an error parsing the saved data, use the mock data as fallback
         setKeywords(mockKeywords);
       }
     } else {
-      // If no saved keywords exist, use the mock data
       setKeywords(mockKeywords);
     }
   }, [toast]);
 
-  // Save keywords to localStorage whenever they change
   useEffect(() => {
     if (keywords.length > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(keywords));
     }
   }, [keywords]);
 
-  // Update the parent component whenever keywords change
   useEffect(() => {
     if (onKeywordDataUpdate) {
       onKeywordDataUpdate(keywords);
@@ -106,15 +99,10 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   };
 
   const filteredKeywords = keywords.filter(kw => {
-    // Apply text search filter
     const matchesSearch = kw.keyword.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Apply range filters
     const matchesVolume = kw.volume >= filterOptions.minVolume && kw.volume <= filterOptions.maxVolume;
     const matchesDifficulty = kw.difficulty >= filterOptions.minDifficulty && kw.difficulty <= filterOptions.maxDifficulty;
     const matchesCpc = kw.cpc >= filterOptions.minCpc && kw.cpc <= filterOptions.maxCpc;
-    
-    // Apply trend filter
     const matchesTrend = filterOptions.trend === "all" || kw.trend === filterOptions.trend;
     
     return matchesSearch && matchesVolume && matchesDifficulty && matchesCpc && matchesTrend;
@@ -143,8 +131,6 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   };
 
   const validateFile = (file: File): boolean => {
-    console.log("Validating file:", file.name, file.type);
-    
     const fileName = file.name.toLowerCase();
     const fileExtension = fileName.substring(fileName.lastIndexOf('.') + 1);
     const validExcelExtensions = ['xlsx', 'xls', 'csv'];
@@ -168,16 +154,12 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     const files = e.target.files;
     
     if (!files || files.length === 0) {
-      console.log("No files selected");
       return;
     }
     
     const file = files[0];
-    console.log("File selected:", file.name, file.type, file.size);
     
-    // Validate file extension first
     if (!validateFile(file)) {
-      // Reset the file input
       e.target.value = '';
       return;
     }
@@ -185,10 +167,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     setIsImporting(true);
     
     try {
-      console.log("Processing Excel file:", file.name, file.type);
       const keywordData = await processExcelFile(file);
-      console.log("Import successful, keyword data:", keywordData);
-      
       setKeywords(keywordData);
       setImportDialogOpen(false);
       toast({
@@ -200,7 +179,6 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
       setImportError(error instanceof Error ? error.message : "Failed to import keywords");
     } finally {
       setIsImporting(false);
-      // Reset the file input
       e.target.value = '';
     }
   };
@@ -218,10 +196,18 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   };
 
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-300", className)}>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold">Office Space SEO Keywords</h3>
-        <div className="flex gap-2">
+    <div className={cn("", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="relative w-full md:w-auto md:flex-1 max-w-lg">
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search for keywords..."
+            className="pl-9 bg-secondary/50"
+          />
+        </div>
+        <div className="flex gap-2 w-full md:w-auto">
           <Button 
             variant="outline" 
             size="sm" 
@@ -285,18 +271,8 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="md:col-span-3">
-          <div className="relative mb-6">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search for keywords..."
-              className="pl-9 bg-secondary/50"
-            />
-          </div>
-          
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div className="lg:col-span-3">
           <div className="rounded-lg border border-border overflow-hidden">
             <div className="bg-secondary/50 text-xs font-medium text-muted-foreground grid grid-cols-12 gap-4 px-4 py-3">
               <div className="col-span-1"></div>
@@ -312,7 +288,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
                   No keywords match your filters
                 </div>
               ) : (
-                filteredKeywords.map((kw, index) => (
+                filteredKeywords.map((kw) => (
                   <div 
                     key={kw.keyword}
                     className={cn(
@@ -363,12 +339,12 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
           </div>
         </div>
         
-        <div className="md:col-span-1">
+        <div className="lg:col-span-1">
           <KeywordFilters onFiltersChange={handleFilterChange} />
         </div>
       </div>
       
-      <div className="mt-4 flex justify-between items-center">
+      <div className="mt-4 flex flex-wrap justify-between items-center gap-4">
         <div className="text-sm text-muted-foreground">
           {selectedKeywords.length} keywords selected
         </div>
