@@ -129,10 +129,27 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
           
           console.log("Normalized trend:", normalizedTrend);
           
-          // Parse numeric values safely
+          // Parse numeric values safely with expanded column name options
           const volume = parseInt(String(row.Volume || row.volume || row.VOLUME || '0'), 10);
-          const difficulty = parseInt(String(row.Difficulty || row.difficulty || row.DIFFICULTY || '0'), 10);
-          const cpc = parseFloat(String(row.CPC || row.cpc || row.Cost || row.cost || '0'));
+          
+          // Look for difficulty in all possible column names from SEMRush
+          let difficulty = 0;
+          if (row['Keyword Difficulty'] !== undefined) {
+            difficulty = parseInt(String(row['Keyword Difficulty']), 10);
+          } else if (row['Personal Keyword Difficulty'] !== undefined) {
+            difficulty = parseInt(String(row['Personal Keyword Difficulty']), 10);
+          } else if (row.Difficulty !== undefined) {
+            difficulty = parseInt(String(row.Difficulty), 10);
+          } else if (row.difficulty !== undefined) {
+            difficulty = parseInt(String(row.difficulty), 10);
+          } else if (row.DIFFICULTY !== undefined) {
+            difficulty = parseInt(String(row.DIFFICULTY), 10);
+          }
+          
+          console.log("Parsed difficulty:", difficulty);
+          
+          // Parse CPC with expanded options
+          const cpc = parseFloat(String(row.CPC || row['CPC (USD)'] || row.cpc || row.Cost || row.cost || '0'));
           
           // Create the keyword data object
           const keywordItem: KeywordData = {

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -9,7 +8,7 @@ import ManualContentCreator from "@/components/dashboard/ManualContentCreator";
 import RecentContent from "@/components/dashboard/RecentContent";
 import ContentAnalytics from "@/components/dashboard/ContentAnalytics";
 import ContentSuggestions from "@/components/dashboard/ContentSuggestions";
-import { FileTextIcon, Tag, Share2, TrendingUp, Building2, BarChart } from "lucide-react";
+import { FileTextIcon, Tag, Share2, TrendingUp, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
 
@@ -77,10 +76,9 @@ const Index = () => {
                 />
               </div>
               
-              {/* Updated layout with more visual separation */}
-              <div className="space-y-8">
+              <div className="space-y-10">
                 <div className="rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-300">
-                  <h3 className="text-lg font-semibold mb-4">Office Space SEO Keywords</h3>
+                  <h3 className="text-xl font-semibold mb-6">Office Space SEO Keywords</h3>
                   <KeywordResearch 
                     onKeywordsSelected={handleKeywordsSelected} 
                     onKeywordDataUpdate={handleKeywordDataUpdated}
@@ -88,14 +86,14 @@ const Index = () => {
                 </div>
                 
                 <div className="rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-400">
-                  <h3 className="text-lg font-semibold mb-4">AI Content Generator</h3>
+                  <h3 className="text-xl font-semibold mb-6">AI Content Generator</h3>
                   <ContentGenerator keywords={selectedKeywords} />
                 </div>
+                
+                <ManualContentCreator />
+                
+                <RecentContent />
               </div>
-              
-              <ManualContentCreator className="mt-8 mb-6" />
-              
-              <RecentContent className="mb-8" />
             </div>
           </TabsContent>
           
