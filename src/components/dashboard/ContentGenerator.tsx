@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, ArrowRight, Check, Loader2, Building2, Globe, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
   const [activeTab, setActiveTab] = useState("pillar");
   const [keywords, setKeywords] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState("");
   const [generatedContent, setGeneratedContent] = useState("");
   const [targetUrl, setTargetUrl] = useState(suggestedUrls[0]);
   const [urlExists, setUrlExists] = useState(true);
@@ -167,25 +169,69 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
     setIsGenerating(true);
     setGeneratedContent("");
     
+    // Set initial loading message
+    if (activeTab === "pillar") {
+      setGeneratingProgress("Generating comprehensive pillar content (this may take a minute)...");
+    } else {
+      setGeneratingProgress("Generating content...");
+    }
+    
     try {
       const mainKeyword = keywords.split(',')[0]?.trim() || "";
       const contentType = activeTab;
+      
+      // Define minimum words based on content type
+      let minWords;
+      if (contentType === 'pillar') {
+        minWords = 1500; // Setting higher than requested to ensure we meet the minimum
+        toast.info("Generating pillar content", {
+          description: "Creating comprehensive content of at least 1200 words. This may take a minute...",
+          duration: 5000,
+        });
+      }
+      
+      // Create progress update interval for pillar content
+      let progressDots = 0;
+      let progressInterval: number | null = null;
+      
+      if (contentType === 'pillar') {
+        progressInterval = window.setInterval(() => {
+          progressDots = (progressDots + 1) % 4;
+          const dots = '.'.repeat(progressDots);
+          setGeneratingProgress(`Creating comprehensive ${mainKeyword} guide${dots} This may take a minute.`);
+        }, 500);
+      }
       
       const generatedResult = await generateContentByType({
         contentType,
         mainKeyword,
         keywords: keywords.split(',').map(k => k.trim()),
         targetUrl: contentType === 'meta' ? targetUrl : undefined,
-        minWords: contentType === 'pillar' ? 1200 : undefined
+        minWords
       });
       
+      // Clear the progress interval if it exists
+      if (progressInterval !== null) {
+        clearInterval(progressInterval);
+      }
+      
       setGeneratedContent(generatedResult);
-      toast.success("Content generated successfully!");
+      
+      const wordCount = generatedResult.split(/\s+/).filter(word => word.length > 0).length;
+      
+      if (contentType === 'pillar') {
+        toast.success(`Content generated successfully!`, {
+          description: `Created a ${wordCount.toLocaleString()} word guide on ${mainKeyword}`,
+        });
+      } else {
+        toast.success("Content generated successfully!");
+      }
     } catch (error) {
       console.error("Error generating content:", error);
       toast.error("Failed to generate content. Please try again.");
     } finally {
       setIsGenerating(false);
+      setGeneratingProgress("");
     }
   };
 
@@ -287,7 +333,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
                   {isGenerating ? (
                     <>
                       <Loader2 size={16} className="mr-2 animate-spin" />
-                      Generating...
+                      {generatingProgress || "Generating..."}
                     </>
                   ) : (
                     <>
@@ -300,7 +346,14 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
               {generatedContent && activeTab === type.id && (
                 <div className="rounded-lg border border-border p-4 mt-4 animate-fade-in">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                    <div className="text-sm font-medium">Generated Content</div>
+                    <div className="text-sm font-medium">
+                      Generated Content 
+                      {activeTab === "pillar" && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({generatedContent.split(/\s+/).filter(word => word.length > 0).length.toLocaleString()} words)
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="ghost" className="h-8 text-xs px-2">
                         Regenerate

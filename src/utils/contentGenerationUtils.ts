@@ -20,11 +20,15 @@ export async function generateContentByType(params: ContentGenerationParams): Pr
 
   switch (params.contentType) {
     case "pillar":
-      systemPrompt = "You are an expert content writer specializing in office space and asset management technology. Write comprehensive, well-structured content that is engaging and informative.";
-      userPrompt = `Create a comprehensive guide about "${params.mainKeyword}" that is at least ${params.minWords} words. 
-                    Include practical examples, industry statistics, and actionable insights.
-                    Use proper headings, subheadings, and incorporate these keywords naturally: ${params.keywords.join(", ")}.
-                    Format the content in Markdown.`;
+      systemPrompt = "You are an expert content writer specializing in office space and asset management technology. Write comprehensive, well-structured content that is engaging and informative. Your content should be thorough, detailed, and provide significant value to readers.";
+      userPrompt = `Create a comprehensive guide about "${params.mainKeyword}" that is AT LEAST ${params.minWords || 1500} words. 
+                    Include practical examples, industry statistics, actionable insights, and address common questions.
+                    Structure the content with a clear introduction, multiple sections with descriptive headings and subheadings, and a conclusion.
+                    Cover the topic from multiple angles including benefits, challenges, implementation strategies, and future trends.
+                    Incorporate these keywords naturally throughout the content: ${params.keywords.join(", ")}.
+                    Ensure the content is optimized for SEO while maintaining high readability and value for the audience.
+                    For asset management topics, include information about tracking systems, software solutions, and ROI calculations.
+                    Format the content in Markdown with proper headings (H1, H2, H3), bullet points, and numbered lists where appropriate.`;
       break;
 
     case "social":
@@ -76,7 +80,7 @@ export async function generateContentByType(params: ContentGenerationParams): Pr
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: params.contentType === 'pillar' ? 4000 : 2000,
+        max_tokens: params.contentType === 'pillar' ? 4500 : 2000,
       }),
     });
 
@@ -85,9 +89,90 @@ export async function generateContentByType(params: ContentGenerationParams): Pr
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    const generatedContent = data.choices[0].message.content;
+    
+    // For pillar content, verify it meets minimum word count
+    if (params.contentType === 'pillar') {
+      const wordCount = countWords(generatedContent);
+      console.log(`Generated ${params.contentType} content with ${wordCount} words`);
+      
+      if (wordCount < (params.minWords || 1200)) {
+        console.log("Content too short, regenerating with more detailed instructions...");
+        return generatePillarContentWithExtension(apiKey, params, generatedContent);
+      }
+    }
+    
+    return generatedContent;
   } catch (error) {
     console.error("Error generating content:", error);
     throw new Error("Failed to generate content");
+  }
+}
+
+// Count words in a string
+function countWords(text: string): number {
+  return text.split(/\s+/).filter(word => word.length > 0).length;
+}
+
+// Generate extended pillar content if initial content is too short
+async function generatePillarContentWithExtension(
+  apiKey: string, 
+  params: ContentGenerationParams, 
+  initialContent: string
+): Promise<string> {
+  const currentWordCount = countWords(initialContent);
+  const additionalWordsNeeded = (params.minWords || 1200) - currentWordCount;
+  
+  if (additionalWordsNeeded <= 0) {
+    return initialContent;
+  }
+  
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { 
+            role: 'system', 
+            content: "You are an expert content writer specializing in expanding and enhancing existing content. You provide additional sections, examples, and depth to make content more comprehensive."
+          },
+          { 
+            role: 'user', 
+            content: `I have the following content about "${params.mainKeyword}" but it needs to be expanded by approximately ${additionalWordsNeeded} words to reach a minimum of ${params.minWords || 1200} words.
+                      
+                      Please analyze this content and provide ADDITIONAL sections, examples, case studies, statistics, or deeper explanations that would enhance it. Focus on adding value, not just words.
+                      
+                      EXISTING CONTENT:
+                      ${initialContent}
+                      
+                      Please provide ONLY the new content to add, formatted in Markdown. I will integrate it with the existing content.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 3000,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const additionalContent = data.choices[0].message.content;
+    
+    // Combine initial content with additional content
+    const combinedContent = `${initialContent}\n\n${additionalContent}`;
+    const finalWordCount = countWords(combinedContent);
+    
+    console.log(`Extended content to ${finalWordCount} words`);
+    return combinedContent;
+  } catch (error) {
+    console.error("Error generating extended content:", error);
+    return initialContent; // Return the original content if extension fails
   }
 }
