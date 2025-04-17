@@ -44,7 +44,9 @@ import {
   CloudIcon,
   CheckCircleIcon,
   XCircleIcon,
-  LoaderIcon
+  LoaderIcon,
+  Building2Icon,
+  ServerIcon
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +65,16 @@ const API_SERVICES = {
     name: "OpenAI",
     description: "Used for AI content suggestions and keyword analysis",
     icon: <ShieldIcon className="h-5 w-5" />
+  },
+  "supabase-connection": {
+    name: "Supabase",
+    description: "Database and authentication service",
+    icon: <ServerIcon className="h-5 w-5" />
+  },
+  "officespace-connection": {
+    name: "Office Space Software",
+    description: "Workspace management integration",
+    icon: <Building2Icon className="h-5 w-5" />
   }
 };
 
@@ -98,8 +110,29 @@ const ApiConnectionsManager: React.FC = () => {
 
   const loadConnections = async () => {
     try {
+      // Get user-defined API connections
       const apiConnections = await listApiKeys();
-      setConnections(apiConnections);
+      
+      // Add built-in connections
+      const allConnections = {
+        ...apiConnections,
+        "supabase-connection": {
+          id: "supabase-connection",
+          name: "Supabase Database",
+          lastUpdated: new Date().toISOString(),
+          hasKey: supabaseAvailable,
+          useSupabase: true
+        },
+        "officespace-connection": {
+          id: "officespace-connection",
+          name: "Office Space API",
+          lastUpdated: new Date().toISOString(),
+          hasKey: true,
+          useSupabase: false
+        }
+      };
+      
+      setConnections(allConnections);
     } catch (error) {
       console.error("Error loading API connections:", error);
       toast({
@@ -224,10 +257,15 @@ const ApiConnectionsManager: React.FC = () => {
     }
   };
 
+  const canEdit = (connectionId: string) => {
+    // Built-in connections can't be edited or deleted
+    return connectionId !== "supabase-connection" && connectionId !== "officespace-connection";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">API Connections</h2>
+        <h3 className="text-2xl font-semibold">API Connections</h3>
         <div className="flex gap-2">
           {checkingSupabase ? (
             <div className="text-xs text-blue-500 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md">
@@ -273,23 +311,35 @@ const ApiConnectionsManager: React.FC = () => {
               icon: <KeyIcon className="h-5 w-5" />
             };
             
+            const isBuiltIn = id === "supabase-connection" || id === "officespace-connection";
+            
             return (
-              <Card key={id} className="overflow-hidden">
+              <Card key={id} className={`overflow-hidden ${isBuiltIn ? 'border-2 border-blue-200 dark:border-blue-800' : ''}`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {serviceInfo.icon}
                       <CardTitle>{serviceInfo.name}</CardTitle>
-                      {connection.useSupabase && (
+                      {isBuiltIn && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          Built-in
+                        </Badge>
+                      )}
+                      {connection.useSupabase && !isBuiltIn && (
                         <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                           Supabase
                         </Badge>
                       )}
                     </div>
-                    {connection.hasKey && (
+                    {connection.hasKey ? (
                       <div className="text-xs font-medium text-green-600 bg-green-100 rounded-full px-2 py-1 flex items-center">
                         <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1"></span>
                         Active
+                      </div>
+                    ) : (
+                      <div className="text-xs font-medium text-red-600 bg-red-100 rounded-full px-2 py-1 flex items-center">
+                        <span className="w-1.5 h-1.5 bg-red-600 rounded-full mr-1"></span>
+                        Inactive
                       </div>
                     )}
                   </div>
@@ -299,7 +349,7 @@ const ApiConnectionsManager: React.FC = () => {
                   <div className="text-sm text-muted-foreground space-y-2">
                     <p><span className="font-medium">Name:</span> {connection.name}</p>
                     <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
-                    {supabaseAvailable && (
+                    {!isBuiltIn && supabaseAvailable && (
                       <div className="flex items-center justify-between">
                         <span className="font-medium">Store in Supabase:</span>
                         <Switch 
@@ -313,30 +363,32 @@ const ApiConnectionsManager: React.FC = () => {
                         <>
                           <CloudIcon className="h-3 w-3 text-blue-500" />
                           <span className="text-blue-700">
-                            Stored in Supabase (secure cloud storage)
+                            {isBuiltIn ? "Built-in service connection" : "Stored in Supabase (secure cloud storage)"}
                           </span>
                         </>
                       ) : (
                         <>
                           <DatabaseIcon className="h-3 w-3" />
                           <span>
-                            Stored locally in browser
+                            {isBuiltIn ? "Default system connection" : "Stored locally in browser"}
                           </span>
                         </>
                       )}
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-end gap-2 pt-0">
-                  <Button variant="ghost" size="sm" onClick={() => handleDeleteConnection(id)}>
-                    <TrashIcon className="h-4 w-4 mr-1" />
-                    Remove
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleEditConnection(id)}>
-                    <RefreshCwIcon className="h-4 w-4 mr-1" />
-                    Update
-                  </Button>
-                </CardFooter>
+                {!isBuiltIn && (
+                  <CardFooter className="flex justify-end gap-2 pt-0">
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteConnection(id)}>
+                      <TrashIcon className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleEditConnection(id)}>
+                      <RefreshCwIcon className="h-4 w-4 mr-1" />
+                      Update
+                    </Button>
+                  </CardFooter>
+                )}
               </Card>
             );
           })
