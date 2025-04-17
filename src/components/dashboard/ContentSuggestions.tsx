@@ -314,7 +314,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       console.log("Executing insert promises...");
       const results = await Promise.all(insertPromises);
       
-      // Check for errors
+      // Check for errors and handle success
       const errors = results.filter(result => result.error);
       if (errors.length > 0) {
         console.error('Errors storing content:', errors);
@@ -324,13 +324,17 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         throw new Error(`Failed to store ${errors.length} content items`);
       }
 
+      // Navigate to content tab
+      window.dispatchEvent(new CustomEvent('navigate-to-content', { 
+        detail: { topicArea: suggestion.topicArea } 
+      }));
+
       toast({
         title: "Content Stored",
         description: `Successfully stored content for "${suggestion.topicArea}"`,
       });
       
       // Force a refresh of any components that show content from Supabase
-      // This will be picked up by the useEffect in RecentContent
       window.dispatchEvent(new CustomEvent('content-updated'));
       
     } catch (error) {

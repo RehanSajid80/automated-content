@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import StatsCard from "@/components/dashboard/StatsCard";
@@ -12,11 +11,25 @@ import ContentSuggestions from "@/components/dashboard/ContentSuggestions";
 import { FileTextIcon, Tag, Share2, TrendingUp, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
+import { ContentSelectionView } from "@/components/dashboard/ContentSelectionView";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [keywordData, setKeywordData] = useState<KeywordData[]>([]);
+  const [selectedTopicArea, setSelectedTopicArea] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleNavigateToContent = (event: CustomEvent<{ topicArea: string }>) => {
+      setActiveTab('content');
+      setSelectedTopicArea(event.detail.topicArea);
+    };
+
+    window.addEventListener('navigate-to-content', handleNavigateToContent as EventListener);
+    return () => {
+      window.removeEventListener('navigate-to-content', handleNavigateToContent as EventListener);
+    };
+  }, []);
 
   const handleKeywordsSelected = (keywords: string[]) => {
     setSelectedKeywords(keywords);
@@ -136,13 +149,20 @@ const Index = () => {
               </div>
               
               <div className="space-y-8">
-                <div className="rounded-xl border border-border bg-card p-6">
-                  <h3 className="text-lg font-semibold mb-4">Content Generator</h3>
-                  <ContentGenerator className="max-w-none" keywords={selectedKeywords} />
-                </div>
-                
-                <ManualContentCreator />
-                <RecentContent />
+                {selectedTopicArea ? (
+                  <div className="rounded-xl border border-border bg-card p-6">
+                    <ContentSelectionView topicArea={selectedTopicArea} />
+                  </div>
+                ) : (
+                  <>
+                    <div className="rounded-xl border border-border bg-card p-6">
+                      <h3 className="text-lg font-semibold mb-4">Content Generator</h3>
+                      <ContentGenerator className="max-w-none" keywords={selectedKeywords} />
+                    </div>
+                    <ManualContentCreator />
+                    <RecentContent />
+                  </>
+                )}
               </div>
             </div>
           </TabsContent>

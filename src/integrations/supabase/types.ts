@@ -15,7 +15,9 @@ export type Database = {
           content_type: string
           created_at: string
           id: string
+          is_selected: boolean | null
           keywords: string[]
+          parent_topic_id: string | null
           reasoning: string | null
           title: string | null
           topic_area: string
@@ -26,7 +28,9 @@ export type Database = {
           content_type: string
           created_at?: string
           id?: string
+          is_selected?: boolean | null
           keywords?: string[]
+          parent_topic_id?: string | null
           reasoning?: string | null
           title?: string | null
           topic_area: string
@@ -37,13 +41,23 @@ export type Database = {
           content_type?: string
           created_at?: string
           id?: string
+          is_selected?: boolean | null
           keywords?: string[]
+          parent_topic_id?: string | null
           reasoning?: string | null
           title?: string | null
           topic_area?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "content_library_parent_topic_id_fkey"
+            columns: ["parent_topic_id"]
+            isOneToOne: false
+            referencedRelation: "content_library"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
