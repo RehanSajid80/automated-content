@@ -81,9 +81,10 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [usingSupabase, setUsingSupabase] = useState(false);
   const [checkingSupabase, setCheckingSupabase] = useState(true);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [apiKeyInfo, setApiKeyInfo] = useState<ApiKeyInfo | null>(null);
   const { toast } = useToast();
 
-  // Check if Supabase is connected
   useEffect(() => {
     const checkSupabaseConnection = async () => {
       try {
@@ -99,14 +100,12 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     checkSupabaseConnection();
   }, []);
 
-  // Initialize default selected keywords if they have the "trend" property as "up"
   useEffect(() => {
     if (keywords.length > 0) {
       const trendingKeywords = keywords
         .filter(kw => kw.trend === "up")
         .map(kw => kw.keyword);
       
-      // Select up to 5 trending keywords by default
       setSelectedKeywords(trendingKeywords.slice(0, 5));
     }
   }, [keywords]);
@@ -131,7 +130,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       .filter(kw => kw.trend === "up")
       .map(kw => kw.keyword);
     
-    // Select up to 5 trending keywords
     setSelectedKeywords(trendingKeywords.slice(0, 5));
     
     toast({
@@ -173,7 +171,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     setUsedModel(null);
     
     try {
-      // Filter keywords to only include the selected ones
       const filteredKeywords = keywords.filter(kw => 
         selectedKeywords.includes(kw.keyword)
       );
@@ -183,7 +180,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       
       setUsedModel(selectedModel);
       
-      // Open the first card by default
       if (results.length > 0) {
         setOpenCards({ 0: true });
       }
@@ -206,17 +202,18 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
   const checkApiKeyAvailability = async () => {
     try {
-      const apiKeyInfo = await getApiKeyInfo(API_KEYS.OPENAI);
-      return Boolean(apiKeyInfo?.key);
+      const keyInfo = await getApiKeyInfo(API_KEYS.OPENAI);
+      if (keyInfo?.key) {
+        setHasApiKey(true);
+        setApiKeyInfo(keyInfo);
+      }
+      return Boolean(keyInfo?.key);
     } catch (error) {
       console.error("Error checking API key availability:", error);
       return false;
     }
   };
 
-  const [hasApiKey, setHasApiKey] = useState(false);
-
-  // Check API key availability
   useEffect(() => {
     checkApiKeyAvailability().then(setHasApiKey);
   }, []);
@@ -280,19 +277,28 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               </div>
 
               {hasApiKey ? (
-                <div className="bg-secondary/30 p-3 rounded-md flex items-center justify-between">
+                <div className="bg-green-50 border border-green-200 p-3 rounded-md flex items-center justify-between">
                   <div className="font-medium text-sm flex items-center">
-                    <KeyIcon className="h-4 w-4 mr-2 text-primary" />
-                    <span>OpenAI API</span>
-                    {usingSupabase && (
-                      <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        Supabase
-                      </Badge>
-                    )}
+                    <KeyIcon className="h-5 w-5 mr-2 text-green-600" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span>OpenAI API Connected</span>
+                        {apiKeyInfo?.name && (
+                          <Badge variant="secondary" className="text-xs">
+                            {apiKeyInfo.name}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Last updated: {apiKeyInfo?.lastUpdated 
+                          ? new Date(apiKeyInfo.lastUpdated).toLocaleString() 
+                          : 'Unknown'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-green-600 text-xs font-medium flex items-center">
+                  <div className="text-green-700 text-xs font-medium flex items-center">
                     <span className="w-2 h-2 bg-green-600 rounded-full mr-1.5"></span>
-                    Connected
+                    Active
                   </div>
                 </div>
               ) : (
@@ -312,7 +318,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               <p className="text-xs text-muted-foreground mt-1">
                 {usingSupabase 
                   ? "Your API key is securely stored in Supabase" 
-                  : "Your API key is stored locally on your device and not sent to our servers"}
+                  : "Your API key is stored locally on your device"}
               </p>
             </div>
             
