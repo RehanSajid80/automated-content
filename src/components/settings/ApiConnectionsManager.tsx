@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +68,7 @@ const API_SERVICES = {
   },
   "supabase-connection": {
     name: "Supabase",
-    description: "Backend services",
+    description: "Database and authentication service",
     icon: <ServerIcon className="h-5 w-5" />
   },
   "officespace-connection": {
@@ -319,30 +320,29 @@ const ApiConnectionsManager: React.FC = () => {
                     <div className="flex items-center gap-2">
                       {serviceInfo.icon}
                       <CardTitle>{serviceInfo.name}</CardTitle>
-                      {isBuiltIn && connection.hasKey && (
-                        <div className="text-xs font-medium text-green-600 bg-green-100 rounded-full px-2 py-1 flex items-center">
-                          <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1"></span>
-                          Connected
-                        </div>
+                      {isBuiltIn && (
+                        <Badge variant={connection.hasKey ? "success" : "outline"} className="ml-2">
+                          {connection.hasKey ? "Active" : "Inactive"}
+                        </Badge>
                       )}
                     </div>
                   </div>
                   <CardDescription>{serviceInfo.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="pb-3">
-                  <div className="text-sm text-muted-foreground space-y-2">
-                    {!isBuiltIn && (
-                      <>
-                        <p><span className="font-medium">Name:</span> {connection.name}</p>
-                        <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
-                      </>
-                    )}
-                    {isBuiltIn && (
-                      <p className="text-muted-foreground">
-                        {connection.hasKey ? "Active and integrated" : "Not configured"}
-                      </p>
-                    )}
-                  </div>
+                  {isBuiltIn && (
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p><span className="font-medium">Name:</span> {connection.name}</p>
+                      <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
+                      <p className="text-xs text-muted-foreground italic">Built-in service connection</p>
+                    </div>
+                  )}
+                  {!isBuiltIn && (
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p><span className="font-medium">Name:</span> {connection.name}</p>
+                      <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
+                    </div>
+                  )}
                 </CardContent>
                 {!isBuiltIn && (
                   <CardFooter className="flex justify-end gap-2 pt-0">
