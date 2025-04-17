@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, ArrowRight, Check, Loader2, Building2, Globe, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { generateContentByType } from "@/utils/contentGenerationUtils";
 
 interface ContentGeneratorProps {
   className?: string;
   keywords?: string[];
 }
 
-// Mock content templates for Office Space Software
 const contentTypes = [
   { 
     id: "pillar", 
@@ -46,7 +45,6 @@ const contentTypes = [
   },
 ];
 
-// Suggested URLs for OfficeSpaceSoftware.com
 const suggestedUrls = [
   "https://officespacesoftware.com/features/desk-booking",
   "https://officespacesoftware.com/features/space-analytics",
@@ -73,7 +71,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
     }
   }, [initialKeywords]);
 
-  // Function to check if meta tags already exist in the database
   const checkExistingMetaTags = async (url: string) => {
     try {
       const { data, error } = await supabase
@@ -95,13 +92,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
     }
   };
 
-  // Function to check if a URL exists (mock implementation)
   const checkUrlExists = (url: string) => {
-    // Simplified check - you might want to implement a more comprehensive solution
-    // such as an actual HTTP request to verify if the URL exists
     const mainKeyword = keywords.split(',')[0]?.trim().toLowerCase() || "";
     
-    // Check if the URL or the keyword is reflected in any of the suggested URLs
     const urlMatch = suggestedUrls.some(suggestedUrl => {
       const urlParts = suggestedUrl.toLowerCase().split('/');
       const lastPart = urlParts[urlParts.length - 1].replace(/-/g, ' ');
@@ -117,7 +110,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
     const mainKeyword = keywords.split(',')[0]?.trim() || "office space management";
     const keywordSlug = mainKeyword.toLowerCase().replace(/\s+/g, '-');
     
-    // Create a new suggested URL based on the main keyword
     let newUrl = "";
     
     if (mainKeyword.includes("management")) {
@@ -138,11 +130,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
   const handleSuggestUrl = async () => {
     setIsCheckingExistence(true);
     
-    // Generate a URL based on the main keyword
     const mainKeyword = keywords.split(',')[0]?.trim() || "office space management";
     const keywordSlug = mainKeyword.toLowerCase().replace(/\s+/g, '-');
     
-    // First, try existing URLs
     let foundUrl = suggestedUrls.find(url => 
       url.toLowerCase().includes(keywordSlug) || 
       url.toLowerCase().includes(mainKeyword.replace(/\s+/g, ''))
@@ -155,7 +145,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
       foundUrl = suggestNewUrl();
     }
     
-    // Check if meta tags already exist for this URL
     const tagsExist = await checkExistingMetaTags(foundUrl);
     setExistingMetaTags(tagsExist);
     
@@ -174,162 +163,30 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
     setGeneratedContent("");
     
-    setTimeout(() => {
-      const keywordList = keywords.split(',').map(k => k.trim());
-      const mainKeyword = keywordList[0] || "office space management";
+    try {
+      const mainKeyword = keywords.split(',')[0]?.trim() || "";
+      const contentType = activeTab;
       
-      let content = "";
+      const generatedResult = await generateContentByType({
+        contentType,
+        mainKeyword,
+        keywords: keywords.split(',').map(k => k.trim()),
+        targetUrl: contentType === 'meta' ? targetUrl : undefined,
+        minWords: contentType === 'pillar' ? 1200 : undefined
+      });
       
-      if (activeTab === "pillar") {
-        content = `# The Ultimate Guide to ${mainKeyword} in 2024: A Comprehensive Analysis
-
-## Introduction
-In today's dynamic workplace landscape, ${mainKeyword} has emerged as a critical component of successful business operations. This comprehensive guide explores how OfficeSpaceSoftware.com's solutions address the evolving challenges of modern workplace management, with a particular focus on ${keywordList.slice(1, 3).join(" and ")}.
-
-## Understanding ${mainKeyword}
-### Definition and Core Concepts
-${mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1)} represents a strategic approach to organizing and optimizing workplace resources through OfficeSpaceSoftware.com's advanced platform. This encompasses:
-- Space utilization analytics
-- Workplace capacity planning
-- Resource allocation optimization
-- Employee experience enhancement
-
-### The Evolution of ${mainKeyword}
-#### Historical Context
-Traditional office management methods have evolved significantly over the past decade, driven by:
-1. Technological advancements
-2. Changing workforce demographics
-3. Shifting workplace expectations
-4. Global workplace trends
-
-#### Current Industry Landscape
-Modern ${mainKeyword} solutions integrate:
-- IoT sensors for real-time occupancy monitoring
-- AI-powered predictive analytics
-- Mobile-first booking interfaces
-- Integration capabilities with existing enterprise systems
-
-## Key Benefits for Organizations
-### 1. Operational Efficiency
-- Streamlined booking processes
-- Automated space allocation
-- Reduced administrative overhead
-- Improved resource utilization rates
-
-### 2. Cost Optimization
-- Reduced real estate costs through data-driven decisions
-- Lower utility expenses through optimized space usage
-- Minimized maintenance costs through predictive scheduling
-- Enhanced ROI on workplace investments
-
-### 3. Employee Experience
-- Intuitive interface for space booking
-- Flexible workplace options
-- Improved collaboration opportunities
-- Enhanced workplace satisfaction metrics
-
-### 4. Data-Driven Decision Making
-- Real-time occupancy analytics
-- Historical usage patterns
-- Predictive space requirements
-- Actionable insights for workplace strategy
-
-## Implementation Strategy
-### Phase 1: Assessment and Planning
-1. Evaluate current workplace metrics
-2. Define organizational objectives
-3. Identify key stakeholders
-4. Establish success criteria
-5. Develop implementation timeline
-
-### Phase 2: Technical Setup
-1. Configure OfficeSpaceSoftware.com platform settings
-2. Import organizational structure and employee data
-3. Set up integration with existing systems
-4. Configure custom workflows and automation rules
-5. Establish reporting frameworks
-
-### Phase 3: User Onboarding
-1. Develop training materials
-2. Conduct user workshops
-3. Establish support channels
-4. Create user documentation
-5. Set up feedback mechanisms
-
-## Best Practices for ${mainKeyword}
-### Data-Driven Decision Making
-- Regular analysis of usage patterns
-- Continuous monitoring of key metrics
-- Iterative improvements based on feedback
-- Strategic planning using historical data
-
-### Change Management
-- Clear communication strategies
-- Stakeholder engagement plans
-- Training and support programs
-- Feedback collection mechanisms
-
-### Technology Integration
-- Seamless system connections
-- API utilization
-- Mobile accessibility
-- Security compliance
-
-## Future Trends in ${mainKeyword}
-### Emerging Technologies
-1. AI-powered space optimization
-2. IoT integration for real-time monitoring
-3. Predictive analytics for space planning
-4. Blockchain for resource tracking
-
-### Industry Developments
-1. Hybrid work model optimization
-2. Sustainability focus
-3. Employee wellness integration
-4. Smart building integration
-
-## Case Studies
-### Enterprise Implementation
-Learn how Fortune 500 companies have achieved:
-- 30% reduction in real estate costs
-- 45% improvement in space utilization
-- 85% increase in employee satisfaction
-- 25% decrease in operational expenses
-
-### Mid-Market Success Stories
-Discover how growing businesses have:
-- Optimized their workplace strategy
-- Improved employee experience
-- Reduced administrative overhead
-- Enhanced decision-making processes
-
-## Conclusion
-${mainKeyword} continues to evolve as a critical component of successful business operations. By leveraging OfficeSpaceSoftware.com's comprehensive platform, organizations can:
-- Optimize their workplace resources
-- Enhance employee experience
-- Make data-driven decisions
-- Prepare for future workplace trends
-
-## Additional Resources
-- OfficeSpaceSoftware.com documentation
-- Implementation guides
-- Best practices documentation
-- Industry research and whitepapers
-- Customer success stories
-
-## Get Started
-Transform your workplace with OfficeSpaceSoftware.com's ${mainKeyword} solution. Contact our team for a personalized demo and consultation.`;
-      } else {
-        content = `LinkedIn:\n📊 Are you getting the most out of your ${mainKeyword}? Our latest workplace analytics report from OfficeSpaceSoftware.com shows that companies are only utilizing 60% of their available space effectively.\n\n✅ Optimize desk allocation with our smart booking system\n✅ Implement hoteling and hot-desking with minimal friction\n✅ Track detailed space utilization metrics across your entire portfolio\n\nBook a demo today and see how OfficeSpaceSoftware.com can transform your ${mainKeyword} strategy: [link]\n\n#${mainKeyword.replace(/\s+/g, '')} #OfficeSpaceSoftware #WorkplaceOptimization`;
-      }
-      
-      setGeneratedContent(content);
+      setGeneratedContent(generatedResult);
+      toast.success("Content generated successfully!");
+    } catch (error) {
+      console.error("Error generating content:", error);
+      toast.error("Failed to generate content. Please try again.");
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const handleCopy = () => {
