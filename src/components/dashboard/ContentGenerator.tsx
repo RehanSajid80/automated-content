@@ -185,22 +185,144 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
       let content = "";
       
       if (activeTab === "pillar") {
-        content = `# The Complete Guide to ${mainKeyword}\n\n## Introduction\nModern workplace management is evolving rapidly with OfficeSpaceSoftware.com leading the charge in ${mainKeyword} solutions. This comprehensive guide will explore how our platform addresses the challenges of ${keywordList.slice(1, 3).join(" and ")}.\n\n## What is ${mainKeyword}?\n${mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1)} enables businesses to efficiently organize, allocate, and optimize their physical workspaces through OfficeSpaceSoftware.com's intuitive platform.\n\n## Key Benefits for Facility Managers\n1. Improved space utilization metrics\n2. Enhanced employee experience and satisfaction\n3. Data-driven decision making for workplace strategy\n4. Reduced operational costs through optimized space usage\n\n## Implementation Strategies\nOur clients typically follow these steps when implementing ${mainKeyword} with OfficeSpaceSoftware.com:\n\n1. Assess current workspace usage patterns\n2. Configure the software to match your organizational structure\n3. Integrate with existing systems (HRIS, IoT sensors, etc.)\n4. Deploy user-friendly booking interfaces\n5. Analyze data to continuously improve workspace optimization`;
-      } else if (activeTab === "support") {
-        content = `# ${mainKeyword} Troubleshooting and Support Guide\n\n## Common Issues & Solutions\n\n### Issue: Users cannot access the booking system\n**Solution:** Verify user permissions in the admin dashboard. Navigate to Users > Permissions and ensure the appropriate access levels are set.\n\n### Issue: Floor plans not displaying correctly\n**Solution:** Check that floor plan files are in the proper format (.jpg, .png, or .svg) and under 5MB in size. Re-upload if necessary.\n\n### Issue: Integration with Google Calendar not syncing\n**Solution:** Ensure OAuth credentials are valid and that scopes include both read and write permissions for calendar events.\n\n## FAQ for ${mainKeyword}\n\n**Q: How do I set up recurring bookings?**\nA: Navigate to Bookings > New Booking and toggle the "Recurring" option. You can then set daily, weekly, or monthly patterns.\n\n**Q: Can I limit the number of bookings per user?**\nA: Yes, this setting is available under Admin > Policies > Booking Limits. Customize per department or role.\n\n**Q: How do we handle visitors and guests?**\nA: The Visitor Management module allows employees to pre-register guests, who will receive automated check-in instructions via email.\n\n## Installation & Setup\n\n1. **Initial Setup**\n   - Configure your domain settings\n   - Set primary admin contacts\n   - Import employee directory\n\n2. **Floor Plan Configuration**\n   - Upload building plans\n   - Mark bookable and non-bookable areas\n   - Set capacity and distancing rules\n\n3. **User Onboarding**\n   - Schedule training sessions\n   - Distribute quick-start guides\n   - Set up help desk resources`;
-      } else if (activeTab === "meta") {
-        const urlPath = targetUrl.split('/').pop() || '';
-        const formattedUrlPath = urlPath.replace(/-/g, ' ');
-        
-        content = `## Meta Tags for: ${targetUrl}\n\n**Title Tag (60 chars):**\n${mainKeyword} - OfficeSpaceSoftware.com ${formattedUrlPath ? `| ${formattedUrlPath.charAt(0).toUpperCase() + formattedUrlPath.slice(1)}` : ''}\n\n**Meta Description (150-160 chars):**\nDiscover how OfficeSpaceSoftware.com's ${mainKeyword} solution transforms workplace efficiency. Get data-driven insights, optimize space utilization, and enhance employee experience.\n\n**H1 Heading:**\nEnterprise-Grade ${mainKeyword} for Modern Workplaces\n\n**H2 Headings:**\n- How ${mainKeyword} Drives Workplace Efficiency\n- Key Features of Our ${mainKeyword} Platform\n- Why Companies Choose OfficeSpaceSoftware for ${mainKeyword}\n- Implementing ${mainKeyword} With Minimal Disruption\n\n**Focus Keywords:**\n${keywordList.join(', ')}\n\n**Image Alt Tags:**\n1. "${mainKeyword} dashboard interface screenshot"\n2. "${mainKeyword} analytics and reporting features"\n3. "OfficeSpaceSoftware ${mainKeyword} mobile app"\n\n**URL Structure:**\n${targetUrl}`;
-        
-        if (!urlExists) {
-          content += `\n\n**NOTE: NEW PAGE RECOMMENDATION**\nThis keyword requires a new page to be created at the URL above. There is currently no existing page that adequately targets this keyword.`;
-        }
-        
-        if (existingMetaTags) {
-          content += `\n\n**ALERT: META TAGS ALREADY EXIST**\nMeta tags for this URL already exist in the content library. Please review existing content before saving.`;
-        }
+        content = `# The Ultimate Guide to ${mainKeyword} in 2024: A Comprehensive Analysis
+
+## Introduction
+In today's dynamic workplace landscape, ${mainKeyword} has emerged as a critical component of successful business operations. This comprehensive guide explores how OfficeSpaceSoftware.com's solutions address the evolving challenges of modern workplace management, with a particular focus on ${keywordList.slice(1, 3).join(" and ")}.
+
+## Understanding ${mainKeyword}
+### Definition and Core Concepts
+${mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1)} represents a strategic approach to organizing and optimizing workplace resources through OfficeSpaceSoftware.com's advanced platform. This encompasses:
+- Space utilization analytics
+- Workplace capacity planning
+- Resource allocation optimization
+- Employee experience enhancement
+
+### The Evolution of ${mainKeyword}
+#### Historical Context
+Traditional office management methods have evolved significantly over the past decade, driven by:
+1. Technological advancements
+2. Changing workforce demographics
+3. Shifting workplace expectations
+4. Global workplace trends
+
+#### Current Industry Landscape
+Modern ${mainKeyword} solutions integrate:
+- IoT sensors for real-time occupancy monitoring
+- AI-powered predictive analytics
+- Mobile-first booking interfaces
+- Integration capabilities with existing enterprise systems
+
+## Key Benefits for Organizations
+### 1. Operational Efficiency
+- Streamlined booking processes
+- Automated space allocation
+- Reduced administrative overhead
+- Improved resource utilization rates
+
+### 2. Cost Optimization
+- Reduced real estate costs through data-driven decisions
+- Lower utility expenses through optimized space usage
+- Minimized maintenance costs through predictive scheduling
+- Enhanced ROI on workplace investments
+
+### 3. Employee Experience
+- Intuitive interface for space booking
+- Flexible workplace options
+- Improved collaboration opportunities
+- Enhanced workplace satisfaction metrics
+
+### 4. Data-Driven Decision Making
+- Real-time occupancy analytics
+- Historical usage patterns
+- Predictive space requirements
+- Actionable insights for workplace strategy
+
+## Implementation Strategy
+### Phase 1: Assessment and Planning
+1. Evaluate current workplace metrics
+2. Define organizational objectives
+3. Identify key stakeholders
+4. Establish success criteria
+5. Develop implementation timeline
+
+### Phase 2: Technical Setup
+1. Configure OfficeSpaceSoftware.com platform settings
+2. Import organizational structure and employee data
+3. Set up integration with existing systems
+4. Configure custom workflows and automation rules
+5. Establish reporting frameworks
+
+### Phase 3: User Onboarding
+1. Develop training materials
+2. Conduct user workshops
+3. Establish support channels
+4. Create user documentation
+5. Set up feedback mechanisms
+
+## Best Practices for ${mainKeyword}
+### Data-Driven Decision Making
+- Regular analysis of usage patterns
+- Continuous monitoring of key metrics
+- Iterative improvements based on feedback
+- Strategic planning using historical data
+
+### Change Management
+- Clear communication strategies
+- Stakeholder engagement plans
+- Training and support programs
+- Feedback collection mechanisms
+
+### Technology Integration
+- Seamless system connections
+- API utilization
+- Mobile accessibility
+- Security compliance
+
+## Future Trends in ${mainKeyword}
+### Emerging Technologies
+1. AI-powered space optimization
+2. IoT integration for real-time monitoring
+3. Predictive analytics for space planning
+4. Blockchain for resource tracking
+
+### Industry Developments
+1. Hybrid work model optimization
+2. Sustainability focus
+3. Employee wellness integration
+4. Smart building integration
+
+## Case Studies
+### Enterprise Implementation
+Learn how Fortune 500 companies have achieved:
+- 30% reduction in real estate costs
+- 45% improvement in space utilization
+- 85% increase in employee satisfaction
+- 25% decrease in operational expenses
+
+### Mid-Market Success Stories
+Discover how growing businesses have:
+- Optimized their workplace strategy
+- Improved employee experience
+- Reduced administrative overhead
+- Enhanced decision-making processes
+
+## Conclusion
+${mainKeyword} continues to evolve as a critical component of successful business operations. By leveraging OfficeSpaceSoftware.com's comprehensive platform, organizations can:
+- Optimize their workplace resources
+- Enhance employee experience
+- Make data-driven decisions
+- Prepare for future workplace trends
+
+## Additional Resources
+- OfficeSpaceSoftware.com documentation
+- Implementation guides
+- Best practices documentation
+- Industry research and whitepapers
+- Customer success stories
+
+## Get Started
+Transform your workplace with OfficeSpaceSoftware.com's ${mainKeyword} solution. Contact our team for a personalized demo and consultation.`;
       } else {
         content = `LinkedIn:\n📊 Are you getting the most out of your ${mainKeyword}? Our latest workplace analytics report from OfficeSpaceSoftware.com shows that companies are only utilizing 60% of their available space effectively.\n\n✅ Optimize desk allocation with our smart booking system\n✅ Implement hoteling and hot-desking with minimal friction\n✅ Track detailed space utilization metrics across your entire portfolio\n\nBook a demo today and see how OfficeSpaceSoftware.com can transform your ${mainKeyword} strategy: [link]\n\n#${mainKeyword.replace(/\s+/g, '')} #OfficeSpaceSoftware #WorkplaceOptimization`;
       }
