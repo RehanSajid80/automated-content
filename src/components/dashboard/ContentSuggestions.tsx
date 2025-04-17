@@ -234,74 +234,95 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
   const storeContentInLibrary = async (suggestion: ContentSuggestion) => {
     try {
-      const pillarInsert = await Promise.all(
-        suggestion.pillarContent.map(async (content) => {
-          const { error } = await supabase.from('content_library').insert({
+      const insertPromises = [];
+      
+      // Store pillar content
+      for (const content of suggestion.pillarContent) {
+        const title = content;
+        insertPromises.push(
+          supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
             content_type: 'pillar',
             content: content,
+            title: title,
             reasoning: suggestion.reasoning,
             keywords: keywords
               .filter(kw => selectedKeywords.includes(kw.keyword))
               .map(kw => kw.keyword)
-          });
+          })
+        );
+      }
 
-          if (error) throw error;
-        })
-      );
-
-      const supportInsert = await Promise.all(
-        suggestion.supportPages.map(async (content) => {
-          const { error } = await supabase.from('content_library').insert({
+      // Store support pages
+      for (const content of suggestion.supportPages) {
+        const title = content;
+        insertPromises.push(
+          supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
             content_type: 'support',
             content: content,
+            title: title,
             reasoning: suggestion.reasoning,
             keywords: keywords
               .filter(kw => selectedKeywords.includes(kw.keyword))
               .map(kw => kw.keyword)
-          });
+          })
+        );
+      }
 
-          if (error) throw error;
-        })
-      );
-
-      const metaInsert = await Promise.all(
-        suggestion.metaTags.map(async (content) => {
-          const { error } = await supabase.from('content_library').insert({
+      // Store meta tags
+      for (const content of suggestion.metaTags) {
+        const title = content;
+        insertPromises.push(
+          supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
             content_type: 'meta',
             content: content,
+            title: title,
             reasoning: suggestion.reasoning,
             keywords: keywords
               .filter(kw => selectedKeywords.includes(kw.keyword))
               .map(kw => kw.keyword)
-          });
+          })
+        );
+      }
 
-          if (error) throw error;
-        })
-      );
-
-      const socialInsert = await Promise.all(
-        suggestion.socialMedia.map(async (content) => {
-          const { error } = await supabase.from('content_library').insert({
+      // Store social media content
+      for (const content of suggestion.socialMedia) {
+        const title = content;
+        insertPromises.push(
+          supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
             content_type: 'social',
             content: content,
+            title: title,
             reasoning: suggestion.reasoning,
             keywords: keywords
               .filter(kw => selectedKeywords.includes(kw.keyword))
               .map(kw => kw.keyword)
-          });
+          })
+        );
+      }
 
-          if (error) throw error;
-        })
-      );
+      // Execute all insert promises
+      const results = await Promise.all(insertPromises);
+      
+      // Check for errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('Errors storing content:', errors);
+        throw new Error(`Failed to store ${errors.length} content items`);
+      }
 
       toast({
         title: "Content Stored",
         description: `Successfully stored content for "${suggestion.topicArea}"`,
       });
+      
+      // Force a refresh of any components that show content from Supabase
+      // This will be picked up by the useEffect in RecentContent
+      window.dispatchEvent(new CustomEvent('content-updated'));
+      
     } catch (error) {
       console.error('Error storing content:', error);
       toast({
