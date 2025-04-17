@@ -1,4 +1,3 @@
-
 import { API_KEYS, getApiKey } from "./apiKeyUtils";
 import { KeywordData } from "./excelUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -292,24 +291,31 @@ const fetchContentSuggestions = async (
   ).join(", ");
   
   const prompt = `
-    You are a content strategist for Office Space Software. Analyze these SEO keywords: ${keywordsText}.
+    You are a senior content strategist for Office Space Software. Analyze these SEO keywords in depth: ${keywordsText}.
     
-    For each logical topic group in these keywords, suggest:
-    1. A topic area name
-    2. 2-3 pillar content ideas (in-depth articles/guides)
-    3. 3-4 supporting page ideas (shorter, more specific content)
-    4. 2-3 meta tag ideas for SEO
-    5. 2-3 social media post ideas
-    6. A brief reasoning for your suggestions
+    For each logical topic group in these keywords, create high-value content recommendations:
     
-    Format your response as a JSON array where each object has the following structure exactly:
+    1. Create a descriptive topic area name that captures the essence of the keyword group
+    2. Provide 2-3 pillar content ideas (comprehensive guides of 1500+ words) with detailed descriptions
+    3. Suggest 3-4 supporting page ideas (focused content that addresses specific aspects)
+    4. Create 2-3 meta tag ideas optimized for SEO and click-through rates
+    5. Develop 2-3 engaging social media post ideas with platform-specific formatting
+    6. Include an insightful reasoning section explaining the strategic value of your suggestions
+    
+    Ensure all recommendations are:
+    - Highly specific to workplace management/office space software
+    - Tailored to business professionals and decision-makers
+    - Focused on solving real business challenges
+    - Aligned with current industry trends and best practices
+    
+    Format your response as a JSON array where each object has the following structure:
     {
-      "topicArea": "Name of topic area",
-      "pillarContent": ["Idea 1", "Idea 2"],
-      "supportPages": ["Page 1", "Page 2", "Page 3"],
-      "metaTags": ["Meta tag 1", "Meta tag 2"],
-      "socialMedia": ["Social post 1", "Social post 2"],
-      "reasoning": "Brief reasoning for suggestions"
+      "topicArea": "Specific, descriptive name for the topic area",
+      "pillarContent": ["Detailed pillar content idea 1", "Detailed pillar content idea 2"],
+      "supportPages": ["Specific support page idea 1", "Specific support page idea 2", "Specific support page idea 3"],
+      "metaTags": ["Optimized meta tag 1", "Optimized meta tag 2"],
+      "socialMedia": ["Engaging social post idea 1", "Engaging social post idea 2"],
+      "reasoning": "Strategic explanation of why these content pieces will resonate with the target audience and address their needs"
     }
     
     IMPORTANT: Return ONLY the JSON array with no additional text, comments, or explanations.
@@ -327,7 +333,7 @@ const fetchContentSuggestions = async (
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that provides content strategy suggestions based on SEO keywords."
+          content: "You are a strategic content advisor for B2B SaaS companies. You analyze SEO data and provide specific, actionable content recommendations that drive business results."
         },
         {
           role: "user",

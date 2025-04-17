@@ -20,46 +20,95 @@ export async function generateContentByType(params: ContentGenerationParams): Pr
 
   switch (params.contentType) {
     case "pillar":
-      systemPrompt = "You are an expert content writer specializing in office space and asset management technology. Write comprehensive, well-structured content that is engaging and informative. Your content should be thorough, detailed, and provide significant value to readers.";
-      userPrompt = `Create a comprehensive guide about "${params.mainKeyword}" that is AT LEAST ${params.minWords || 1500} words. 
-                    Include practical examples, industry statistics, actionable insights, and address common questions.
-                    Structure the content with a clear introduction, multiple sections with descriptive headings and subheadings, and a conclusion.
-                    Cover the topic from multiple angles including benefits, challenges, implementation strategies, and future trends.
-                    Incorporate these keywords naturally throughout the content: ${params.keywords.join(", ")}.
-                    Ensure the content is optimized for SEO while maintaining high readability and value for the audience.
-                    For asset management topics, include information about tracking systems, software solutions, and ROI calculations.
-                    Format the content in Markdown with proper headings (H1, H2, H3), bullet points, and numbered lists where appropriate.`;
+      systemPrompt = "You are an expert content writer specializing in office space and asset management technology. Your writing is authoritative, well-researched, and valuable to professionals in the field. Create content that demonstrates expertise, builds trust, and positions the brand as an industry leader. Focus on providing specific actionable insights and practical examples throughout.";
+      userPrompt = `Create an in-depth, comprehensive guide about "${params.mainKeyword}" that is AT LEAST ${params.minWords || 1500} words. 
+
+CONTENT STRUCTURE:
+1. Start with a compelling introduction that establishes the importance of ${params.mainKeyword} and outlines what the reader will learn
+2. Create at least 5-7 major sections with descriptive H2 headings
+3. Include relevant H3 subheadings within each section to organize information logically
+4. End with a strong conclusion summarizing key points and providing next steps
+
+CONTENT REQUIREMENTS:
+- Include concrete examples, case studies, and specific scenarios throughout
+- Provide practical, actionable advice that readers can implement immediately
+- Cite specific industry statistics and research findings (you can create realistic examples)
+- Address common challenges and provide detailed solutions
+- Include pros and cons analysis where appropriate
+- Discuss future trends and innovations in this area
+- Naturally incorporate these keywords throughout: ${params.keywords.join(", ")}
+
+CONTENT STYLE:
+- Write in a professional but conversational tone
+- Use active voice and second-person perspective where appropriate
+- Break up text with bullet points and numbered lists for better readability
+- Ensure all content is factually accurate and valuable to industry professionals
+- Format in proper Markdown with headings (H1, H2, H3), lists, and emphasis
+
+The content MUST be AT LEAST ${params.minWords || 1500} words and provide significant value to office space professionals.`;
       break;
 
     case "social":
-      systemPrompt = "You are a social media content expert for B2B software companies.";
-      userPrompt = `Create a set of 5 engaging social media posts about "${params.mainKeyword}" for LinkedIn and Twitter.
-                    Each post should be unique and incorporate different aspects of these keywords: ${params.keywords.join(", ")}.
-                    Include relevant hashtags and call-to-actions.
-                    Format each post clearly with "LinkedIn:" or "Twitter:" prefix.`;
+      systemPrompt = "You are a social media content strategist for B2B SaaS companies specializing in workplace technology. You create engaging, shareable content that drives engagement and demonstrates thought leadership.";
+      userPrompt = `Create a set of 6 engaging social media posts about "${params.mainKeyword}" - 3 for LinkedIn and 3 for Twitter.
+
+FOR EACH PLATFORM:
+- Create 1 educational post sharing a valuable insight or tip
+- Create 1 thought leadership post positioning the brand as an industry expert
+- Create 1 engagement post asking questions or encouraging discussion
+
+CONTENT REQUIREMENTS:
+- Each post should be unique and incorporate different aspects of these keywords: ${params.keywords.join(", ")}
+- LinkedIn posts should be professional, detailed (200-300 characters), and include a strong call-to-action
+- Twitter posts should be concise (under 280 characters) while still providing value
+- Include relevant hashtags tailored to each platform (3-5 per post)
+- For LinkedIn, suggest 1-2 appropriate emoji per post where relevant
+- For Twitter, use more casual language while maintaining professionalism
+
+Format each post clearly with "LinkedIn:" or "Twitter:" prefix, and separate each post with a line break. Include a brief note about the best time to post each type of content.`;
       break;
 
     case "meta":
-      systemPrompt = "You are an SEO expert specialized in B2B SaaS websites.";
-      userPrompt = `Analyze the URL: ${params.targetUrl}
-                    Create optimized meta tags including:
-                    1. Title tag (50-60 characters)
-                    2. Meta description (150-160 characters)
-                    3. Primary and secondary keywords
-                    4. Open Graph tags
-                    Using these target keywords: ${params.keywords.join(", ")}`;
+      systemPrompt = "You are an SEO specialist with expertise in technical SEO for B2B SaaS websites. You create optimized meta tags that improve search visibility while accurately representing page content.";
+      userPrompt = `Analyze the target URL: ${params.targetUrl || "https://officespacesoftware.com"}
+                    
+Based on best SEO practices for B2B SaaS websites, create a complete set of optimized meta tags for a page about "${params.mainKeyword}" including:
+
+1. Title tag (50-60 characters) that balances keyword usage with compelling copy
+2. Meta description (140-155 characters) that includes a value proposition and call-to-action
+3. 5 primary keywords in order of priority
+4. 5 secondary long-tail keywords
+5. Complete Open Graph tags (og:title, og:description, og:type, og:url, og:image)
+6. Twitter card tags (twitter:card, twitter:title, twitter:description, twitter:image)
+7. Suggested H1 heading for the page
+
+TARGET KEYWORDS: ${params.keywords.join(", ")}
+
+Your meta tags should prioritize click-through rate while maintaining keyword relevance. Format your response clearly with each element labeled and separated.`;
       break;
 
     case "support":
-      systemPrompt = "You are a technical documentation writer for enterprise software.";
-      userPrompt = `Create a comprehensive support guide about "${params.mainKeyword}".
-                    Include:
-                    1. Overview and key concepts
-                    2. Step-by-step instructions
-                    3. Common issues and solutions
-                    4. Best practices
-                    5. Related features
-                    Format in Markdown and incorporate these keywords naturally: ${params.keywords.join(", ")}`;
+      systemPrompt = "You are a technical documentation specialist for enterprise software. You create clear, comprehensive support documentation that helps users troubleshoot issues and maximize their use of the software.";
+      userPrompt = `Create a detailed support guide about "${params.mainKeyword}" for office space management software users.
+
+DOCUMENT STRUCTURE:
+1. Overview and key concepts (with clear definitions)
+2. Step-by-step instructions for common tasks related to ${params.mainKeyword}
+3. Frequently asked questions with comprehensive answers
+4. Troubleshooting section addressing common issues and their solutions
+5. Best practices and optimization tips
+6. Related features and integration possibilities
+
+CONTENT REQUIREMENTS:
+- Include specific examples of how to use the features
+- Create detailed step-by-step instructions with numbered steps
+- Include pro tips and warnings where appropriate
+- Use clear, concise language accessible to both technical and non-technical users
+- Naturally incorporate these keywords: ${params.keywords.join(", ")}
+- Format in proper Markdown with appropriate headings, lists, and code blocks where needed
+- For technical instructions, provide specific UI navigation paths (e.g., "Settings > Users > Permissions")
+
+The final document should be comprehensive, easy to follow, and serve as a valuable reference for users at different expertise levels.`;
       break;
 
     default:
@@ -139,18 +188,18 @@ async function generatePillarContentWithExtension(
         messages: [
           { 
             role: 'system', 
-            content: "You are an expert content writer specializing in expanding and enhancing existing content. You provide additional sections, examples, and depth to make content more comprehensive."
+            content: "You are an expert content writer specializing in expanding and enhancing existing content with specific, detailed examples, case studies, and actionable insights. Your additions are seamlessly integrated, matching the tone and style of the original content while adding significant value."
           },
           { 
             role: 'user', 
             content: `I have the following content about "${params.mainKeyword}" but it needs to be expanded by approximately ${additionalWordsNeeded} words to reach a minimum of ${params.minWords || 1200} words.
                       
-                      Please analyze this content and provide ADDITIONAL sections, examples, case studies, statistics, or deeper explanations that would enhance it. Focus on adding value, not just words.
+                      Please analyze this content and provide ADDITIONAL sections, detailed examples, case studies, statistics, and deeper explanations that would enhance it. Focus on adding specific, actionable value, not just words.
                       
                       EXISTING CONTENT:
                       ${initialContent}
                       
-                      Please provide ONLY the new content to add, formatted in Markdown. I will integrate it with the existing content.`
+                      Please provide ONLY the new content to add, formatted in Markdown. I will integrate it with the existing content. Include at least one new major section (H2) with subsections (H3) that wasn't covered in the original content.`
           }
         ],
         temperature: 0.7,
