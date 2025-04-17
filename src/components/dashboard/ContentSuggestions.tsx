@@ -49,6 +49,7 @@ const storeContentInLibrary = async (suggestion: ContentSuggestion) => {
             .map(kw => kw.keyword),
           title: content.length > 80 ? content.substring(0, 80) + '...' : content
         })
+      )
     ];
 
     const results = await Promise.allSettled(insertPromises);
