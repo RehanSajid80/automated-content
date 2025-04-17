@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -28,7 +29,8 @@ import {
   RefreshCwIcon,
   SettingsIcon,
   AlertTriangleIcon,
-  SparklesIcon
+  SparklesIcon,
+  CheckSquare2Icon
 } from "lucide-react";
 import {
   Dialog,
@@ -47,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import ApiConnectionsManager from "../settings/ApiConnectionsManager";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -73,13 +76,34 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [apiError, setApiError] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>(OPENAI_MODELS.PREMIUM);
   const [usedModel, setUsedModel] = useState<string | null>(null);
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Initialize default selected keywords if they have the "trend" property as "up"
+  useEffect(() => {
+    if (keywords.length > 0 && selectedKeywords.length === 0) {
+      const trendingKeywords = keywords
+        .filter(kw => kw.trend === "up")
+        .map(kw => kw.keyword);
+      
+      // Select up to 5 trending keywords by default
+      setSelectedKeywords(trendingKeywords.slice(0, 5));
+    }
+  }, [keywords]);
 
   const toggleCard = (index: number) => {
     setOpenCards({
       ...openCards,
       [index]: !openCards[index],
     });
+  };
+
+  const toggleKeywordSelection = (keyword: string) => {
+    if (selectedKeywords.includes(keyword)) {
+      setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
+    } else {
+      setSelectedKeywords([...selectedKeywords, keyword]);
+    }
   };
 
   const generateSuggestions = async () => {
@@ -95,10 +119,10 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       return;
     }
 
-    if (keywords.length === 0) {
+    if (selectedKeywords.length === 0) {
       toast({
-        title: "No Keywords",
-        description: "Please upload or select keywords first",
+        title: "No Keywords Selected",
+        description: "Please select at least one keyword for suggestions",
         variant: "destructive",
       });
       return;
@@ -109,7 +133,12 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     setUsedModel(null);
     
     try {
-      const results = await getContentSuggestions(keywords, undefined, selectedModel);
+      // Filter keywords to only include the selected ones
+      const filteredKeywords = keywords.filter(kw => 
+        selectedKeywords.includes(kw.keyword)
+      );
+      
+      const results = await getContentSuggestions(filteredKeywords, undefined, selectedModel);
       setSuggestions(results);
       
       setUsedModel(selectedModel);
@@ -249,14 +278,54 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               </p>
             </div>
 
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium">
+                  Select Keywords for Analysis
+                </label>
+                {keywords.length > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    {selectedKeywords.length} of {keywords.length} selected
+                  </div>
+                )}
+              </div>
+              
+              {keywords.length === 0 ? (
+                <div className="bg-secondary/30 p-3 rounded-md text-muted-foreground text-sm">
+                  No keywords available. Please add keywords from the Keyword Research tab.
+                </div>
+              ) : (
+                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {keywords.map((kw, idx) => (
+                    <div key={idx} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`kw-${idx}`} 
+                        checked={selectedKeywords.includes(kw.keyword)}
+                        onCheckedChange={() => toggleKeywordSelection(kw.keyword)}
+                      />
+                      <label 
+                        htmlFor={`kw-${idx}`}
+                        className="text-sm cursor-pointer flex items-center"
+                      >
+                        {kw.keyword}
+                        {kw.trend === "up" && (
+                          <span className="ml-2 text-green-500 text-xs">▲ Trending</span>
+                        )}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Button
               onClick={generateSuggestions}
-              disabled={isLoading || keywords.length === 0 || !hasApiKey}
+              disabled={isLoading || selectedKeywords.length === 0 || !hasApiKey}
               className="w-full"
             >
               {isLoading
                 ? "Generating Suggestions..."
-                : `Generate Content Suggestions (${keywords.length} keywords)`}
+                : `Generate Content Suggestions (${selectedKeywords.length} keywords)`}
             </Button>
           </div>
         </CardContent>

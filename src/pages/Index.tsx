@@ -20,12 +20,10 @@ const Index = () => {
 
   const handleKeywordsSelected = (keywords: string[]) => {
     setSelectedKeywords(keywords);
-    
-    // If we're on the dashboard, we might want to auto-switch to the content tab
-    if (activeTab === "dashboard") {
-      // Optional: auto-switch to content tab when keywords are selected
-      // setActiveTab("content");
-    }
+  };
+  
+  const handleKeywordDataUpdated = (data: KeywordData[]) => {
+    setKeywordData(data);
   };
 
   return (
@@ -80,7 +78,10 @@ const Index = () => {
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <KeywordResearch onKeywordsSelected={handleKeywordsSelected} />
+                <KeywordResearch 
+                  onKeywordsSelected={handleKeywordsSelected} 
+                  onKeywordDataUpdate={handleKeywordDataUpdated}
+                />
                 <ContentGenerator keywords={selectedKeywords} />
               </div>
               
@@ -100,7 +101,11 @@ const Index = () => {
               </div>
               
               <div className="grid grid-cols-1 gap-6">
-                <KeywordResearch className="max-w-none" onKeywordsSelected={handleKeywordsSelected} />
+                <KeywordResearch 
+                  className="max-w-none" 
+                  onKeywordsSelected={handleKeywordsSelected}
+                  onKeywordDataUpdate={handleKeywordDataUpdated}
+                />
               </div>
             </div>
           </TabsContent>

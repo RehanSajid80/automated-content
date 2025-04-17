@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, ArrowRight, Upload, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,11 +37,13 @@ const STORAGE_KEY = 'office-space-keywords';
 interface KeywordResearchProps {
   className?: string;
   onKeywordsSelected?: (keywords: string[]) => void;
+  onKeywordDataUpdate?: (data: KeywordData[]) => void;
 }
 
 const KeywordResearch: React.FC<KeywordResearchProps> = ({ 
   className,
-  onKeywordsSelected 
+  onKeywordsSelected,
+  onKeywordDataUpdate
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
@@ -91,6 +92,13 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(keywords));
     }
   }, [keywords]);
+
+  // Update the parent component whenever keywords change
+  useEffect(() => {
+    if (onKeywordDataUpdate) {
+      onKeywordDataUpdate(keywords);
+    }
+  }, [keywords, onKeywordDataUpdate]);
 
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilterOptions(newFilters);

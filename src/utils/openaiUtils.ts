@@ -1,4 +1,3 @@
-
 import { KeywordData } from "./excelUtils";
 import { toast } from "@/hooks/use-toast";
 import { getApiKey, API_KEYS } from "./apiKeyUtils";
@@ -47,6 +46,17 @@ export async function getContentSuggestions(
       return await getContentSuggestionsFromN8n(keywordData, customApiKey);
     }
 
+    // Get previous content suggestions from localStorage if available
+    let previousSuggestions = [];
+    try {
+      const savedSuggestions = localStorage.getItem('previous-content-suggestions');
+      if (savedSuggestions) {
+        previousSuggestions = JSON.parse(savedSuggestions);
+      }
+    } catch (err) {
+      console.warn("Failed to load previous suggestions:", err);
+    }
+
     // Create the prompt for OpenAI
     const prompt = `
       I have the following keyword data for office space management content:
@@ -60,6 +70,13 @@ export async function getContentSuggestions(
       4. Social media post ideas
 
       Prioritize keywords with higher volume, upward trends, and reasonable difficulty.
+      ${previousSuggestions.length > 0 ? `
+      
+      Here are previous content suggestions that performed well:
+      ${JSON.stringify(previousSuggestions.slice(0, 3), null, 2)}
+      Consider these as examples of successful topics, but provide fresh ideas tailored to the current keywords.
+      ` : ''}
+
       Format your response as a JSON array where each object has:
       { 
         "topicArea": "Topic name", 
@@ -149,7 +166,18 @@ export async function getContentSuggestions(
     
     try {
       const suggestions = JSON.parse(jsonString);
-      return Array.isArray(suggestions) ? suggestions : [suggestions];
+      const suggestionArray = Array.isArray(suggestions) ? suggestions : [suggestions];
+      
+      // Store the new suggestions for future learning
+      try {
+        // Combine with previous suggestions, keeping the most recent ones first
+        const allSuggestions = [...suggestionArray, ...previousSuggestions].slice(0, 10);
+        localStorage.setItem('previous-content-suggestions', JSON.stringify(allSuggestions));
+      } catch (err) {
+        console.warn("Failed to save suggestions for learning:", err);
+      }
+      
+      return suggestionArray;
     } catch (parseError) {
       console.error("Failed to parse OpenAI response:", parseError);
       throw new Error("Failed to parse content suggestions from OpenAI");
