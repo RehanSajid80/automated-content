@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -45,38 +45,48 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFilters({ ...filters, [name]: value });
+    const newFilters = { ...filters, [name]: value };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleTrendChange = (value: string) => {
-    setFilters({
+    const newFilters = {
       ...filters,
       trend: value as "all" | "up" | "neutral" | "down",
-    });
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleVolumeChange = (value: number[]) => {
-    setFilters({
+    const newFilters = {
       ...filters,
       minVolume: value[0],
       maxVolume: value[1],
-    });
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleDifficultyChange = (value: number[]) => {
-    setFilters({
+    const newFilters = {
       ...filters,
       minDifficulty: value[0],
       maxDifficulty: value[1],
-    });
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleCpcChange = (value: number[]) => {
-    setFilters({
+    const newFilters = {
       ...filters,
       minCpc: value[0],
       maxCpc: value[1],
-    });
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const applyFilters = () => {

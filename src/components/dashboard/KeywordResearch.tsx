@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, ArrowRight, Upload, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -98,8 +99,18 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     setSearchTerm(newFilters.searchTerm);
   };
 
+  // Update the search input handler to also update filter options
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSearchTerm = e.target.value;
+    setSearchTerm(newSearchTerm);
+    setFilterOptions({
+      ...filterOptions,
+      searchTerm: newSearchTerm
+    });
+  };
+
   const filteredKeywords = keywords.filter(kw => {
-    const matchesSearch = kw.keyword.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = kw.keyword.toLowerCase().includes(filterOptions.searchTerm.toLowerCase());
     const matchesVolume = kw.volume >= filterOptions.minVolume && kw.volume <= filterOptions.maxVolume;
     const matchesDifficulty = kw.difficulty >= filterOptions.minDifficulty && kw.difficulty <= filterOptions.maxDifficulty;
     const matchesCpc = kw.cpc >= filterOptions.minCpc && kw.cpc <= filterOptions.maxCpc;
@@ -202,7 +213,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
           <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearchInputChange}
             placeholder="Search for keywords..."
             className="pl-9 bg-secondary/50"
           />
