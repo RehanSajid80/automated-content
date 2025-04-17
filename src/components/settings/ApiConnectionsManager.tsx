@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,7 +90,6 @@ const ApiConnectionsManager: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if Supabase is connected
     const checkSupabaseConnection = async () => {
       try {
         const isConnected = await isSupabaseConnected();
@@ -110,10 +108,8 @@ const ApiConnectionsManager: React.FC = () => {
 
   const loadConnections = async () => {
     try {
-      // Get user-defined API connections
       const apiConnections = await listApiKeys();
       
-      // Add built-in connections
       const allConnections = {
         ...apiConnections,
         "supabase-connection": {
@@ -131,6 +127,22 @@ const ApiConnectionsManager: React.FC = () => {
           useSupabase: false
         }
       };
+
+      if (!allConnections[API_KEYS.OPENAI]) {
+        allConnections[API_KEYS.OPENAI] = {
+          id: API_KEYS.OPENAI,
+          name: "OfficeSpace OpenAI",
+          lastUpdated: "2025-04-16T23:10:58.000Z",
+          hasKey: false,
+          useSupabase: false
+        };
+      } else {
+        allConnections[API_KEYS.OPENAI] = {
+          ...allConnections[API_KEYS.OPENAI],
+          name: "OfficeSpace OpenAI",
+          lastUpdated: "2025-04-16T23:10:58.000Z"
+        };
+      }
       
       setConnections(allConnections);
     } catch (error) {
@@ -258,7 +270,6 @@ const ApiConnectionsManager: React.FC = () => {
   };
 
   const canEdit = (connectionId: string) => {
-    // Built-in connections can't be edited or deleted
     return connectionId !== "supabase-connection" && connectionId !== "officespace-connection";
   };
 
