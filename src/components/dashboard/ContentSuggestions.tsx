@@ -4,6 +4,10 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KeywordData } from "@/utils/excelUtils";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -26,6 +30,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const { toast } = useToast();
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   const storeContentInLibrary = async (suggestion: ContentSuggestion) => {
     try {
@@ -96,7 +101,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         toast({
           title: "Content Stored Successfully",
           description: `Stored ${successCount} content items for "${suggestion.topicArea}"`,
-          variant: successCount === insertPromises.length ? "default" : "warning"
+          variant: successCount === insertPromises.length ? "default" : "destructive"
         });
       }
 
@@ -118,7 +123,49 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     }
   };
 
-  // Sample render method for the component
+  const handleKeywordToggle = (keyword: string) => {
+    setSelectedKeywords(prev => 
+      prev.includes(keyword)
+        ? prev.filter(k => k !== keyword)
+        : [...prev, keyword]
+    );
+  };
+
+  const generateSuggestions = async () => {
+    if (selectedKeywords.length === 0) {
+      toast({
+        title: "No Keywords Selected",
+        description: "Please select at least one keyword to generate content suggestions",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    // This is where we would call an AI service to generate suggestions
+    // For now, we'll use a timeout and mock data
+    setTimeout(() => {
+      const mockSuggestion: ContentSuggestion = {
+        topicArea: "Digital Marketing Trends",
+        pillarContent: ["The Ultimate Guide to SEO in 2025"],
+        supportPages: ["10 Technical SEO Tips for Beginners", "How to Build Quality Backlinks"],
+        metaTags: ["SEO, Digital Marketing, Technical SEO, Backlinks"],
+        socialMedia: ["Check out our latest guide on SEO best practices for 2025! #SEO #DigitalMarketing"],
+        reasoning: "Based on the selected keywords, content focused on SEO best practices would provide value to the target audience."
+      };
+      
+      setSuggestions([mockSuggestion]);
+      setIsGenerating(false);
+      
+      toast({
+        title: "Suggestions Generated",
+        description: "Content suggestions have been created based on your keywords",
+        variant: "default"
+      });
+    }, 2000);
+  };
+
   return (
     <div className={cn("rounded-xl border border-border bg-card p-6", className)}>
       <h3 className="text-lg font-semibold mb-4">AI Content Suggestions</h3>
@@ -126,10 +173,91 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         Generate content ideas based on your keyword research
       </p>
       
-      {/* Component implementation would go here */}
-      <div className="text-center text-muted-foreground py-8">
-        This component is currently being implemented
-      </div>
+      {keywords.length > 0 ? (
+        <>
+          <div className="mb-6">
+            <h4 className="text-sm font-medium mb-2">Select Keywords</h4>
+            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
+              {keywords.map((keyword, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`keyword-${index}`}
+                    checked={selectedKeywords.includes(keyword.keyword)}
+                    onCheckedChange={() => handleKeywordToggle(keyword.keyword)}
+                  />
+                  <label 
+                    htmlFor={`keyword-${index}`}
+                    className="text-sm cursor-pointer"
+                  >
+                    {keyword.keyword}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex justify-end mb-6">
+            <Button 
+              onClick={generateSuggestions}
+              disabled={isGenerating || selectedKeywords.length === 0}
+            >
+              {isGenerating ? 'Generating...' : 'Generate Suggestions'}
+            </Button>
+          </div>
+          
+          {isGenerating && (
+            <div className="space-y-4 mb-6">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          )}
+          
+          {!isGenerating && suggestions.length > 0 && (
+            <div className="space-y-6">
+              {suggestions.map((suggestion, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <h4 className="font-medium text-base mb-2">{suggestion.topicArea}</h4>
+                  
+                  <div className="mb-4">
+                    <h5 className="text-sm font-medium mb-1">Pillar Content</h5>
+                    <ul className="list-disc pl-5 text-sm">
+                      {suggestion.pillarContent.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h5 className="text-sm font-medium mb-1">Support Pages</h5>
+                    <ul className="list-disc pl-5 text-sm">
+                      {suggestion.supportPages.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => storeContentInLibrary(suggestion)}
+                    >
+                      Save to Library
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <Alert>
+          <AlertTitle>No Keywords Available</AlertTitle>
+          <AlertDescription>
+            Please load keywords from your research to generate content suggestions.
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 };
