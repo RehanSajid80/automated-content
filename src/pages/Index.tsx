@@ -13,17 +13,21 @@ import { FileTextIcon, Tag, Share2, TrendingUp, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
 import { ContentSelectionView } from "@/components/dashboard/ContentSelectionView";
+import ContentDetailView from "@/components/dashboard/ContentDetailView";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [keywordData, setKeywordData] = useState<KeywordData[]>([]);
   const [selectedTopicArea, setSelectedTopicArea] = useState<string | null>(null);
+  const [contentViewMode, setContentViewMode] = useState<"selection" | "detail">("selection");
+  const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
 
   useEffect(() => {
     const handleNavigateToContent = (event: CustomEvent<{ topicArea: string }>) => {
       setActiveTab('content');
       setSelectedTopicArea(event.detail.topicArea);
+      setContentViewMode("selection");
     };
     
     const handleNavigateToTab = (event: CustomEvent<{ tab: string }>) => {
@@ -33,12 +37,21 @@ const Index = () => {
       }
     };
 
+    const handleNavigateToContentDetails = (event: CustomEvent<{ contentIds: string[], topicArea: string }>) => {
+      setActiveTab('content');
+      setContentViewMode("detail");
+      setSelectedContentIds(event.detail.contentIds);
+      setSelectedTopicArea(event.detail.topicArea);
+    };
+
     window.addEventListener('navigate-to-content', handleNavigateToContent as EventListener);
     window.addEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
+    window.addEventListener('navigate-to-content-details', handleNavigateToContentDetails as EventListener);
     
     return () => {
       window.removeEventListener('navigate-to-content', handleNavigateToContent as EventListener);
       window.removeEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
+      window.removeEventListener('navigate-to-content-details', handleNavigateToContentDetails as EventListener);
     };
   }, []);
 
@@ -162,7 +175,15 @@ const Index = () => {
               <div className="space-y-8">
                 {selectedTopicArea ? (
                   <div className="rounded-xl border border-border bg-card p-6">
-                    <ContentSelectionView topicArea={selectedTopicArea} />
+                    {contentViewMode === "selection" ? (
+                      <ContentSelectionView topicArea={selectedTopicArea} />
+                    ) : (
+                      <ContentDetailView 
+                        contentIds={selectedContentIds} 
+                        topicArea={selectedTopicArea}
+                        onBack={() => setContentViewMode("selection")}
+                      />
+                    )}
                   </div>
                 ) : (
                   <>

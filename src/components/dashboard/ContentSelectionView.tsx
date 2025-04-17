@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckSquare2Icon, ArrowRightIcon } from "lucide-react";
+import { CheckSquare2Icon, ArrowRightIcon, EyeIcon } from "lucide-react";
 
 interface ContentItem {
   id: string;
@@ -23,6 +23,7 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
   const [contentItems, setContentItems] = React.useState<ContentItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [createdContentIds, setCreatedContentIds] = useState<string[]>([]);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -57,6 +58,13 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
     );
   };
 
+  const viewCreatedContent = () => {
+    // Navigate to a detailed view of the created content
+    window.dispatchEvent(new CustomEvent('navigate-to-content-details', { 
+      detail: { contentIds: createdContentIds, topicArea } 
+    }));
+  };
+
   const createSelectedContent = async () => {
     if (selectedItems.length === 0) {
       toast({
@@ -84,6 +92,9 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
 
       if (error) throw error;
       
+      // Store the created content IDs
+      setCreatedContentIds(selectedItems);
+      
       // Fetch the selected content items for the confirmation
       const { data: selectedContentData, error: fetchError } = await supabase
         .from('content_library')
@@ -104,10 +115,20 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
         .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
         .join(', ');
 
-      // Show success toast with content details
+      // Show success toast with content details and action button
       toast({
         title: "Content Created Successfully",
-        description: `Created ${summaryText} for "${topicArea}". Your content is now ready to view.`,
+        description: `Created ${summaryText} for "${topicArea}". Click 'View Content' to review.`,
+        action: (
+          <Button 
+            size="sm" 
+            variant="secondary" 
+            onClick={viewCreatedContent}
+            className="ml-2"
+          >
+            View Content
+          </Button>
+        ),
       });
 
       // Refresh the content items
@@ -118,7 +139,7 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
       
       // Dispatch content creation event for other components
       window.dispatchEvent(new CustomEvent('content-created', { 
-        detail: { selectedItems, topicArea } 
+        detail: { selectedItems, topicArea, createdContentIds: selectedItems } 
       }));
       
       // Also dispatch content-selected event for compatibility
@@ -166,6 +187,28 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
           </div>
         )}
       </div>
+
+      {createdContentIds.length > 0 && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 my-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckSquare2Icon className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <span className="font-medium text-green-800 dark:text-green-400">
+                Content created successfully!
+              </span>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={viewCreatedContent}
+              className="text-green-600 border-green-300 hover:border-green-500 hover:bg-green-50"
+            >
+              <EyeIcon className="h-4 w-4 mr-1" />
+              View Created Content
+            </Button>
+          </div>
+        </div>
+      )}
 
       {Object.entries(contentTypes).map(([type, title]) => (
         <Card key={type}>
@@ -219,4 +262,3 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
     </div>
   );
 };
-
