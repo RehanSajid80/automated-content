@@ -19,16 +19,146 @@ export const OPENAI_MODELS = {
   FALLBACK: "gpt-3.5-turbo" // Ultimate fallback if needed
 };
 
+// API call tracking to prevent multiple rapid calls
+const apiCallTracker = {
+  lastCallTime: 0,
+  cooldownPeriod: 5000, // 5 seconds cooldown
+  inProgress: false,
+  validateThrottling: function() {
+    const now = Date.now();
+    if (this.inProgress) {
+      return { allowed: false, reason: "A request is already in progress" };
+    }
+    if (now - this.lastCallTime < this.cooldownPeriod) {
+      return { 
+        allowed: false, 
+        reason: `Please wait ${Math.ceil((this.cooldownPeriod - (now - this.lastCallTime)) / 1000)} seconds before making another request` 
+      };
+    }
+    return { allowed: true };
+  },
+  startCall: function() {
+    this.inProgress = true;
+  },
+  endCall: function() {
+    this.lastCallTime = Date.now();
+    this.inProgress = false;
+  }
+};
+
+// Quality assessment for content suggestions
+const contentQualityCheck = {
+  validateSuggestions: function(suggestions: ContentSuggestion[]): { valid: boolean; issues: string[] } {
+    const issues: string[] = [];
+    
+    if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) {
+      return { valid: false, issues: ["No content suggestions were generated"] };
+    }
+    
+    for (let i = 0; i < suggestions.length; i++) {
+      const suggestion = suggestions[i];
+      
+      // Check for missing required fields
+      if (!suggestion.topicArea) {
+        issues.push(`Suggestion #${i+1} is missing a topic area`);
+      }
+      
+      // Check for empty content arrays
+      if (!suggestion.pillarContent || suggestion.pillarContent.length === 0) {
+        issues.push(`Suggestion #${i+1} has no pillar content ideas`);
+      }
+      
+      if (!suggestion.supportPages || suggestion.supportPages.length === 0) {
+        issues.push(`Suggestion #${i+1} has no support page ideas`);
+      }
+      
+      // Check content length and quality
+      suggestion.pillarContent?.forEach((content, idx) => {
+        if (content.length < 10) {
+          issues.push(`Pillar content #${idx+1} in suggestion #${i+1} is too short`);
+        }
+      });
+    }
+    
+    return { valid: issues.length === 0, issues };
+  }
+};
+
+// Track usage metrics
+const usageMetrics = {
+  totalCalls: 0,
+  successfulCalls: 0,
+  failedCalls: 0,
+  lastModelUsed: "",
+  
+  recordCall: function(success: boolean, model: string) {
+    this.totalCalls++;
+    if (success) {
+      this.successfulCalls++;
+    } else {
+      this.failedCalls++;
+    }
+    this.lastModelUsed = model;
+    
+    try {
+      // Store metrics in localStorage for the API connections dashboard
+      localStorage.setItem('openai-usage-metrics', JSON.stringify({
+        totalCalls: this.totalCalls,
+        successfulCalls: this.successfulCalls,
+        failedCalls: this.failedCalls,
+        lastModelUsed: this.lastModelUsed,
+        lastUpdated: new Date().toISOString()
+      }));
+    } catch (err) {
+      console.warn("Failed to save metrics:", err);
+    }
+  },
+  
+  getMetrics: function() {
+    try {
+      const stored = localStorage.getItem('openai-usage-metrics');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        Object.assign(this, parsed);
+      }
+    } catch (err) {
+      console.warn("Failed to load metrics:", err);
+    }
+    
+    return {
+      totalCalls: this.totalCalls,
+      successfulCalls: this.successfulCalls,
+      failedCalls: this.failedCalls,
+      lastModelUsed: this.lastModelUsed
+    };
+  }
+};
+
 export async function getContentSuggestions(
   keywords: KeywordData[],
   customApiKey?: string,
   model: string = OPENAI_MODELS.PREMIUM
 ): Promise<ContentSuggestion[]> {
   try {
+    // Check if we're throttling requests
+    const throttleCheck = apiCallTracker.validateThrottling();
+    if (!throttleCheck.allowed) {
+      toast({
+        title: "Request Throttled",
+        description: throttleCheck.reason,
+        variant: "destructive",
+      });
+      throw new Error(throttleCheck.reason);
+    }
+    
+    // Mark call as in progress
+    apiCallTracker.startCall();
+    
     // Use provided API key or get from storage
     const apiKey = customApiKey || await getApiKey(API_KEYS.OPENAI);
     
     if (!apiKey) {
+      apiCallTracker.endCall(); // Release lock
       throw new Error("No OpenAI API key provided");
     }
 
@@ -44,7 +174,16 @@ export async function getContentSuggestions(
     // Check if this is a custom n8n AI agent key
     // Custom n8n keys start with "n8n-agent-"
     if (customApiKey && customApiKey.startsWith("n8n-agent-")) {
-      return await getContentSuggestionsFromN8n(keywordData, customApiKey);
+      try {
+        const result = await getContentSuggestionsFromN8n(keywordData, customApiKey);
+        apiCallTracker.endCall(); // Release lock
+        usageMetrics.recordCall(true, "n8n-agent");
+        return result;
+      } catch (error) {
+        apiCallTracker.endCall(); // Release lock
+        usageMetrics.recordCall(false, "n8n-agent");
+        throw error;
+      }
     }
 
     // Get previous content suggestions from localStorage if available
@@ -90,6 +229,11 @@ export async function getContentSuggestions(
     `;
 
     // Make the API call to OpenAI
+    toast({
+      title: "Generating Content Suggestions",
+      description: `Using ${model} model to analyze ${keywords.length} keywords...`,
+    });
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -118,6 +262,8 @@ export async function getContentSuggestions(
       
       // Check for common API key issues
       if (response.status === 401) {
+        apiCallTracker.endCall(); // Release lock
+        usageMetrics.recordCall(false, model);
         throw new Error("Invalid API key. Please check your OpenAI API key and try again.");
       } else if (response.status === 429) {
         // More specific rate limit error handling
@@ -131,14 +277,20 @@ export async function getContentSuggestions(
         if (model === OPENAI_MODELS.PREMIUM) {
           // First fallback: try the standard model
           console.warn(`Rate limited on ${OPENAI_MODELS.PREMIUM}, falling back to ${OPENAI_MODELS.STANDARD}`);
+          apiCallTracker.endCall(); // Release lock
+          usageMetrics.recordCall(false, model);
           return getContentSuggestions(keywords, customApiKey, OPENAI_MODELS.STANDARD);
         } else if (model === OPENAI_MODELS.STANDARD) {
           // Second fallback: try the ultimate fallback model
           console.warn(`Rate limited on ${OPENAI_MODELS.STANDARD}, falling back to ${OPENAI_MODELS.FALLBACK}`);
+          apiCallTracker.endCall(); // Release lock
+          usageMetrics.recordCall(false, model);
           return getContentSuggestions(keywords, customApiKey, OPENAI_MODELS.FALLBACK);
         }
         
         // If we're already on the lowest tier model or other models also failed
+        apiCallTracker.endCall(); // Release lock
+        usageMetrics.recordCall(false, model);
         throw new Error(
           `Rate limit exceeded. Your OpenAI account has reached its request limit. ` + 
           `Current balance might be low. ` +
@@ -146,6 +298,8 @@ export async function getContentSuggestions(
           `or check your usage at https://platform.openai.com/account/usage.`
         );
       } else {
+        apiCallTracker.endCall(); // Release lock
+        usageMetrics.recordCall(false, model);
         throw new Error(errorMessage);
       }
     }
@@ -154,6 +308,8 @@ export async function getContentSuggestions(
     const content = data.choices[0]?.message?.content;
 
     if (!content) {
+      apiCallTracker.endCall(); // Release lock
+      usageMetrics.recordCall(false, model);
       throw new Error("No content returned from OpenAI");
     }
 
@@ -169,6 +325,17 @@ export async function getContentSuggestions(
       const suggestions = JSON.parse(jsonString);
       const suggestionArray = Array.isArray(suggestions) ? suggestions : [suggestions];
       
+      // Perform quality validation
+      const qualityCheck = contentQualityCheck.validateSuggestions(suggestionArray);
+      if (!qualityCheck.valid) {
+        console.warn("Content quality issues detected:", qualityCheck.issues);
+        toast({
+          title: "Content Quality Issues",
+          description: qualityCheck.issues[0],
+          variant: "warning",
+        });
+      }
+      
       // Store the new suggestions for future learning
       try {
         // Combine with previous suggestions, keeping the most recent ones first
@@ -178,13 +345,24 @@ export async function getContentSuggestions(
         console.warn("Failed to save suggestions for learning:", err);
       }
       
+      // End tracking and record usage
+      apiCallTracker.endCall();
+      usageMetrics.recordCall(true, model);
+      
       return suggestionArray;
     } catch (parseError) {
       console.error("Failed to parse OpenAI response:", parseError);
+      apiCallTracker.endCall(); // Release lock
+      usageMetrics.recordCall(false, model);
       throw new Error("Failed to parse content suggestions from OpenAI");
     }
   } catch (error) {
     console.error("Error getting content suggestions:", error);
+    // Make sure to release the lock if there's an error
+    if (apiCallTracker.inProgress) {
+      apiCallTracker.endCall();
+    }
+    
     toast({
       title: "OpenAI Error",
       description: error instanceof Error ? error.message : "Failed to get content suggestions",
@@ -194,7 +372,7 @@ export async function getContentSuggestions(
   }
 }
 
-// New function to handle n8n AI agent requests
+// Function to handle n8n AI agent requests
 async function getContentSuggestionsFromN8n(
   keywordData: any[],
   agentKey: string
@@ -257,3 +435,14 @@ async function getContentSuggestionsFromN8n(
     throw error;
   }
 }
+
+// Export the utility functions for usage in the API connections page
+export const getOpenAIUsageMetrics = () => {
+  return usageMetrics.getMetrics();
+};
+
+// Reset the API call throttling (for testing or admin purposes)
+export const resetApiCallThrottling = () => {
+  apiCallTracker.inProgress = false;
+  apiCallTracker.lastCallTime = 0;
+};

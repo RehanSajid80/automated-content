@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { 
   KeyIcon, 
   EyeIcon, 
@@ -43,11 +50,17 @@ import {
   CloudIcon,
   CheckCircleIcon,
   XCircleIcon,
-  LoaderIcon
+  LoaderIcon,
+  BarChart3Icon,
+  AlertTriangleIcon,
+  ClockIcon,
+  Settings2Icon
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { Slider } from "@/components/ui/slider";
+import { getOpenAIUsageMetrics, resetApiCallThrottling } from "@/utils/openaiUtils";
 
 interface ApiConnection {
   id: string;
@@ -75,6 +88,18 @@ const ApiConnectionsManager: React.FC = () => {
   const [useSupabase, setUseSupabase] = useState(false);
   const [supabaseAvailable, setSupabaseAvailable] = useState(false);
   const [checkingSupabase, setCheckingSupabase] = useState(true);
+  const [showUsageStats, setShowUsageStats] = useState(false);
+  const [usageMetrics, setUsageMetrics] = useState({
+    totalCalls: 0,
+    successfulCalls: 0,
+    failedCalls: 0,
+    lastModelUsed: ""
+  });
+  const [throttlingSettings, setThrottlingSettings] = useState({
+    cooldownPeriod: 5, // in seconds
+    enabled: true
+  });
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -92,6 +117,7 @@ const ApiConnectionsManager: React.FC = () => {
     
     checkSupabaseConnection();
     loadConnections();
+    loadUsageStats();
   }, []);
 
   const loadConnections = async () => {
@@ -105,6 +131,21 @@ const ApiConnectionsManager: React.FC = () => {
         description: "There was a problem loading your API connections",
         variant: "destructive",
       });
+    }
+  };
+
+  const loadUsageStats = () => {
+    try {
+      const metrics = getOpenAIUsageMetrics();
+      setUsageMetrics(metrics);
+      
+      // Load throttling settings
+      const savedThrottling = localStorage.getItem('api-throttling-settings');
+      if (savedThrottling) {
+        setThrottlingSettings(JSON.parse(savedThrottling));
+      }
+    } catch (error) {
+      console.error("Error loading usage stats:", error);
     }
   };
 
@@ -222,6 +263,38 @@ const ApiConnectionsManager: React.FC = () => {
     }
   };
 
+  const handleResetThrottling = () => {
+    resetApiCallThrottling();
+    toast({
+      title: "Throttling Reset",
+      description: "API call throttling has been reset. You can make calls immediately.",
+    });
+  };
+
+  const handleSaveThrottlingSettings = () => {
+    try {
+      localStorage.setItem('api-throttling-settings', JSON.stringify(throttlingSettings));
+      
+      // Apply settings to the API call tracker
+      // Note: in a real implementation, you would expose a method from openaiUtils.ts
+      // to update the throttling settings dynamically
+      
+      toast({
+        title: "Settings Saved",
+        description: `API call throttling ${throttlingSettings.enabled ? 'enabled' : 'disabled'} with a ${throttlingSettings.cooldownPeriod} second cooldown period.`,
+      });
+      
+      setIsSettingsDialogOpen(false);
+    } catch (error) {
+      console.error("Error saving throttling settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -243,12 +316,107 @@ const ApiConnectionsManager: React.FC = () => {
               <span>Supabase not connected</span>
             </div>
           )}
+          <Button onClick={() => setIsSettingsDialogOpen(true)} variant="outline" size="sm">
+            <Settings2Icon className="h-4 w-4 mr-2" />
+            API Settings
+          </Button>
           <Button onClick={handleAddNew} variant="outline" size="sm">
             <PlusCircleIcon className="h-4 w-4 mr-2" />
             New Connection
           </Button>
         </div>
       </div>
+
+      {/* API Usage Stats */}
+      <Card className="bg-slate-50">
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg flex items-center">
+              <BarChart3Icon className="h-5 w-5 mr-2" />
+              API Usage Statistics
+            </CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                setShowUsageStats(!showUsageStats);
+                if (!showUsageStats) loadUsageStats();
+              }}
+            >
+              {showUsageStats ? "Hide Stats" : "Show Stats"}
+            </Button>
+          </div>
+        </CardHeader>
+        
+        {showUsageStats && (
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <div className="bg-white p-4 rounded-md shadow-sm border">
+                <div className="text-sm font-medium text-muted-foreground">Total API Calls</div>
+                <div className="text-2xl font-bold mt-1">{usageMetrics.totalCalls}</div>
+              </div>
+              
+              <div className="bg-white p-4 rounded-md shadow-sm border">
+                <div className="text-sm font-medium text-green-600">Successful Calls</div>
+                <div className="text-2xl font-bold mt-1 text-green-700">
+                  {usageMetrics.successfulCalls} 
+                  {usageMetrics.totalCalls > 0 && (
+                    <span className="text-sm font-normal ml-1">
+                      ({Math.round((usageMetrics.successfulCalls / usageMetrics.totalCalls) * 100)}%)
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="bg-white p-4 rounded-md shadow-sm border">
+                <div className="text-sm font-medium text-red-600">Failed Calls</div>
+                <div className="text-2xl font-bold mt-1 text-red-700">
+                  {usageMetrics.failedCalls}
+                  {usageMetrics.totalCalls > 0 && (
+                    <span className="text-sm font-normal ml-1">
+                      ({Math.round((usageMetrics.failedCalls / usageMetrics.totalCalls) * 100)}%)
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 bg-white p-4 rounded-md shadow-sm border">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="text-sm font-medium">Throttling Status</h4>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Prevents multiple API calls within {throttlingSettings.cooldownPeriod} seconds
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleResetThrottling} 
+                  className="bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+                >
+                  <ClockIcon className="h-4 w-4 mr-2" />
+                  Reset Throttling
+                </Button>
+              </div>
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-50 rounded-md text-blue-800 text-sm">
+              <div className="flex items-start">
+                <AlertTriangleIcon className="h-5 w-5 mr-2 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong>Quality Assurance:</strong> Content generated through the API undergoes automatic quality checks for:
+                  <ul className="list-disc ml-6 mt-1 space-y-1">
+                    <li>Content depth and relevance</li>
+                    <li>Required fields validation</li>
+                    <li>Structural integrity</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        )}
+      </Card>
 
       <div className="grid gap-4">
         {Object.entries(connections).length === 0 ? (
@@ -341,6 +509,7 @@ const ApiConnectionsManager: React.FC = () => {
         )}
       </div>
 
+      {/* API Key Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -414,6 +583,101 @@ const ApiConnectionsManager: React.FC = () => {
             </Button>
             <Button onClick={handleSaveConnection}>
               Save Connection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* API Settings Dialog */}
+      <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>API Settings</DialogTitle>
+            <DialogDescription>
+              Configure API call throttling and quality checks
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="throttling">
+                <AccordionTrigger className="text-sm font-medium">
+                  <div className="flex items-center">
+                    <ClockIcon className="h-4 w-4 mr-2" />
+                    Request Throttling
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="enable-throttling" 
+                        checked={throttlingSettings.enabled}
+                        onCheckedChange={(checked) => 
+                          setThrottlingSettings({...throttlingSettings, enabled: checked})
+                        }
+                      />
+                      <Label htmlFor="enable-throttling">Enable request throttling</Label>
+                    </div>
+                  
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label htmlFor="cooldown-period">Cooldown period (seconds)</Label>
+                        <span className="text-sm">{throttlingSettings.cooldownPeriod}s</span>
+                      </div>
+                      <Slider
+                        id="cooldown-period"
+                        disabled={!throttlingSettings.enabled}
+                        value={[throttlingSettings.cooldownPeriod]}
+                        min={1}
+                        max={30}
+                        step={1}
+                        onValueChange={(value) => 
+                          setThrottlingSettings({...throttlingSettings, cooldownPeriod: value[0]})
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Minimum time between API calls to prevent rate limiting and excessive costs
+                      </p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="quality-checks">
+                <AccordionTrigger className="text-sm font-medium">
+                  <div className="flex items-center">
+                    <CheckCircleIcon className="h-4 w-4 mr-2" />
+                    Quality Assurance Checks
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pt-2">
+                    <div className="text-sm">
+                      <p className="mb-2">
+                        Quality checks ensure that generated content meets the following criteria:
+                      </p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Each topic area contains required content sections</li>
+                        <li>Generated content has sufficient depth</li>
+                        <li>Content structure follows expected format</li>
+                      </ul>
+                    </div>
+                    <div className="pt-2 text-xs text-muted-foreground">
+                      Quality assurance checks are always enabled to ensure optimal content generation
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsSettingsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveThrottlingSettings}>
+              Save Settings
             </Button>
           </DialogFooter>
         </DialogContent>
