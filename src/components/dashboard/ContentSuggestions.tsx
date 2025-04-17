@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
 import { getContentSuggestions, OPENAI_MODELS } from "@/utils/openaiUtils";
 import { useToast } from "@/hooks/use-toast";
-import { API_KEYS, getApiKey, getApiKeyInfo } from "@/utils/apiKeyUtils";
+import { API_KEYS, getApiKey, getApiKeyInfo, ApiKeyInfo } from "@/utils/apiKeyUtils";
 import {
   Card,
   CardContent,
