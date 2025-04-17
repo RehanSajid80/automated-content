@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -27,18 +26,12 @@ export interface ApiKeyInfo {
  */
 export async function isSupabaseConnected(): Promise<boolean> {
   try {
-    // Test connection by making a simple request
-    const { error } = await supabase.from('_dummy_query_for_connection_test').select('*').limit(1).maybeSingle();
+    // Test connection by making a simple auth status request
+    // This is safer than trying to query a table that might not exist
+    const { data, error } = await supabase.auth.getSession();
     
-    // If the error is about the table not existing, but not about connection issues,
-    // then Supabase is properly connected
-    if (error && error.code === '42P01') { // 42P01 is the Postgres error code for "relation does not exist"
-      return true;
-    }
-    
-    // Check if we can access the auth API as another way to verify connection
-    const { data, error: authError } = await supabase.auth.getSession();
-    return !authError;
+    // If there's no connection error, Supabase is connected
+    return !error;
   } catch (error) {
     console.error("Error checking Supabase connection:", error);
     return false;

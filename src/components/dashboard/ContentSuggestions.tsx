@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -88,8 +87,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   useEffect(() => {
     const checkSupabaseConnection = async () => {
       try {
-        const isConnected = await supabase.from('_dummy_check_connection').select('*').limit(1).maybeSingle();
-        setUsingSupabase(true);
+        const { data, error } = await supabase.auth.getSession();
+        setUsingSupabase(!error);
         setCheckingSupabase(false);
       } catch (error) {
         setUsingSupabase(false);
