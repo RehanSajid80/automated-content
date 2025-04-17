@@ -8,8 +8,7 @@ import {
   ShareIcon, 
   SettingsIcon, 
   HelpCircleIcon,
-  BarChart,
-  KeyIcon
+  BarChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -109,13 +108,9 @@ const Sidebar: React.FC<SidebarProps> = ({ className, activeTab = "dashboard", o
           <nav className="space-y-1">
             <a 
               href="#" 
-              onClick={handleTabClick("apiConnections")}
-              className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium",
-                activeTab === "apiConnections" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-              )}
+              className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
-              <KeyIcon size={16} />
+              <SettingsIcon size={16} />
               <span>API Connections</span>
             </a>
             <a 

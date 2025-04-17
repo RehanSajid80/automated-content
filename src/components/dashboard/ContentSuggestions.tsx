@@ -4,12 +4,10 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KeywordData } from "@/utils/excelUtils";
-import { getContentSuggestions } from "@/utils/openaiUtils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle } from "lucide-react";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -33,7 +31,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
   
   const storeContentInLibrary = async (suggestion: ContentSuggestion) => {
     try {
@@ -145,35 +142,28 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     }
 
     setIsGenerating(true);
-    setApiError(null);
     
-    try {
-      // Filter keywords to only the selected ones
-      const selectedKeywordData = keywords.filter(kw => 
-        selectedKeywords.includes(kw.keyword)
-      );
+    // This is where we would call an AI service to generate suggestions
+    // For now, we'll use a timeout and mock data
+    setTimeout(() => {
+      const mockSuggestion: ContentSuggestion = {
+        topicArea: "Digital Marketing Trends",
+        pillarContent: ["The Ultimate Guide to SEO in 2025"],
+        supportPages: ["10 Technical SEO Tips for Beginners", "How to Build Quality Backlinks"],
+        metaTags: ["SEO, Digital Marketing, Technical SEO, Backlinks"],
+        socialMedia: ["Check out our latest guide on SEO best practices for 2025! #SEO #DigitalMarketing"],
+        reasoning: "Based on the selected keywords, content focused on SEO best practices would provide value to the target audience."
+      };
       
-      // Get content suggestions from OpenAI
-      const contentSuggestions = await getContentSuggestions(selectedKeywordData);
-      
-      setSuggestions(contentSuggestions);
+      setSuggestions([mockSuggestion]);
+      setIsGenerating(false);
       
       toast({
         title: "Suggestions Generated",
         description: "Content suggestions have been created based on your keywords",
         variant: "default"
       });
-    } catch (error) {
-      console.error("Error generating suggestions:", error);
-      setApiError(error instanceof Error ? error.message : "Unknown error occurred");
-      toast({
-        title: "Generation Error",
-        description: error instanceof Error ? error.message : "Failed to generate content suggestions",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGenerating(false);
-    }
+    }, 2000);
   };
 
   return (
@@ -214,16 +204,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               {isGenerating ? 'Generating...' : 'Generate Suggestions'}
             </Button>
           </div>
-          
-          {apiError && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>API Error</AlertTitle>
-              <AlertDescription>
-                {apiError}
-              </AlertDescription>
-            </Alert>
-          )}
           
           {isGenerating && (
             <div className="space-y-4 mb-6">

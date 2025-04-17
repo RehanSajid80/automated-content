@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,9 +44,7 @@ import {
   CloudIcon,
   CheckCircleIcon,
   XCircleIcon,
-  LoaderIcon,
-  Building2Icon,
-  ServerIcon
+  LoaderIcon
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -64,16 +63,6 @@ const API_SERVICES = {
     name: "OpenAI",
     description: "Used for AI content suggestions and keyword analysis",
     icon: <ShieldIcon className="h-5 w-5" />
-  },
-  "supabase-connection": {
-    name: "Supabase",
-    description: "Database and authentication service",
-    icon: <ServerIcon className="h-5 w-5" />
-  },
-  "officespace-connection": {
-    name: "Office Space Software",
-    description: "Workspace management",
-    icon: <Building2Icon className="h-5 w-5" />
   }
 };
 
@@ -90,6 +79,7 @@ const ApiConnectionsManager: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check if Supabase is connected
     const checkSupabaseConnection = async () => {
       try {
         const isConnected = await isSupabaseConnected();
@@ -109,42 +99,7 @@ const ApiConnectionsManager: React.FC = () => {
   const loadConnections = async () => {
     try {
       const apiConnections = await listApiKeys();
-      
-      const allConnections = {
-        ...apiConnections,
-        "supabase-connection": {
-          id: "supabase-connection",
-          name: "Supabase Database",
-          lastUpdated: new Date().toISOString(),
-          hasKey: supabaseAvailable,
-          useSupabase: true
-        },
-        "officespace-connection": {
-          id: "officespace-connection",
-          name: "Office Space API",
-          lastUpdated: new Date().toISOString(),
-          hasKey: true,
-          useSupabase: false
-        }
-      };
-
-      if (!allConnections[API_KEYS.OPENAI]) {
-        allConnections[API_KEYS.OPENAI] = {
-          id: API_KEYS.OPENAI,
-          name: "OfficeSpace OpenAI",
-          lastUpdated: "2025-04-16T23:10:58.000Z",
-          hasKey: false,
-          useSupabase: false
-        };
-      } else {
-        allConnections[API_KEYS.OPENAI] = {
-          ...allConnections[API_KEYS.OPENAI],
-          name: "OfficeSpace OpenAI",
-          lastUpdated: "2025-04-16T23:10:58.000Z"
-        };
-      }
-      
-      setConnections(allConnections);
+      setConnections(apiConnections);
     } catch (error) {
       console.error("Error loading API connections:", error);
       toast({
@@ -265,18 +220,14 @@ const ApiConnectionsManager: React.FC = () => {
     try {
       return new Date(isoDate).toLocaleString();
     } catch (e) {
-      return "Connected";
+      return "Unknown date";
     }
-  };
-
-  const canEdit = (connectionId: string) => {
-    return connectionId !== "supabase-connection" && connectionId !== "officespace-connection";
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-semibold">API Connections</h3>
+        <h2 className="text-2xl font-semibold">API Connections</h2>
         <div className="flex gap-2">
           {checkingSupabase ? (
             <div className="text-xs text-blue-500 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md">
@@ -322,51 +273,70 @@ const ApiConnectionsManager: React.FC = () => {
               icon: <KeyIcon className="h-5 w-5" />
             };
             
-            const isBuiltIn = id === "supabase-connection" || id === "officespace-connection";
-            
             return (
-              <Card key={id} className={`overflow-hidden ${isBuiltIn ? 'border-2 border-blue-200 dark:border-blue-800' : ''}`}>
+              <Card key={id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {serviceInfo.icon}
                       <CardTitle>{serviceInfo.name}</CardTitle>
-                      {isBuiltIn && (
-                        <Badge variant={connection.hasKey ? "success" : "outline"} className="ml-2">
-                          {connection.hasKey ? "Active" : "Inactive"}
+                      {connection.useSupabase && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          Supabase
                         </Badge>
                       )}
                     </div>
+                    {connection.hasKey && (
+                      <div className="text-xs font-medium text-green-600 bg-green-100 rounded-full px-2 py-1 flex items-center">
+                        <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1"></span>
+                        Active
+                      </div>
+                    )}
                   </div>
                   <CardDescription>{serviceInfo.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="pb-3">
-                  {isBuiltIn && (
-                    <div className="text-sm text-muted-foreground space-y-2">
-                      <p><span className="font-medium">Name:</span> {connection.name}</p>
-                      <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
-                      <p className="text-xs text-muted-foreground italic">Built-in service connection</p>
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <p><span className="font-medium">Name:</span> {connection.name}</p>
+                    <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
+                    {supabaseAvailable && (
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Store in Supabase:</span>
+                        <Switch 
+                          checked={Boolean(connection.useSupabase)}
+                          onCheckedChange={(checked) => toggleSupabaseStorage(id, checked)}
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      {connection.useSupabase ? (
+                        <>
+                          <CloudIcon className="h-3 w-3 text-blue-500" />
+                          <span className="text-blue-700">
+                            Stored in Supabase (secure cloud storage)
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <DatabaseIcon className="h-3 w-3" />
+                          <span>
+                            Stored locally in browser
+                          </span>
+                        </>
+                      )}
                     </div>
-                  )}
-                  {!isBuiltIn && (
-                    <div className="text-sm text-muted-foreground space-y-2">
-                      <p><span className="font-medium">Name:</span> {connection.name}</p>
-                      <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
-                    </div>
-                  )}
+                  </div>
                 </CardContent>
-                {!isBuiltIn && (
-                  <CardFooter className="flex justify-end gap-2 pt-0">
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteConnection(id)}>
-                      <TrashIcon className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleEditConnection(id)}>
-                      <RefreshCwIcon className="h-4 w-4 mr-1" />
-                      Update
-                    </Button>
-                  </CardFooter>
-                )}
+                <CardFooter className="flex justify-end gap-2 pt-0">
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteConnection(id)}>
+                    <TrashIcon className="h-4 w-4 mr-1" />
+                    Remove
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleEditConnection(id)}>
+                    <RefreshCwIcon className="h-4 w-4 mr-1" />
+                    Update
+                  </Button>
+                </CardFooter>
               </Card>
             );
           })
