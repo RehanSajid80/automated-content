@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -24,10 +25,20 @@ const Index = () => {
       setActiveTab('content');
       setSelectedTopicArea(event.detail.topicArea);
     };
+    
+    const handleNavigateToTab = (event: CustomEvent<{ tab: string }>) => {
+      setActiveTab(event.detail.tab);
+      if (event.detail.tab === 'dashboard') {
+        setSelectedTopicArea(null);
+      }
+    };
 
     window.addEventListener('navigate-to-content', handleNavigateToContent as EventListener);
+    window.addEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
+    
     return () => {
       window.removeEventListener('navigate-to-content', handleNavigateToContent as EventListener);
+      window.removeEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
     };
   }, []);
 

@@ -122,6 +122,11 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
       // Force a refresh of any components that show content from Supabase
       window.dispatchEvent(new CustomEvent('content-updated'));
 
+      // Navigate back to the dashboard after content creation
+      window.dispatchEvent(new CustomEvent('navigate-to-tab', { 
+        detail: { tab: 'dashboard' } 
+      }));
+
     } catch (error) {
       console.error('Error creating content:', error);
       toast({
