@@ -1,4 +1,3 @@
-
 import { API_KEYS, getApiKey } from "./apiKeyUtils";
 
 interface ContentGenerationParams {
@@ -20,32 +19,47 @@ export async function generateContentByType(params: ContentGenerationParams): Pr
 
   switch (params.contentType) {
     case "pillar":
-      systemPrompt = "You are an expert content writer specializing in office space and asset management technology. Your writing is authoritative, well-researched, and valuable to professionals in the field. Create content that demonstrates expertise, builds trust, and positions the brand as an industry leader. Focus on providing specific actionable insights and practical examples throughout.";
-      userPrompt = `Create an in-depth, comprehensive guide about "${params.mainKeyword}" that is AT LEAST ${params.minWords || 1500} words. 
+      systemPrompt = "You are an expert content writer specializing in office space and asset management technology. Your writing is authoritative, well-researched, and valuable to professionals in the field. Create content that demonstrates expertise while maintaining engaging, readable style with concise headlines and comprehensive content. Focus on providing specific actionable insights and practical examples throughout.";
+      userPrompt = `Create an in-depth, expert guide about "${params.mainKeyword}" that is AT LEAST ${params.minWords || 1500} words. 
+
+TITLE REQUIREMENTS:
+- Create a concise, impactful title (maximum 60 characters)
+- Make it action-oriented and benefit-focused
+- Avoid long, complex phrases
+- Example format: "Office Asset Management: A Strategic Guide" instead of "The Ultimate Guide to Asset Management in Office Spaces: Explore the foundational elements..."
 
 CONTENT STRUCTURE:
-1. Start with a compelling introduction that establishes the importance of ${params.mainKeyword} and outlines what the reader will learn
-2. Create at least 5-7 major sections with descriptive H2 headings
-3. Include relevant H3 subheadings within each section to organize information logically
-4. End with a strong conclusion summarizing key points and providing next steps
+1. Start with a compelling executive summary (2-3 short paragraphs)
+2. Create 6-8 major sections with clear H2 headings
+3. Include relevant H3 subheadings within each section
+4. End with actionable takeaways and next steps
 
 CONTENT REQUIREMENTS:
-- Include concrete examples, case studies, and specific scenarios throughout
-- Provide practical, actionable advice that readers can implement immediately
-- Cite specific industry statistics and research findings (you can create realistic examples)
-- Address common challenges and provide detailed solutions
-- Include pros and cons analysis where appropriate
-- Discuss future trends and innovations in this area
-- Naturally incorporate these keywords throughout: ${params.keywords.join(", ")}
+- Provide concrete examples from the office space management industry
+- Include relevant statistics and research findings
+- Address ROI and cost-benefit considerations
+- Discuss integration with existing office management systems
+- Cover best practices and common pitfalls
+- Include specific OfficeSpace Software features where relevant
+- Naturally incorporate these keywords: ${params.keywords.join(", ")}
+
+SECTIONS TO INCLUDE:
+- Current challenges in office asset management
+- Technology solutions and integrations
+- Implementation strategies
+- ROI and performance metrics
+- Future trends and innovations
+- Case studies and success stories
+- Best practices and optimization tips
 
 CONTENT STYLE:
-- Write in a professional but conversational tone
-- Use active voice and second-person perspective where appropriate
-- Break up text with bullet points and numbered lists for better readability
-- Ensure all content is factually accurate and valuable to industry professionals
-- Format in proper Markdown with headings (H1, H2, H3), lists, and emphasis
+- Use clear, professional language
+- Break up text with bullet points and numbered lists
+- Include specific examples and scenarios
+- Focus on practical implementation
+- Target facility managers and operations leaders
 
-The content MUST be AT LEAST ${params.minWords || 1500} words and provide significant value to office space professionals.`;
+Format in proper Markdown with clear H1, H2, H3 headings, lists, and emphasis. The content MUST be AT LEAST ${params.minWords || 1500} words.`;
       break;
 
     case "social":
@@ -145,7 +159,7 @@ The final document should be comprehensive, easy to follow, and serve as a valua
       const wordCount = countWords(generatedContent);
       console.log(`Generated ${params.contentType} content with ${wordCount} words`);
       
-      if (wordCount < (params.minWords || 1200)) {
+      if (wordCount < (params.minWords || 1500)) {
         console.log("Content too short, regenerating with more detailed instructions...");
         return generatePillarContentWithExtension(apiKey, params, generatedContent);
       }
@@ -158,12 +172,10 @@ The final document should be comprehensive, easy to follow, and serve as a valua
   }
 }
 
-// Count words in a string
 function countWords(text: string): number {
   return text.split(/\s+/).filter(word => word.length > 0).length;
 }
 
-// Generate extended pillar content if initial content is too short
 async function generatePillarContentWithExtension(
   apiKey: string, 
   params: ContentGenerationParams, 
