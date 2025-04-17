@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ApiConnectionsManager from "./components/settings/ApiConnectionsManager";
 
+// Create a new query client instance
 const queryClient = new QueryClient();
 
 const App = () => (

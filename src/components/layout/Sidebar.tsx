@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   HomeIcon, 
@@ -11,7 +10,7 @@ import {
   BarChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface SidebarProps {
   className?: string;
@@ -26,6 +25,8 @@ const Sidebar: React.FC<SidebarProps> = ({ className, activeTab = "dashboard", o
       onTabChange(tab);
     }
   };
+
+  const location = useLocation();
 
   return (
     <aside 
@@ -109,7 +110,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className, activeTab = "dashboard", o
           <nav className="space-y-1">
             <Link 
               to="/api-connections" 
-              className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium",
+                location.pathname === "/api-connections" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              )}
             >
               <SettingsIcon size={16} />
               <span>API Connections</span>
