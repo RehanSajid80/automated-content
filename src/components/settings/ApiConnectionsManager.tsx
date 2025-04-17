@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,12 +67,12 @@ const API_SERVICES = {
   },
   "supabase-connection": {
     name: "Supabase",
-    description: "Database and authentication service",
+    description: "Backend services",
     icon: <ServerIcon className="h-5 w-5" />
   },
   "officespace-connection": {
     name: "Office Space Software",
-    description: "Workspace management integration",
+    description: "Workspace management",
     icon: <Building2Icon className="h-5 w-5" />
   }
 };
@@ -253,7 +252,7 @@ const ApiConnectionsManager: React.FC = () => {
     try {
       return new Date(isoDate).toLocaleString();
     } catch (e) {
-      return "Unknown date";
+      return "Connected";
     }
   };
 
@@ -320,61 +319,29 @@ const ApiConnectionsManager: React.FC = () => {
                     <div className="flex items-center gap-2">
                       {serviceInfo.icon}
                       <CardTitle>{serviceInfo.name}</CardTitle>
-                      {isBuiltIn && (
-                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                          Built-in
-                        </Badge>
-                      )}
-                      {connection.useSupabase && !isBuiltIn && (
-                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                          Supabase
-                        </Badge>
+                      {isBuiltIn && connection.hasKey && (
+                        <div className="text-xs font-medium text-green-600 bg-green-100 rounded-full px-2 py-1 flex items-center">
+                          <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1"></span>
+                          Connected
+                        </div>
                       )}
                     </div>
-                    {connection.hasKey ? (
-                      <div className="text-xs font-medium text-green-600 bg-green-100 rounded-full px-2 py-1 flex items-center">
-                        <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1"></span>
-                        Active
-                      </div>
-                    ) : (
-                      <div className="text-xs font-medium text-red-600 bg-red-100 rounded-full px-2 py-1 flex items-center">
-                        <span className="w-1.5 h-1.5 bg-red-600 rounded-full mr-1"></span>
-                        Inactive
-                      </div>
-                    )}
                   </div>
                   <CardDescription>{serviceInfo.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="pb-3">
                   <div className="text-sm text-muted-foreground space-y-2">
-                    <p><span className="font-medium">Name:</span> {connection.name}</p>
-                    <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
-                    {!isBuiltIn && supabaseAvailable && (
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">Store in Supabase:</span>
-                        <Switch 
-                          checked={Boolean(connection.useSupabase)}
-                          onCheckedChange={(checked) => toggleSupabaseStorage(id, checked)}
-                        />
-                      </div>
+                    {!isBuiltIn && (
+                      <>
+                        <p><span className="font-medium">Name:</span> {connection.name}</p>
+                        <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
+                      </>
                     )}
-                    <div className="flex items-center gap-2 text-xs mt-1">
-                      {connection.useSupabase ? (
-                        <>
-                          <CloudIcon className="h-3 w-3 text-blue-500" />
-                          <span className="text-blue-700">
-                            {isBuiltIn ? "Built-in service connection" : "Stored in Supabase (secure cloud storage)"}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <DatabaseIcon className="h-3 w-3" />
-                          <span>
-                            {isBuiltIn ? "Default system connection" : "Stored locally in browser"}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    {isBuiltIn && (
+                      <p className="text-muted-foreground">
+                        {connection.hasKey ? "Active and integrated" : "Not configured"}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
                 {!isBuiltIn && (
