@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -176,6 +175,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         selectedKeywords.includes(kw.keyword)
       );
       
+      console.log("Generating content for keywords:", filteredKeywords);
       const results = await getContentSuggestions(filteredKeywords, undefined, selectedModel);
       setSuggestions(results);
       
@@ -238,7 +238,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         <CardHeader>
           <CardTitle>AI Content Suggestions</CardTitle>
           <CardDescription>
-            Use OpenAI to analyze your keywords and suggest content topics
+            Use OpenAI to analyze your keywords and suggest content topics for officespacesoftware.com
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -408,11 +408,16 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
             <Button
               onClick={generateSuggestions}
               disabled={isLoading || selectedKeywords.length === 0 || !hasApiKey}
-              className="w-full"
+              className="w-full relative overflow-hidden"
             >
-              {isLoading
-                ? "Generating Suggestions..."
-                : `Generate Content Suggestions (${selectedKeywords.length} keywords)`}
+              <span className={isLoading ? "invisible" : ""}>
+                {`Generate Content Suggestions (${selectedKeywords.length} keywords)`}
+              </span>
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
             </Button>
           </div>
         </CardContent>
