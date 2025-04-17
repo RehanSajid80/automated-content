@@ -10,7 +10,9 @@ import {
   saveApiKey,
   updateApiKey,
   removeApiKey,
-  listApiKeys
+  listApiKeys,
+  isSupabaseConnected,
+  setSupabasePreference
 } from "@/utils/apiKeyUtils";
 import {
   Card,
@@ -37,14 +39,18 @@ import {
   PlusCircleIcon,
   RefreshCwIcon,
   ShieldIcon,
-  TrashIcon
+  TrashIcon,
+  DatabaseIcon,
+  CloudIcon
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface ApiConnection {
   id: string;
   name: string;
   lastUpdated: string;
   hasKey: boolean;
+  useSupabase?: boolean;
 }
 
 const API_SERVICES = {
@@ -62,9 +68,13 @@ const ApiConnectionsManager: React.FC = () => {
   const [apiKeyValue, setApiKeyValue] = useState("");
   const [connectionName, setConnectionName] = useState("");
   const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
+  const [useSupabase, setUseSupabase] = useState(false);
+  const [supabaseAvailable, setSupabaseAvailable] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check if Supabase is connected
+    setSupabaseAvailable(isSupabaseConnected());
     loadConnections();
   }, []);
 
@@ -77,6 +87,7 @@ const ApiConnectionsManager: React.FC = () => {
     setCurrentConnectionId(API_KEYS.OPENAI);
     setConnectionName("OpenAI API");
     setApiKeyValue("");
+    setUseSupabase(false);
     setIsDialogOpen(true);
   };
 
@@ -86,6 +97,7 @@ const ApiConnectionsManager: React.FC = () => {
       setCurrentConnectionId(connectionId);
       setConnectionName(connection.name);
       setApiKeyValue(connection.key);
+      setUseSupabase(connection.useSupabase || false);
       setIsDialogOpen(true);
     }
   };
@@ -113,9 +125,9 @@ const ApiConnectionsManager: React.FC = () => {
 
     const existingConnection = getApiKeyInfo(currentConnectionId);
     if (existingConnection) {
-      updateApiKey(currentConnectionId, apiKeyValue.trim(), connectionName);
+      updateApiKey(currentConnectionId, apiKeyValue.trim(), connectionName, useSupabase);
     } else {
-      saveApiKey(currentConnectionId, apiKeyValue.trim(), connectionName);
+      saveApiKey(currentConnectionId, apiKeyValue.trim(), connectionName, useSupabase);
     }
 
     loadConnections();
@@ -130,6 +142,17 @@ const ApiConnectionsManager: React.FC = () => {
     setIsApiKeyVisible(!isApiKeyVisible);
   };
 
+  const toggleSupabaseStorage = (connectionId: string, useSupabaseValue: boolean) => {
+    setSupabasePreference(connectionId, useSupabaseValue);
+    loadConnections();
+    toast({
+      title: useSupabaseValue ? "Using Supabase Storage" : "Using Local Storage",
+      description: useSupabaseValue 
+        ? "This API key will be stored in Supabase when connected" 
+        : "This API key will be stored locally",
+    });
+  };
+
   const formatDate = (isoDate: string) => {
     try {
       return new Date(isoDate).toLocaleString();
@@ -142,10 +165,18 @@ const ApiConnectionsManager: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">API Connections</h2>
-        <Button onClick={handleAddNew} variant="outline" size="sm">
-          <PlusCircleIcon className="h-4 w-4 mr-2" />
-          New Connection
-        </Button>
+        <div className="flex gap-2">
+          {!supabaseAvailable && (
+            <div className="text-xs text-orange-500 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-md">
+              <DatabaseIcon className="h-3 w-3" />
+              <span>Supabase not connected</span>
+            </div>
+          )}
+          <Button onClick={handleAddNew} variant="outline" size="sm">
+            <PlusCircleIcon className="h-4 w-4 mr-2" />
+            New Connection
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4">
@@ -187,9 +218,26 @@ const ApiConnectionsManager: React.FC = () => {
                   <CardDescription>{serviceInfo.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="pb-3">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground space-y-2">
                     <p><span className="font-medium">Name:</span> {connection.name}</p>
                     <p><span className="font-medium">Last Updated:</span> {formatDate(connection.lastUpdated)}</p>
+                    {supabaseAvailable && (
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Store in Supabase:</span>
+                        <Switch 
+                          checked={Boolean(connection.useSupabase)}
+                          onCheckedChange={(checked) => toggleSupabaseStorage(id, checked)}
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      <CloudIcon className="h-3 w-3" />
+                      <span>
+                        {connection.useSupabase 
+                          ? "Stored in Supabase (secure cloud storage)" 
+                          : "Stored locally in browser"}
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2 pt-0">
@@ -257,9 +305,22 @@ const ApiConnectionsManager: React.FC = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Your API key is stored locally on your device and not sent to our servers
+                {supabaseAvailable 
+                  ? "Your API key can be stored securely in Supabase" 
+                  : "Your API key is stored locally on your device"}
               </p>
             </div>
+            
+            {supabaseAvailable && (
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="use-supabase" 
+                  checked={useSupabase}
+                  onCheckedChange={setUseSupabase}
+                />
+                <Label htmlFor="use-supabase">Store in Supabase (secure cloud storage)</Label>
+              </div>
+            )}
           </div>
           
           <DialogFooter className="gap-2 sm:gap-0">
