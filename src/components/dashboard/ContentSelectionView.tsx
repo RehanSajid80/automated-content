@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ interface ContentSelectionViewProps {
 export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) => {
   const [contentItems, setContentItems] = React.useState<ContentItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -66,29 +68,69 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
     }
 
     try {
+      setIsCreating(true);
+      
+      // First, mark the items as selected in the database
       const { error } = await supabase
         .from('content_library')
         .update({ is_selected: true })
         .in('id', selectedItems);
 
       if (error) throw error;
+      
+      // Fetch the selected content items to display in the confirmation toast
+      const { data: selectedContentData, error: fetchError } = await supabase
+        .from('content_library')
+        .select('title, content_type')
+        .in('id', selectedItems);
+        
+      if (fetchError) throw fetchError;
+      
+      // Group content by type for a better toast message
+      const contentSummary = selectedContentData.reduce((acc, item) => {
+        const type = item.content_type;
+        if (!acc[type]) acc[type] = 0;
+        acc[type]++;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const summaryText = Object.entries(contentSummary)
+        .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
+        .join(', ');
 
       toast({
-        title: "Content Selected",
-        description: `${selectedItems.length} content item(s) marked for creation`,
+        title: "Content Created",
+        description: `Successfully created ${summaryText} for "${topicArea}"`,
       });
 
+      // Refresh the content items to show updated state
+      await loadContentItems();
+      
+      // Clear selection after successful creation
+      setSelectedItems([]);
+      
+      // Dispatch event to notify other components about content creation
+      window.dispatchEvent(new CustomEvent('content-created', { 
+        detail: { selectedItems, topicArea } 
+      }));
+      
+      // Also dispatch the standard content-selected event for compatibility
       window.dispatchEvent(new CustomEvent('content-selected', { 
         detail: { selectedItems, topicArea } 
       }));
+      
+      // Force a refresh of any components that show content from Supabase
+      window.dispatchEvent(new CustomEvent('content-updated'));
 
     } catch (error) {
-      console.error('Error selecting content:', error);
+      console.error('Error creating content:', error);
       toast({
         title: "Error",
-        description: "Failed to select content items",
+        description: "Failed to create content items",
         variant: "destructive",
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -142,10 +184,20 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
           <Button 
             onClick={createSelectedContent}
             className="flex items-center gap-2 shadow-lg"
+            disabled={isCreating}
           >
-            <CheckSquare2Icon className="h-5 w-5" />
-            Create {selectedItems.length} Selected Content Items
-            <ArrowRightIcon className="h-4 w-4" />
+            {isCreating ? (
+              <>
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+                Creating Content...
+              </>
+            ) : (
+              <>
+                <CheckSquare2Icon className="h-5 w-5" />
+                Create {selectedItems.length} Selected Content Items
+                <ArrowRightIcon className="h-4 w-4" />
+              </>
+            )}
           </Button>
         </div>
       )}
