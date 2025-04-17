@@ -89,6 +89,8 @@ export async function getContentSuggestions(
       }
     `;
 
+    console.log("Making OpenAI API request with prompt:", prompt.substring(0, 100) + "...");
+
     // Make the API call to OpenAI
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -114,6 +116,7 @@ export async function getContentSuggestions(
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("OpenAI API error:", errorData);
       const errorMessage = errorData.error?.message || `API error (${response.status})`;
       
       // Check for common API key issues
@@ -151,6 +154,7 @@ export async function getContentSuggestions(
     }
 
     const data = await response.json();
+    console.log("OpenAI API response:", data);
     const content = data.choices[0]?.message?.content;
 
     if (!content) {
@@ -194,7 +198,7 @@ export async function getContentSuggestions(
   }
 }
 
-// New function to handle n8n AI agent requests
+// Function to handle n8n AI agent requests
 async function getContentSuggestionsFromN8n(
   keywordData: any[],
   agentKey: string
