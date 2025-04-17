@@ -1,4 +1,3 @@
-
 import React from "react";
 import { BarChart, BarChart3, TrendingUp, Eye, Share, ThumbsUp, ExternalLink, FileText, Building2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,45 +8,45 @@ interface ContentAnalyticsProps {
 }
 
 const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
-  // Mock data for content performance
+  // Updated mock data for content performance with reduced numbers
   const contentPerformance = [
     { 
       title: "Office Space Planning Best Practices", 
       type: "Pillar Content",
-      views: 2456,
-      shares: 123,
+      views: 456,
+      shares: 23,
       engagement: 78,
       trend: "up" 
     },
     { 
       title: "Hybrid Workplace Management Guide", 
       type: "Pillar Content",
-      views: 1879,
-      shares: 95,
+      views: 379,
+      shares: 19,
       engagement: 82,
       trend: "up"
     },
     { 
       title: "Desk Booking Systems Comparison", 
       type: "Support Page",
-      views: 3240,
-      shares: 87,
+      views: 540,
+      shares: 17,
       engagement: 65,
       trend: "neutral"
     },
     { 
       title: "Optimizing Meeting Room Utilization", 
       type: "Support Page",
-      views: 1560,
-      shares: 42,
+      views: 260,
+      shares: 12,
       engagement: 59,
       trend: "up"
     },
     { 
       title: "Workplace Analytics Tools Guide", 
       type: "Support Page",
-      views: 980,
-      shares: 36,
+      views: 180,
+      shares: 9,
       engagement: 71,
       trend: "down"
     },
