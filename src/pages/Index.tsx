@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -77,17 +78,26 @@ const Index = () => {
               </div>
               
               <div className="space-y-10">
-                <div className="rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-300">
-                  <h3 className="text-xl font-semibold mb-6">Office Space SEO Keywords</h3>
-                  <KeywordResearch 
-                    onKeywordsSelected={handleKeywordsSelected} 
-                    onKeywordDataUpdate={handleKeywordDataUpdated}
-                  />
-                </div>
-                
-                <div className="rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-400">
-                  <h3 className="text-xl font-semibold mb-6">AI Content Generator</h3>
-                  <ContentGenerator keywords={selectedKeywords} />
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="flex flex-col space-y-6">
+                    <div className="flex flex-col space-y-2">
+                      <h3 className="text-xl font-semibold">Keyword Selection & Content Generation</h3>
+                      <p className="text-muted-foreground">
+                        Select keywords from your SEMrush data to generate optimized content
+                      </p>
+                    </div>
+
+                    <KeywordResearch 
+                      onKeywordsSelected={handleKeywordsSelected} 
+                      onKeywordDataUpdate={handleKeywordDataUpdated}
+                    />
+
+                    {selectedKeywords.length > 0 && (
+                      <div className="pt-6 border-t border-border">
+                        <ContentGenerator keywords={selectedKeywords} />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <ManualContentCreator />
