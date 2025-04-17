@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +60,7 @@ interface ApiConnection {
 const API_SERVICES = {
   [API_KEYS.OPENAI]: {
     name: "OpenAI",
-    description: "Used for AI content suggestions and keyword analysis",
+    description: "Used for AI content suggestions and keyword analysis for officespacesoftware.com",
     icon: <ShieldIcon className="h-5 w-5" />
   }
 };
@@ -79,7 +78,6 @@ const ApiConnectionsManager: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if Supabase is connected
     const checkSupabaseConnection = async () => {
       try {
         const isConnected = await isSupabaseConnected();
