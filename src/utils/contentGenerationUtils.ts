@@ -262,3 +262,93 @@ async function generatePillarContentWithExtension(
     return initialContent; // Return the original content if extension fails
   }
 }
+
+/**
+ * Generate content suggestions based on keywords analysis
+ */
+export const getContentSuggestions = async (
+  keywords: KeywordData[],
+  toast?: any,
+  model: string = OPENAI_MODELS.PREMIUM
+): Promise<ContentSuggestion[]> => {
+  const apiKey = await getApiKey(API_KEYS.OPENAI);
+  if (!apiKey) {
+    throw new Error("OpenAI API key not found");
+  }
+
+  const keywordsText = keywords.map(k => 
+    `"${k.keyword}" (search volume: ${k.volume || 'unknown'}, trend: ${k.trend || 'unknown'}, competitiveness: ${k.difficulty || 'unknown'})`
+  ).join(", ");
+  
+  const prompt = `
+    You are a senior content strategist for Office Space Software. Analyze these SEO keywords in depth: ${keywordsText}.
+    
+    For each logical topic group in these keywords, create high-value content recommendations:
+    
+    1. Create a descriptive topic area name that captures the essence of the keyword group
+    2. Analyze search volume trends and competitive landscape
+    3. Provide 2-3 pillar content ideas (comprehensive guides of 1500+ words) with detailed descriptions
+    4. Suggest 3-4 supporting page ideas (focused content that addresses specific aspects)
+    5. Create 2-3 meta tag ideas optimized for SEO and click-through rates
+    6. Develop 2-3 engaging social media post ideas with platform-specific formatting
+    7. Include a detailed reasoning section explaining:
+       - Why these keywords are valuable for the business
+       - Search volume analysis and trends
+       - Competitive landscape insights
+       - Strategic value of the content suggestions
+    
+    Ensure all recommendations are:
+    - Highly specific to workplace management/office space software
+    - Tailored to business professionals and decision-makers
+    - Focused on solving real business challenges
+    - Aligned with current industry trends and best practices
+    
+    Format your response as a JSON array where each object has the following structure:
+    {
+      "topicArea": "Specific, descriptive name for the topic area",
+      "searchAnalysis": {
+        "totalVolume": number,
+        "averageDifficulty": number,
+        "trendingKeywords": string[],
+        "competitiveLandscape": string
+      },
+      "pillarContent": ["Detailed pillar content idea 1", "Detailed pillar content idea 2"],
+      "supportPages": ["Specific support page idea 1", "Specific support page idea 2", "Specific support page idea 3"],
+      "metaTags": ["Optimized meta tag 1", "Optimized meta tag 2"],
+      "socialMedia": ["Engaging social post idea 1", "Engaging social post idea 2"],
+      "reasoning": "Strategic explanation of why these content pieces will resonate with the target audience and address their needs"
+    }
+    
+    IMPORTANT: Return ONLY the JSON array with no additional text, comments, or explanations.
+  `;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const suggestions = data.choices[0].message.content;
+    
+    return JSON.parse(suggestions);
+  } catch (error) {
+    console.error("Error generating content suggestions:", error);
+    throw new Error("Failed to generate content suggestions");
+  }
+}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -53,6 +52,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import ApiConnectionsManager from "../settings/ApiConnectionsManager";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -61,6 +61,12 @@ interface ContentSuggestion {
   metaTags: string[];
   socialMedia: string[];
   reasoning: string;
+  searchAnalysis?: {
+    totalVolume?: number;
+    averageDifficulty?: number;
+    trendingKeywords?: string[];
+    competitiveLandscape?: string;
+  };
 }
 
 interface ContentSuggestionsProps {
@@ -558,8 +564,29 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
           {suggestions.map((suggestion, index) => (
             <Card key={index} className="overflow-hidden">
               <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">{suggestion.topicArea}</CardTitle>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{suggestion.topicArea}</CardTitle>
+                    {suggestion.searchAnalysis && (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <TrendingUp className="h-4 w-4 text-green-500" />
+                          <span className="font-medium">Search Volume:</span>
+                          <span>{suggestion.searchAnalysis.totalVolume?.toLocaleString() || 'N/A'}</span>
+                        </div>
+                        {suggestion.searchAnalysis.trendingKeywords?.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {suggestion.searchAnalysis.trendingKeywords.map((keyword, idx) => (
+                              <Badge key={idx} variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                <TrendingUp className="h-3 w-3 mr-1" />
+                                {keyword}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -572,7 +599,14 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                     )}
                   </Button>
                 </div>
-                <CardDescription>{suggestion.reasoning}</CardDescription>
+                <div className="mt-3 text-sm text-muted-foreground">
+                  <Alert className="bg-secondary/50 border-none">
+                    <AlertTitle className="text-sm font-medium">AI Reasoning</AlertTitle>
+                    <AlertDescription className="mt-2 text-sm">
+                      {suggestion.reasoning}
+                    </AlertDescription>
+                  </Alert>
+                </div>
               </CardHeader>
               <Collapsible open={openCards[index]} className="w-full">
                 <CollapsibleContent>
