@@ -63,7 +63,7 @@ Format in proper Markdown with clear H1, H2, H3 headings, lists, and emphasis. T
       break;
 
     case "social":
-      systemPrompt = "You are a social media content strategist for B2B SaaS companies specializing in workplace technology. You create engaging, shareable content that drives engagement and demonstrates thought leadership.";
+      systemPrompt = "You are a social media content strategist for B2B SaaS companies specializing in workplace technology. You create engaging, shareable content that drives engagement and demonstrates thought leadership. You incorporate relevant emojis to improve engagement while maintaining professionalism.";
       userPrompt = `Create a set of 6 engaging social media posts about "${params.mainKeyword}" - 3 for LinkedIn and 3 for Twitter.
 
 FOR EACH PLATFORM:
@@ -73,11 +73,36 @@ FOR EACH PLATFORM:
 
 CONTENT REQUIREMENTS:
 - Each post should be unique and incorporate different aspects of these keywords: ${params.keywords.join(", ")}
-- LinkedIn posts should be professional, detailed (200-300 characters), and include a strong call-to-action
-- Twitter posts should be concise (under 280 characters) while still providing value
+- LinkedIn posts should be professional, detailed (200-300 characters), and include relevant emojis (2-3 per post) from this set:
+  🏢 (office building)
+  📊 (analytics/data)
+  💡 (insights/ideas)
+  ✨ (highlights/features)
+  🚀 (growth/success)
+  📈 (positive trends)
+  🎯 (targets/goals)
+  🤝 (partnerships/collaboration)
+  💼 (business/workplace)
+  ⭐ (excellence/quality)
+  ✅ (completion/success)
+  🔑 (key points/solutions)
+  
+- Twitter posts should be concise (under 280 characters) and use casual but professional emojis (1-2 per post) from this set:
+  📱 (mobile/tech)
+  🔍 (search/discover)
+  💫 (innovation)
+  🎉 (celebration)
+  👥 (teams/people)
+  📍 (location)
+  💪 (empowerment)
+  🌟 (highlights)
+  ⚡ (quick tips)
+  🎪 (workspace)
+  
 - Include relevant hashtags tailored to each platform (3-5 per post)
-- For LinkedIn, suggest 1-2 appropriate emoji per post where relevant
-- For Twitter, use more casual language while maintaining professionalism
+- Each post should start with the most relevant emoji for its content
+- Space emojis naturally throughout the text, don't cluster them
+- Include a strong call-to-action in each post
 
 Format each post clearly with "LinkedIn:" or "Twitter:" prefix, and separate each post with a line break. Include a brief note about the best time to post each type of content.`;
       break;
