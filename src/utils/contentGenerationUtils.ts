@@ -1,4 +1,6 @@
 import { API_KEYS, getApiKey } from "./apiKeyUtils";
+import { KeywordData } from "./excelUtils";
+import { OPENAI_MODELS } from "./openaiUtils";
 
 interface ContentGenerationParams {
   contentType: string;
@@ -6,6 +8,21 @@ interface ContentGenerationParams {
   keywords: string[];
   targetUrl?: string;
   minWords?: number;
+}
+
+interface ContentSuggestion {
+  topicArea: string;
+  pillarContent: string[];
+  supportPages: string[];
+  metaTags: string[];
+  socialMedia: string[];
+  reasoning: string;
+  searchAnalysis?: {
+    totalVolume?: number;
+    averageDifficulty?: number;
+    trendingKeywords?: string[];
+    competitiveLandscape?: string;
+  };
 }
 
 export async function generateContentByType(params: ContentGenerationParams): Promise<string> {

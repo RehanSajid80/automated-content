@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -31,7 +32,8 @@ import {
   AlertTriangleIcon,
   SparklesIcon,
   CheckSquare2Icon,
-  TrendingUpIcon
+  TrendingUpIcon,
+  TrendingUp
 } from "lucide-react";
 import {
   Dialog,
