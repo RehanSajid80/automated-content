@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, ArrowRight, Upload, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +31,7 @@ const mockKeywords: KeywordData[] = [
 ];
 
 const STORAGE_KEY = 'office-space-keywords';
+const N8N_WEBHOOK_KEY = 'n8n-keyword-sync-webhook-url';
 
 interface KeywordResearchProps {
   className?: string;
@@ -61,6 +61,11 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     trend: "all",
   });
   const [showContentSuggestions, setShowContentSuggestions] = useState(false);
+  const [n8nDialogOpen, setN8nDialogOpen] = useState(false);
+  const [n8nWebhookUrl, setN8nWebhookUrl] = useState(() =>
+    localStorage.getItem(N8N_WEBHOOK_KEY) || ""
+  );
+  const [isSyncingFromN8n, setIsSyncingFromN8n] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -99,7 +104,6 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     setSearchTerm(newFilters.searchTerm);
   };
 
-  // Update the search input handler to also update filter options
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSearchTerm = e.target.value;
     setSearchTerm(newSearchTerm);
@@ -194,6 +198,55 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
+  const handleN8nSync = async () => {
+    if (!n8nWebhookUrl || n8nWebhookUrl.length < 8) {
+      toast({
+        title: "Enter Webhook URL",
+        description: "Please enter your n8n Webhook URL.",
+        variant: "destructive",
+      });
+      setN8nDialogOpen(true);
+      return;
+    }
+    setIsSyncingFromN8n(true);
+    setImportError(null);
+
+    try {
+      localStorage.setItem(N8N_WEBHOOK_KEY, n8nWebhookUrl);
+
+      const resp = await fetch(n8nWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trigger: "sync_keywords", source: "lovable" }),
+      });
+
+      if (!resp.ok) {
+        throw new Error("n8n workflow did not respond successfully");
+      }
+
+      const data = await resp.json();
+      if (!Array.isArray(data)) throw new Error("Unexpected n8n response");
+
+      if (!data[0]?.keyword) throw new Error("No keyword data returned");
+
+      setKeywords(data);
+      toast({
+        title: "Keywords Synced",
+        description: `Imported ${data.length} keywords from n8n workflow.`,
+      });
+      setN8nDialogOpen(false);
+    } catch (err: any) {
+      setImportError(err.message || "Failed to sync keywords from n8n.");
+      toast({
+        title: "Sync failed",
+        description: err.message || "Failed to sync keywords from n8n.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingFromN8n(false);
+    }
+  };
+
   const clearKeywordData = () => {
     if (window.confirm("Are you sure you want to clear all keyword data? This cannot be undone.")) {
       localStorage.removeItem(STORAGE_KEY);
@@ -227,6 +280,58 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
           >
             Reset Data
           </Button>
+          <Dialog open={n8nDialogOpen} onOpenChange={setN8nDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-xs" disabled={isSyncingFromN8n}>
+                {isSyncingFromN8n ? (
+                  <>
+                    <span className="mr-2 animate-spin">⏳</span>
+                    Syncing n8n...
+                  </>
+                ) : (
+                  <>Sync from n8n</>
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Sync Keywords from n8n</DialogTitle>
+                <DialogDescription>
+                  Enter the n8n webhook URL that will return SEMrush keyword data.<br />
+                  This should return a JSON array of keyword objects as shown below.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                {importError && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertTitle>Sync Error</AlertTitle>
+                    <AlertDescription>{importError}</AlertDescription>
+                  </Alert>
+                )}
+                <Input
+                  placeholder="https://your-n8n-instance.com/webhook/keywords"
+                  value={n8nWebhookUrl}
+                  onChange={(e) => setN8nWebhookUrl(e.target.value)}
+                  disabled={isSyncingFromN8n}
+                />
+                <Button
+                  onClick={handleN8nSync}
+                  disabled={isSyncingFromN8n || !n8nWebhookUrl}
+                  className="w-full"
+                >
+                  {isSyncingFromN8n ? "Syncing..." : "Sync Now"}
+                </Button>
+                <div className="text-[11px] text-muted-foreground mt-2">
+                  <b>Expected response:</b>
+                  <pre>
+{`[
+  { "keyword": "office space management software", "volume": 5400, "difficulty": 78, "cpc": 14.5, "trend": "up" }
+]`}
+                  </pre>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="text-xs">
