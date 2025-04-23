@@ -2,19 +2,49 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Webhook } from "lucide-react";
+import { ArrowLeft, Webhook, Braces } from "lucide-react";
 import N8nIntegration from "../integrations/N8nIntegration";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
-import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { API_KEYS, getApiKey, saveApiKey } from "@/utils/apiKeyUtils";
 
 const ApiConnectionsManager = () => {
+  const [openaiApiKey, setOpenaiApiKey] = React.useState("");
   const [semrushWebhookUrl, setSemrushWebhookUrl] = React.useState(() => 
     localStorage.getItem("semrush-webhook-url") || ""
   );
   const { toast } = useToast();
+
+  // Load the OpenAI API key when the component mounts
+  React.useEffect(() => {
+    const loadApiKey = async () => {
+      const key = await getApiKey(API_KEYS.OPENAI);
+      if (key) {
+        setOpenaiApiKey("••••••••••••••••••••••••••");
+      }
+    };
+    
+    loadApiKey();
+  }, []);
+
+  const handleSaveOpenaiKey = async () => {
+    if (openaiApiKey && openaiApiKey !== "••••••••••••••••••••••••••") {
+      await saveApiKey(API_KEYS.OPENAI, openaiApiKey, "OpenAI");
+      setOpenaiApiKey("••••••••••••••••••••••••••");
+      toast({
+        title: "OpenAI API Key Saved",
+        description: "Your OpenAI API key has been saved securely",
+      });
+    } else {
+      toast({
+        title: "API Key Required",
+        description: "Please enter a valid OpenAI API key",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSaveWebhook = () => {
     localStorage.setItem("semrush-webhook-url", semrushWebhookUrl);
@@ -41,6 +71,48 @@ const ApiConnectionsManager = () => {
           </div>
 
           <div className="space-y-6">
+            {/* OpenAI API Key Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Braces className="h-5 w-5" />
+                  OpenAI API Connection
+                </CardTitle>
+                <CardDescription>
+                  Connect your OpenAI API for content generation features
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="openai-api-key" className="text-sm font-medium">
+                    API Key
+                  </label>
+                  <Input
+                    id="openai-api-key"
+                    type="password"
+                    placeholder="Enter your OpenAI API key"
+                    value={openaiApiKey}
+                    onChange={(e) => setOpenaiApiKey(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your API key is stored securely. Find your API key in the 
+                    <a 
+                      href="https://platform.openai.com/api-keys" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline ml-1"
+                    >
+                      OpenAI dashboard
+                    </a>
+                  </p>
+                </div>
+                <Button onClick={handleSaveOpenaiKey} className="w-full sm:w-auto">
+                  Save API Key
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* SEMrush Keyword Sync Section */}
             <Card>
               <CardHeader>
