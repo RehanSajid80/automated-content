@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Sheet,
@@ -155,7 +156,7 @@ const Sidebar = () => {
                   <NavLink
                     key={item.title}
                     to={item.href}
-                    onClick={onClose}
+                    onClick={() => setOpenMobile(false)}
                     className={({ isActive }) =>
                       `flex items-center px-4 py-2.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground ${
                         isActive ? "bg-accent text-accent-foreground font-medium" : "text-foreground"

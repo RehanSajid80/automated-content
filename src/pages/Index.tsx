@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -128,7 +129,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header activeTab={activeTab} onTabChange={handleTabChange} />
-      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
+      <Sidebar />
       
       <main className="pt-[72px] md:pl-[240px] min-h-screen">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
