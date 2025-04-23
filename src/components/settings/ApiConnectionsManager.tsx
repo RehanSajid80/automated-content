@@ -1,9 +1,7 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Webhook, Braces } from "lucide-react";
-import N8nIntegration from "../integrations/N8nIntegration";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +15,6 @@ const ApiConnectionsManager = () => {
   );
   const { toast } = useToast();
 
-  // Load the OpenAI API key when the component mounts
   React.useEffect(() => {
     const loadApiKey = async () => {
       const key = await getApiKey(API_KEYS.OPENAI);
@@ -71,7 +68,6 @@ const ApiConnectionsManager = () => {
           </div>
 
           <div className="space-y-6">
-            {/* OpenAI API Key Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -113,7 +109,6 @@ const ApiConnectionsManager = () => {
               </CardContent>
             </Card>
 
-            {/* SEMrush Keyword Sync Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -145,9 +140,6 @@ const ApiConnectionsManager = () => {
                 </Button>
               </CardContent>
             </Card>
-
-            {/* n8n Integration Section */}
-            <N8nIntegration />
           </div>
         </main>
       </SidebarProvider>
