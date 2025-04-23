@@ -14,6 +14,7 @@ import { KeywordData } from "@/utils/excelUtils";
 import { ContentSelectionView } from "@/components/dashboard/ContentSelectionView";
 import ContentDetailView from "@/components/dashboard/ContentDetailView";
 import { clearCache } from "@/utils/contentLifecycleUtils";
+import { supabase } from "@/utils/supabase";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -23,12 +24,55 @@ const Index = () => {
   const [contentViewMode, setContentViewMode] = useState<"selection" | "detail">("selection");
   const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
   const [contentRefreshTrigger, setContentRefreshTrigger] = useState(0);
+  const [contentStats, setContentStats] = useState({
+    pillarCount: 0,
+    supportCount: 0,
+    metaCount: 0,
+    socialCount: 0
+  });
 
   const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
     if (tab === 'content') {
       setContentRefreshTrigger(prev => prev + 1);
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchContentStats = async () => {
+      try {
+        const { count: pillarCount } = await supabase
+          .from('content_library')
+          .select('id', { count: 'exact' })
+          .eq('content_type', 'pillar');
+
+        const { count: supportCount } = await supabase
+          .from('content_library')
+          .select('id', { count: 'exact' })
+          .eq('content_type', 'support');
+
+        const { count: metaCount } = await supabase
+          .from('content_library')
+          .select('id', { count: 'exact' })
+          .eq('content_type', 'meta');
+
+        const { count: socialCount } = await supabase
+          .from('content_library')
+          .select('id', { count: 'exact' })
+          .eq('content_type', 'social');
+
+        setContentStats({
+          pillarCount: pillarCount || 0,
+          supportCount: supportCount || 0,
+          metaCount: metaCount || 0,
+          socialCount: socialCount || 0
+        });
+      } catch (error) {
+        console.error('Error fetching content stats:', error);
+      }
+    };
+
+    fetchContentStats();
   }, []);
 
   useEffect(() => {
@@ -100,34 +144,34 @@ const Index = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatsCard
                   title="Pillar Content"
-                  value="8"
+                  value={contentStats.pillarCount.toString()}
                   icon={<FileTextIcon size={20} />}
-                  trend="up"
-                  trendValue="3 new this week"
+                  trend={contentStats.pillarCount > 0 ? "up" : "neutral"}
+                  trendValue={contentStats.pillarCount > 0 ? "New content" : "No content"}
                   delay="animation-delay-100"
                 />
                 <StatsCard
                   title="Support Pages"
-                  value="22"
+                  value={contentStats.supportCount.toString()}
                   icon={<Building2 size={20} />}
-                  trend="up"
-                  trendValue="5 new this week"
+                  trend={contentStats.supportCount > 0 ? "up" : "neutral"}
+                  trendValue={contentStats.supportCount > 0 ? "New content" : "No content"}
                   delay="animation-delay-200"
                 />
                 <StatsCard
                   title="Meta Tags"
-                  value="46"
+                  value={contentStats.metaCount.toString()}
                   icon={<Tag size={20} />}
-                  trend="neutral"
-                  trendValue="Same as last week"
+                  trend={contentStats.metaCount > 0 ? "up" : "neutral"}
+                  trendValue={contentStats.metaCount > 0 ? "New content" : "No content"}
                   delay="animation-delay-300"
                 />
                 <StatsCard
                   title="Social Posts"
-                  value="94"
+                  value={contentStats.socialCount.toString()}
                   icon={<Share2 size={20} />}
-                  trend="up"
-                  trendValue="18 new this week"
+                  trend={contentStats.socialCount > 0 ? "up" : "neutral"}
+                  trendValue={contentStats.socialCount > 0 ? "New content" : "No content"}
                   delay="animation-delay-400"
                 />
               </div>
