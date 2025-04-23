@@ -7,17 +7,38 @@ import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { API_KEYS, getApiKey, saveApiKey } from "@/utils/apiKeyUtils";
+import { API_KEYS, getApiKey, saveApiKey, removeApiKey } from "@/utils/apiKeyUtils";
 import { Badge } from "@/components/ui/badge";
 
 const ApiConnectionsManager = () => {
   const [openaiApiKey, setOpenaiApiKey] = React.useState("");
   const [openaiStatus, setOpenaiStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
-  const [semrushWebhookUrl, setSemrushWebhookUrl] = React.useState(() => 
-    localStorage.getItem("semrush-webhook-url") || ""
-  );
+  const [webhookUrl, setWebhookUrl] = React.useState("");
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   const { toast } = useToast();
+
+  // Reset all connections
+  const resetConnections = async () => {
+    try {
+      await removeApiKey(API_KEYS.OPENAI);
+      localStorage.removeItem("semrush-webhook-url");
+      setOpenaiApiKey("");
+      setWebhookUrl("");
+      setOpenaiStatus('checking');
+      setWebhookStatus('checking');
+      
+      toast({
+        title: "Connections Reset",
+        description: "All API connections have been reset successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reset connections",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Check OpenAI connection
   React.useEffect(() => {
@@ -42,6 +63,7 @@ const ApiConnectionsManager = () => {
           setOpenaiStatus('disconnected');
         }
       } catch (error) {
+        console.error('OpenAI connection error:', error);
         setOpenaiStatus('disconnected');
       }
     };
@@ -52,32 +74,33 @@ const ApiConnectionsManager = () => {
   // Check webhook connection
   React.useEffect(() => {
     const checkWebhook = async () => {
-      const url = localStorage.getItem("semrush-webhook-url");
-      if (!url) {
-        setWebhookStatus('disconnected');
-        return;
-      }
-      
       try {
+        const url = localStorage.getItem("semrush-webhook-url");
+        if (!url) {
+          setWebhookStatus('disconnected');
+          return;
+        }
+        setWebhookUrl(url);
+        
         // Ping webhook with a test request
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          mode: 'no-cors', // Required for cross-origin requests
+          mode: 'no-cors',
           body: JSON.stringify({ test: true }),
         });
         
-        // Since we're using no-cors, we can only assume it worked if no error was thrown
         setWebhookStatus('connected');
       } catch (error) {
+        console.error('Webhook connection error:', error);
         setWebhookStatus('disconnected');
       }
     };
     
     checkWebhook();
-  }, [semrushWebhookUrl]);
+  }, []);
 
   const handleSaveOpenaiKey = async () => {
     if (openaiApiKey && openaiApiKey !== "••••••••••••••••••••••••••") {
@@ -98,12 +121,20 @@ const ApiConnectionsManager = () => {
   };
 
   const handleSaveWebhook = () => {
-    localStorage.setItem("semrush-webhook-url", semrushWebhookUrl);
-    setWebhookStatus('checking');
-    toast({
-      title: "Webhook URL Saved",
-      description: "Your SEMrush keyword sync webhook URL has been saved",
-    });
+    if (webhookUrl) {
+      localStorage.setItem("semrush-webhook-url", webhookUrl);
+      setWebhookStatus('checking');
+      toast({
+        title: "Webhook URL Saved",
+        description: "Your webhook URL has been saved",
+      });
+    } else {
+      toast({
+        title: "Webhook URL Required",
+        description: "Please enter a valid webhook URL",
+        variant: "destructive",
+      });
+    }
   };
 
   const renderStatus = (status: 'checking' | 'connected' | 'disconnected') => {
@@ -122,7 +153,6 @@ const ApiConnectionsManager = () => {
             Not Connected
           </Badge>
         );
-      case 'checking':
       default:
         return (
           <Badge variant="secondary" className="ml-2">
@@ -142,10 +172,17 @@ const ApiConnectionsManager = () => {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
             </Link>
-            <h1 className="text-2xl font-semibold tracking-tight mb-1">API Connections</h1>
-            <p className="text-muted-foreground">
-              Configure your integrations and API connections
-            </p>
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight mb-1">API Connections</h1>
+                <p className="text-muted-foreground">
+                  Configure your integrations and API connections
+                </p>
+              </div>
+              <Button variant="outline" onClick={resetConnections}>
+                Reset All Connections
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -195,11 +232,11 @@ const ApiConnectionsManager = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Webhook className="h-5 w-5" />
-                  SEMrush Keyword Sync
+                  Webhook Integration
                   {renderStatus(webhookStatus)}
                 </CardTitle>
                 <CardDescription>
-                  Connect your n8n workflow that syncs keyword data from SEMrush
+                  Connect your webhook for data synchronization
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -209,13 +246,13 @@ const ApiConnectionsManager = () => {
                   </label>
                   <Input
                     id="webhook-url"
-                    placeholder="Enter your n8n webhook URL for SEMrush sync"
-                    value={semrushWebhookUrl}
-                    onChange={(e) => setSemrushWebhookUrl(e.target.value)}
+                    placeholder="Enter your webhook URL"
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
                     className="font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    This webhook will be used to sync keyword data from SEMrush via your n8n workflow
+                    This webhook will be used to sync data with external services
                   </p>
                 </div>
                 <Button onClick={handleSaveWebhook} className="w-full sm:w-auto">
