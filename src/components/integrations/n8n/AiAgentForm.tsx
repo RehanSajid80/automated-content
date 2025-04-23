@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, BrainCircuit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { saveApiKey } from "@/utils/apiKeyUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 const aiAgentFormSchema = z.object({
   apiUrl: z.string().url("Please enter a valid URL").min(5, "Please enter a URL"),
@@ -34,10 +34,38 @@ const AiAgentForm = () => {
     console.log("Connecting to n8n AI Agent:", values.apiUrl);
 
     try {
-      const customKey = `n8n-agent-${Date.now()}`;
-      saveApiKey(customKey, values.apiKey, values.agentName);
+      const { data: authData } = await supabase.auth.getSession();
       
-      localStorage.setItem(`${customKey}-url`, values.apiUrl);
+      if (!authData.session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to save AI agent connection",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const token = authData.session.access_token;
+      const response = await supabase.functions.invoke("manage-integrations", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: {
+          name: values.agentName,
+          type: "ai-agent",
+          config: {
+            apiUrl: values.apiUrl,
+            apiKey: values.apiKey
+          },
+          is_active: true
+        },
+        method: "POST",
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
 
       toast({
         title: "AI Agent Connected",
