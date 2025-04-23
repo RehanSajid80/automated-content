@@ -14,7 +14,7 @@ import { KeywordData } from "@/utils/excelUtils";
 import { ContentSelectionView } from "@/components/dashboard/ContentSelectionView";
 import ContentDetailView from "@/components/dashboard/ContentDetailView";
 import { clearCache } from "@/utils/contentLifecycleUtils";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
