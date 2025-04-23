@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -248,14 +247,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       
       // Store pillar content
       for (const content of suggestion.pillarContent) {
-        const title = content;
-        console.log("Inserting pillar content:", title);
+        console.log("Inserting pillar content:", content);
         insertPromises.push(
           supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
             content_type: 'pillar',
             content: content,
-            title: title,
+            title: content,
             reasoning: suggestion.reasoning,
             keywords: keywords
               .filter(kw => selectedKeywords.includes(kw.keyword))
@@ -266,14 +264,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
       // Store support pages
       for (const content of suggestion.supportPages) {
-        const title = content;
-        console.log("Inserting support page:", title);
+        console.log("Inserting support page:", content);
         insertPromises.push(
           supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
             content_type: 'support',
             content: content,
-            title: title,
+            title: content,
             reasoning: suggestion.reasoning,
             keywords: keywords
               .filter(kw => selectedKeywords.includes(kw.keyword))
@@ -284,14 +281,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
       // Store meta tags
       for (const content of suggestion.metaTags) {
-        const title = content;
-        console.log("Inserting meta tag:", title);
+        console.log("Inserting meta tag:", content);
         insertPromises.push(
           supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
             content_type: 'meta',
             content: content,
-            title: title,
+            title: content,
             reasoning: suggestion.reasoning,
             keywords: keywords
               .filter(kw => selectedKeywords.includes(kw.keyword))
@@ -302,14 +298,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
       // Store social media content
       for (const content of suggestion.socialMedia) {
-        const title = content;
-        console.log("Inserting social media content:", title);
+        console.log("Inserting social media content:", content);
         insertPromises.push(
           supabase.from('content_library').insert({
             topic_area: suggestion.topicArea,
             content_type: 'social',
             content: content,
-            title: title,
+            title: content,
             reasoning: suggestion.reasoning,
             keywords: keywords
               .filter(kw => selectedKeywords.includes(kw.keyword))

@@ -115,6 +115,11 @@ const RecentContent: React.FC<RecentContentProps> = ({ className }) => {
       setRecentContent(formattedContent);
     } catch (error) {
       console.error("Error in fetchRecentContent:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load recent content",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
