@@ -1,35 +1,89 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Webhook, Braces } from "lucide-react";
+import { ArrowLeft, Webhook, Braces, CheckCircle, XCircle } from "lucide-react";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { API_KEYS, getApiKey, saveApiKey } from "@/utils/apiKeyUtils";
+import { Badge } from "@/components/ui/badge";
 
 const ApiConnectionsManager = () => {
   const [openaiApiKey, setOpenaiApiKey] = React.useState("");
+  const [openaiStatus, setOpenaiStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [semrushWebhookUrl, setSemrushWebhookUrl] = React.useState(() => 
     localStorage.getItem("semrush-webhook-url") || ""
   );
+  const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   const { toast } = useToast();
 
+  // Check OpenAI connection
   React.useEffect(() => {
-    const loadApiKey = async () => {
-      const key = await getApiKey(API_KEYS.OPENAI);
-      if (key) {
-        setOpenaiApiKey("••••••••••••••••••••••••••");
+    const checkOpenAI = async () => {
+      try {
+        const key = await getApiKey(API_KEYS.OPENAI);
+        if (!key) {
+          setOpenaiStatus('disconnected');
+          return;
+        }
+        // Test connection with a simple request
+        const response = await fetch('https://api.openai.com/v1/models', {
+          headers: {
+            'Authorization': `Bearer ${key}`,
+          },
+        });
+        
+        if (response.ok) {
+          setOpenaiStatus('connected');
+          setOpenaiApiKey("••••••••••••••••••••••••••");
+        } else {
+          setOpenaiStatus('disconnected');
+        }
+      } catch (error) {
+        setOpenaiStatus('disconnected');
       }
     };
     
-    loadApiKey();
+    checkOpenAI();
   }, []);
+
+  // Check webhook connection
+  React.useEffect(() => {
+    const checkWebhook = async () => {
+      const url = localStorage.getItem("semrush-webhook-url");
+      if (!url) {
+        setWebhookStatus('disconnected');
+        return;
+      }
+      
+      try {
+        // Ping webhook with a test request
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          mode: 'no-cors', // Required for cross-origin requests
+          body: JSON.stringify({ test: true }),
+        });
+        
+        // Since we're using no-cors, we can only assume it worked if no error was thrown
+        setWebhookStatus('connected');
+      } catch (error) {
+        setWebhookStatus('disconnected');
+      }
+    };
+    
+    checkWebhook();
+  }, [semrushWebhookUrl]);
 
   const handleSaveOpenaiKey = async () => {
     if (openaiApiKey && openaiApiKey !== "••••••••••••••••••••••••••") {
       await saveApiKey(API_KEYS.OPENAI, openaiApiKey, "OpenAI");
       setOpenaiApiKey("••••••••••••••••••••••••••");
+      setOpenaiStatus('checking');
       toast({
         title: "OpenAI API Key Saved",
         description: "Your OpenAI API key has been saved securely",
@@ -45,10 +99,37 @@ const ApiConnectionsManager = () => {
 
   const handleSaveWebhook = () => {
     localStorage.setItem("semrush-webhook-url", semrushWebhookUrl);
+    setWebhookStatus('checking');
     toast({
       title: "Webhook URL Saved",
       description: "Your SEMrush keyword sync webhook URL has been saved",
     });
+  };
+
+  const renderStatus = (status: 'checking' | 'connected' | 'disconnected') => {
+    switch (status) {
+      case 'connected':
+        return (
+          <Badge variant="success" className="ml-2">
+            <CheckCircle className="w-4 h-4 mr-1" />
+            Connected
+          </Badge>
+        );
+      case 'disconnected':
+        return (
+          <Badge variant="destructive" className="ml-2">
+            <XCircle className="w-4 h-4 mr-1" />
+            Not Connected
+          </Badge>
+        );
+      case 'checking':
+      default:
+        return (
+          <Badge variant="secondary" className="ml-2">
+            Checking...
+          </Badge>
+        );
+    }
   };
 
   return (
@@ -73,6 +154,7 @@ const ApiConnectionsManager = () => {
                 <CardTitle className="flex items-center gap-2">
                   <Braces className="h-5 w-5" />
                   OpenAI API Connection
+                  {renderStatus(openaiStatus)}
                 </CardTitle>
                 <CardDescription>
                   Connect your OpenAI API for content generation features
@@ -114,6 +196,7 @@ const ApiConnectionsManager = () => {
                 <CardTitle className="flex items-center gap-2">
                   <Webhook className="h-5 w-5" />
                   SEMrush Keyword Sync
+                  {renderStatus(webhookStatus)}
                 </CardTitle>
                 <CardDescription>
                   Connect your n8n workflow that syncs keyword data from SEMrush
