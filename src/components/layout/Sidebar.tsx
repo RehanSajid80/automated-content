@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Sheet,
@@ -82,11 +81,6 @@ const Sidebar = () => {
           title: "API Connections",
           icon: <Braces className="h-5 w-5" />,
           href: "/api-connections"
-        },
-        {
-          title: "Integrations",
-          icon: <Settings className="h-5 w-5" />,
-          href: "/integrations"
         }
       ]
     },
