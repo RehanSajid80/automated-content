@@ -2,12 +2,28 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Webhook } from "lucide-react";
 import N8nIntegration from "../integrations/N8nIntegration";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import { useLocation } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 const ApiConnectionsManager = () => {
+  const [semrushWebhookUrl, setSemrushWebhookUrl] = React.useState(() => 
+    localStorage.getItem("semrush-webhook-url") || ""
+  );
+  const { toast } = useToast();
+
+  const handleSaveWebhook = () => {
+    localStorage.setItem("semrush-webhook-url", semrushWebhookUrl);
+    toast({
+      title: "Webhook URL Saved",
+      description: "Your SEMrush keyword sync webhook URL has been saved",
+    });
+  };
+
   return (
     <div className="min-h-screen flex w-full">
       <SidebarProvider>
@@ -25,6 +41,40 @@ const ApiConnectionsManager = () => {
           </div>
 
           <div className="space-y-6">
+            {/* SEMrush Keyword Sync Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Webhook className="h-5 w-5" />
+                  SEMrush Keyword Sync
+                </CardTitle>
+                <CardDescription>
+                  Connect your n8n workflow that syncs keyword data from SEMrush
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="webhook-url" className="text-sm font-medium">
+                    Webhook URL
+                  </label>
+                  <Input
+                    id="webhook-url"
+                    placeholder="Enter your n8n webhook URL for SEMrush sync"
+                    value={semrushWebhookUrl}
+                    onChange={(e) => setSemrushWebhookUrl(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This webhook will be used to sync keyword data from SEMrush via your n8n workflow
+                  </p>
+                </div>
+                <Button onClick={handleSaveWebhook} className="w-full sm:w-auto">
+                  Save Webhook URL
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* n8n Integration Section */}
             <N8nIntegration />
           </div>
         </main>
