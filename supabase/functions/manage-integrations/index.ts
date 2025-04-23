@@ -1,4 +1,3 @@
-
 // Follow Deno's ES modules convention
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -104,12 +103,11 @@ Deno.serve(async (req) => {
         { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     } else if (req.method === 'DELETE') {
-      const url = new URL(req.url)
-      const id = url.searchParams.get('id')
+      const { id } = await req.json(); // Get ID from request body
       
       if (!id) {
         return new Response(
-          JSON.stringify({ error: 'Missing id parameter' }),
+          JSON.stringify({ error: 'Missing id in request body' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }

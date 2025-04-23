@@ -20,13 +20,13 @@ import {
   BrainCircuit
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const Sidebar = () => {
   const location = useLocation();
-  const { isOpen, onOpen, onClose } = useSidebar();
+  const { state, openMobile, setOpenMobile } = useSidebar();
 
   const navigationItems = [
     {
@@ -126,13 +126,13 @@ const Sidebar = () => {
       </aside>
 
       {/* Mobile Sidebar */}
-      <Sheet open={isOpen} onOpenChange={onClose}>
+      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
             className="md:hidden fixed top-2 left-2 z-50"
-            onClick={onOpen}
+            onClick={() => setOpenMobile(true)}
           >
             <Menu className="h-4 w-4" />
           </Button>
