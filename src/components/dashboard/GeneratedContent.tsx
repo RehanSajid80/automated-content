@@ -34,7 +34,8 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
             content_type: activeTab,
             is_saved: true,
             title: `Generated ${activeTab} content`,
-            topic_area: 'workspace-management'
+            topic_area: 'workspace-management',
+            keywords: [] // Empty array for now, can be updated later
           }
         ])
         .select()
@@ -42,12 +43,12 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
       if (error) throw error;
 
-      toast.success("Content saved successfully!", {
-        description: "You can find it in your content library"
-      });
-
-      // Dispatch event to refresh content lists
+      // Dispatch event to refresh content lists and stats
       window.dispatchEvent(new Event('content-updated'));
+
+      toast.success("Content saved successfully!", {
+        description: `Your ${activeTab} content has been saved to the library`
+      });
 
     } catch (error) {
       console.error('Error saving content:', error);
