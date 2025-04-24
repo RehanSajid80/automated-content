@@ -81,7 +81,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
         volume: kw.volume,
         difficulty: kw.difficulty,
         cpc: kw.cpc,
-        trend: kw.trend
+        trend: kw.trend || 'neutral'
       }));
       
       onKeywordsReceived(formattedKeywords);
