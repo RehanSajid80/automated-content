@@ -1,3 +1,4 @@
+
 import React from "react";
 import { BarChart, BarChart3, TrendingUp, Eye, Share, ThumbsUp, ExternalLink, FileText, Building2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,47 +9,47 @@ interface ContentAnalyticsProps {
 }
 
 const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
-  // Updated mock data for content performance with reduced numbers
+  // Reset all mock data values to zero
   const contentPerformance = [
     { 
       title: "Office Space Planning Best Practices", 
       type: "Pillar Content",
-      views: 456,
-      shares: 23,
-      engagement: 78,
-      trend: "up" 
+      views: 0,
+      shares: 0,
+      engagement: 0,
+      trend: "neutral" 
     },
     { 
       title: "Hybrid Workplace Management Guide", 
       type: "Pillar Content",
-      views: 379,
-      shares: 19,
-      engagement: 82,
-      trend: "up"
+      views: 0,
+      shares: 0,
+      engagement: 0,
+      trend: "neutral"
     },
     { 
       title: "Desk Booking Systems Comparison", 
       type: "Support Page",
-      views: 540,
-      shares: 17,
-      engagement: 65,
+      views: 0,
+      shares: 0,
+      engagement: 0,
       trend: "neutral"
     },
     { 
       title: "Optimizing Meeting Room Utilization", 
       type: "Support Page",
-      views: 260,
-      shares: 12,
-      engagement: 59,
-      trend: "up"
+      views: 0,
+      shares: 0,
+      engagement: 0,
+      trend: "neutral"
     },
     { 
       title: "Workplace Analytics Tools Guide", 
       type: "Support Page",
-      views: 180,
-      shares: 9,
-      engagement: 71,
-      trend: "down"
+      views: 0,
+      shares: 0,
+      engagement: 0,
+      trend: "neutral"
     },
   ];
 
@@ -59,15 +60,14 @@ const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <h3 className="text-lg font-semibold">Total Content Views</h3>
-              <p className="text-3xl font-bold mt-2">24,789</p>
+              <p className="text-3xl font-bold mt-2">0</p>
             </div>
             <div className="bg-primary/10 rounded-full p-2">
               <Eye className="h-5 w-5 text-primary" />
             </div>
           </div>
-          <div className="flex items-center text-sm text-green-500">
-            <TrendingUp className="h-4 w-4 mr-1" />
-            <span>12% increase from last month</span>
+          <div className="flex items-center text-sm text-muted-foreground">
+            <span>No change</span>
           </div>
         </div>
 
@@ -75,15 +75,14 @@ const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <h3 className="text-lg font-semibold">Social Shares</h3>
-              <p className="text-3xl font-bold mt-2">1,245</p>
+              <p className="text-3xl font-bold mt-2">0</p>
             </div>
             <div className="bg-blue-500/10 rounded-full p-2">
               <Share className="h-5 w-5 text-blue-500" />
             </div>
           </div>
-          <div className="flex items-center text-sm text-green-500">
-            <TrendingUp className="h-4 w-4 mr-1" />
-            <span>8% increase from last month</span>
+          <div className="flex items-center text-sm text-muted-foreground">
+            <span>No change</span>
           </div>
         </div>
 
@@ -91,15 +90,14 @@ const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <h3 className="text-lg font-semibold">Avg. Engagement</h3>
-              <p className="text-3xl font-bold mt-2">72%</p>
+              <p className="text-3xl font-bold mt-2">0%</p>
             </div>
             <div className="bg-orange-500/10 rounded-full p-2">
               <ThumbsUp className="h-5 w-5 text-orange-500" />
             </div>
           </div>
-          <div className="flex items-center text-sm text-green-500">
-            <TrendingUp className="h-4 w-4 mr-1" />
-            <span>5% increase from last month</span>
+          <div className="flex items-center text-sm text-muted-foreground">
+            <span>No change</span>
           </div>
         </div>
       </div>
@@ -139,23 +137,15 @@ const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
                   <div className="inline-flex items-center">
                     <div className="w-8 h-2 rounded-full bg-muted overflow-hidden mr-2">
                       <div 
-                        className={cn(
-                          "h-full",
-                          content.engagement > 75 ? "bg-green-500" : 
-                          content.engagement > 60 ? "bg-blue-500" : 
-                          content.engagement > 40 ? "bg-orange-500" : 
-                          "bg-red-500"
-                        )}
-                        style={{ width: `${content.engagement}%` }}
+                        className="h-full bg-gray-500"
+                        style={{ width: "0%" }}
                       ></div>
                     </div>
                     {content.engagement}%
                   </div>
                 </div>
                 <div className="col-span-1 text-right flex justify-end">
-                  {content.trend === "up" && <TrendingUp size={16} className="text-green-500" />}
-                  {content.trend === "down" && <TrendingUp size={16} className="text-red-500 rotate-180" />}
-                  {content.trend === "neutral" && <BarChart3 size={16} className="text-blue-500" />}
+                  <BarChart3 size={16} className="text-muted-foreground" />
                 </div>
               </div>
             ))}
@@ -174,10 +164,9 @@ const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
               <FileText className="h-6 w-6 text-primary" />
             </div>
             <h4 className="font-medium">Pillar Content</h4>
-            <p className="text-2xl font-bold mt-1">8</p>
-            <div className="flex items-center text-xs text-green-500 mt-2">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              <span>3 new this week</span>
+            <p className="text-2xl font-bold mt-1">0</p>
+            <div className="flex items-center text-xs text-muted-foreground mt-2">
+              <span>No new content</span>
             </div>
           </div>
           
@@ -186,10 +175,9 @@ const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
               <Building2 className="h-6 w-6 text-blue-500" />
             </div>
             <h4 className="font-medium">Support Pages</h4>
-            <p className="text-2xl font-bold mt-1">22</p>
-            <div className="flex items-center text-xs text-green-500 mt-2">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              <span>5 new this week</span>
+            <p className="text-2xl font-bold mt-1">0</p>
+            <div className="flex items-center text-xs text-muted-foreground mt-2">
+              <span>No new content</span>
             </div>
           </div>
           
@@ -198,10 +186,9 @@ const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
               <Tag className="h-6 w-6 text-orange-500" />
             </div>
             <h4 className="font-medium">Meta Tags</h4>
-            <p className="text-2xl font-bold mt-1">46</p>
+            <p className="text-2xl font-bold mt-1">0</p>
             <div className="flex items-center text-xs text-muted-foreground mt-2">
-              <BarChart3 className="h-3 w-3 mr-1" />
-              <span>Same as last week</span>
+              <span>No content</span>
             </div>
           </div>
           
@@ -210,10 +197,9 @@ const ContentAnalytics: React.FC<ContentAnalyticsProps> = ({ className }) => {
               <Share className="h-6 w-6 text-green-500" />
             </div>
             <h4 className="font-medium">Social Posts</h4>
-            <p className="text-2xl font-bold mt-1">94</p>
-            <div className="flex items-center text-xs text-green-500 mt-2">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              <span>18 new this week</span>
+            <p className="text-2xl font-bold mt-1">0</p>
+            <div className="flex items-center text-xs text-muted-foreground mt-2">
+              <span>No new content</span>
             </div>
           </div>
         </div>
