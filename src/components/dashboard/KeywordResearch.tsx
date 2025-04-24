@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
 import KeywordFilters, { FilterOptions } from "./KeywordFilters";
@@ -37,6 +36,19 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
 
   const { keywords, updateKeywords, clearKeywords } = useKeywordData(onKeywordDataUpdate);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const searchFromUrl = searchParams.get('search');
+    
+    if (searchFromUrl) {
+      setSearchTerm(searchFromUrl);
+      setFilterOptions(prev => ({
+        ...prev,
+        searchTerm: searchFromUrl
+      }));
+    }
+  }, []);
 
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilterOptions(newFilters);
@@ -127,13 +139,10 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
 
   const handleSemrushKeywords = (newKeywords: KeywordData[]) => {
     if (newKeywords && newKeywords.length > 0) {
-      // Update the keywords state with new keywords
       console.log(`KeywordResearch received ${newKeywords.length} keywords from SEMrush`);
       
-      // Update using the function from useKeywordData hook
       updateKeywords(newKeywords);
       
-      // Clear any existing keyword selection
       setSelectedKeywords([]);
     }
   };

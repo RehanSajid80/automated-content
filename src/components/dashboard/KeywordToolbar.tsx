@@ -1,12 +1,13 @@
 
 import React from 'react';
-import { Search } from "lucide-react";
+import { Search, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SemrushIntegration from "./SemrushIntegration";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import WebhookForm from "./WebhookForm";
 import { KeywordData } from "@/utils/excelUtils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface KeywordToolbarProps {
   searchTerm: string;
@@ -25,17 +26,48 @@ const KeywordToolbar: React.FC<KeywordToolbarProps> = ({
   isSyncingFromN8n,
   onN8nSync
 }) => {
+  const handleSearchInNewTab = () => {
+    if (!searchTerm.trim()) return;
+    
+    // Create a new URL with search parameters
+    const url = new URL(window.location.href);
+    url.searchParams.set('search', searchTerm);
+    
+    // Open in new tab
+    window.open(url.toString(), '_blank');
+  };
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-      <div className="relative w-full md:w-auto md:flex-1 max-w-lg">
-        <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={searchTerm}
-          onChange={onSearchChange}
-          placeholder="Search for keywords..."
-          className="pl-9 bg-secondary/50"
-        />
+      <div className="relative w-full md:w-auto md:flex-1 max-w-lg flex gap-2">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={onSearchChange}
+            placeholder="Search for keywords..."
+            className="pl-9 bg-secondary/50"
+          />
+        </div>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleSearchInNewTab}
+              disabled={!searchTerm.trim()}
+              className="shrink-0"
+            >
+              <ExternalLink size={16} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Open search in new tab
+          </TooltipContent>
+        </Tooltip>
       </div>
+      
       <div className="flex gap-2 w-full md:w-auto">
         <Button 
           variant="outline" 
