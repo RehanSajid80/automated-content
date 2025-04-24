@@ -52,15 +52,17 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     });
   };
 
-  const filteredKeywords = keywords.filter(kw => {
-    const matchesSearch = kw.keyword.toLowerCase().includes(filterOptions.searchTerm.toLowerCase());
-    const matchesVolume = kw.volume >= filterOptions.minVolume && kw.volume <= filterOptions.maxVolume;
-    const matchesDifficulty = kw.difficulty >= filterOptions.minDifficulty && kw.difficulty <= filterOptions.maxDifficulty;
-    const matchesCpc = kw.cpc >= filterOptions.minCpc && kw.cpc <= filterOptions.maxCpc;
-    const matchesTrend = filterOptions.trend === "all" || kw.trend === filterOptions.trend;
-    
-    return matchesSearch && matchesVolume && matchesDifficulty && matchesCpc && matchesTrend;
-  });
+  const filteredKeywords = useMemo(() => {
+    return keywords.filter(kw => {
+      const matchesSearch = kw.keyword.toLowerCase().includes(filterOptions.searchTerm.toLowerCase());
+      const matchesVolume = kw.volume >= filterOptions.minVolume && kw.volume <= filterOptions.maxVolume;
+      const matchesDifficulty = kw.difficulty >= filterOptions.minDifficulty && kw.difficulty <= filterOptions.maxDifficulty;
+      const matchesCpc = kw.cpc >= filterOptions.minCpc && kw.cpc <= filterOptions.maxCpc;
+      const matchesTrend = filterOptions.trend === "all" || kw.trend === filterOptions.trend;
+      
+      return matchesSearch && matchesVolume && matchesDifficulty && matchesCpc && matchesTrend;
+    });
+  }, [keywords, filterOptions]);
 
   const toggleKeywordSelection = (keyword: string) => {
     setSelectedKeywords(prev => 
@@ -123,6 +125,19 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
+  const handleSemrushKeywords = (newKeywords: KeywordData[]) => {
+    if (newKeywords && newKeywords.length > 0) {
+      // Update the keywords state with new keywords
+      updateKeywords(newKeywords);
+      
+      // Clear any existing keyword selection
+      setSelectedKeywords([]);
+      
+      // Log to confirm keywords were received
+      console.log(`Updated keyword data with ${newKeywords.length} keywords from SEMrush`);
+    }
+  };
+
   const suggestions = useMemo(() => {
     return analyzeKeywords(filteredKeywords);
   }, [filteredKeywords]);
@@ -133,7 +148,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
         searchTerm={searchTerm}
         onSearchChange={handleSearchInputChange}
         onClearData={clearKeywords}
-        onSemrushKeywords={updateKeywords}
+        onSemrushKeywords={handleSemrushKeywords}
         isSyncingFromN8n={isSyncingFromN8n}
         onN8nSync={handleN8nSync}
       />

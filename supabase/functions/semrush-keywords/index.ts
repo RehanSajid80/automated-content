@@ -31,6 +31,11 @@ serve(async (req) => {
       .select('*')
       .eq('domain', cleanDomain);
 
+    if (fetchError) {
+      console.error('Error fetching existing keywords:', fetchError);
+      throw new Error('Failed to check for existing keywords');
+    }
+
     if (existingKeywords && existingKeywords.length > 0) {
       console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain}`);
       return new Response(
@@ -47,10 +52,18 @@ serve(async (req) => {
     const semrushResponse = await fetch(`https://api.semrush.com/management/v1/keywords?key=${semrushApiKey}&type=domain&query=${cleanDomain}&limit=${limit}`);
     
     if (!semrushResponse.ok) {
-      throw new Error('Failed to fetch keywords from SEMrush API');
+      const errorText = await semrushResponse.text();
+      console.error('SEMrush API error:', errorText);
+      throw new Error(`Failed to fetch keywords from SEMrush API: ${errorText}`);
     }
 
     const semrushData = await semrushResponse.json();
+    
+    if (!semrushData.keywords || !Array.isArray(semrushData.keywords)) {
+      console.error('Invalid SEMrush response format:', semrushData);
+      throw new Error('Invalid response format from SEMrush API');
+    }
+
     const keywords = semrushData.keywords.map(kw => ({
       domain: cleanDomain,
       keyword: kw.keyword,
@@ -61,16 +74,20 @@ serve(async (req) => {
     }));
 
     // Store the keywords in the database
-    const { error: insertError } = await supabaseAdmin
-      .from('semrush_keywords')
-      .upsert(keywords);
+    if (keywords.length > 0) {
+      const { error: insertError } = await supabaseAdmin
+        .from('semrush_keywords')
+        .upsert(keywords);
 
-    if (insertError) {
-      console.error('Error storing keywords:', insertError);
-      throw new Error('Failed to store keywords in database');
+      if (insertError) {
+        console.error('Error storing keywords:', insertError);
+        throw new Error('Failed to store keywords in database');
+      }
+
+      console.log(`Stored ${keywords.length} keywords for domain: ${cleanDomain}`);
+    } else {
+      console.log(`No keywords found for domain: ${cleanDomain}`);
     }
-
-    console.log(`Stored ${keywords.length} keywords for domain: ${cleanDomain}`);
     
     return new Response(
       JSON.stringify({ 

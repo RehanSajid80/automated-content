@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +56,18 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       }
 
       console.log(`Received ${data.keywords.length} keywords from edge function`);
-      onKeywordsReceived(data.keywords);
+      
+      // Convert the response to the KeywordData format expected by the keyword list component
+      const formattedKeywords: KeywordData[] = data.keywords.map(kw => ({
+        keyword: kw.keyword,
+        volume: kw.volume,
+        difficulty: kw.difficulty,
+        cpc: kw.cpc,
+        trend: kw.trend
+      }));
+      
+      // Pass the keywords to the parent component
+      onKeywordsReceived(formattedKeywords);
       
       toast({
         title: data.fromCache ? "Loaded from cache" : "Success",
