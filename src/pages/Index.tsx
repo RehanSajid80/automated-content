@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -45,22 +44,26 @@ const Index = () => {
         const { count: pillarCount } = await supabase
           .from('content_library')
           .select('id', { count: 'exact' })
-          .eq('content_type', 'pillar');
+          .eq('content_type', 'pillar')
+          .eq('is_saved', true);
 
         const { count: supportCount } = await supabase
           .from('content_library')
           .select('id', { count: 'exact' })
-          .eq('content_type', 'support');
+          .eq('content_type', 'support')
+          .eq('is_saved', true);
 
         const { count: metaCount } = await supabase
           .from('content_library')
           .select('id', { count: 'exact' })
-          .eq('content_type', 'meta');
+          .eq('content_type', 'meta')
+          .eq('is_saved', true);
 
         const { count: socialCount } = await supabase
           .from('content_library')
           .select('id', { count: 'exact' })
-          .eq('content_type', 'social');
+          .eq('content_type', 'social')
+          .eq('is_saved', true);
 
         setContentStats({
           pillarCount: pillarCount || 0,
@@ -74,6 +77,16 @@ const Index = () => {
     };
 
     fetchContentStats();
+    
+    const handleContentUpdated = () => {
+      fetchContentStats();
+    };
+    
+    window.addEventListener('content-updated', handleContentUpdated);
+    
+    return () => {
+      window.removeEventListener('content-updated', handleContentUpdated);
+    };
   }, []);
 
   useEffect(() => {
@@ -101,20 +114,14 @@ const Index = () => {
       clearCache(`content_detail_${event.detail.contentIds.sort().join('_')}`);
     };
 
-    const handleContentUpdated = () => {
-      setContentRefreshTrigger(prev => prev + 1);
-    };
-
     window.addEventListener('navigate-to-content', handleNavigateToContent as EventListener);
     window.addEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
     window.addEventListener('navigate-to-content-details', handleNavigateToContentDetails as EventListener);
-    window.addEventListener('content-updated', handleContentUpdated as EventListener);
     
     return () => {
       window.removeEventListener('navigate-to-content', handleNavigateToContent as EventListener);
       window.removeEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
       window.removeEventListener('navigate-to-content-details', handleNavigateToContentDetails as EventListener);
-      window.removeEventListener('content-updated', handleContentUpdated as EventListener);
     };
   }, [handleTabChange]);
 
