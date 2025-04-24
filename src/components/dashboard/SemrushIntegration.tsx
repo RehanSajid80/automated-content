@@ -40,7 +40,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       console.log(`Fetching keywords for domain: ${cleanDomain}`);
       
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
-        body: { keyword: cleanDomain, limit: 20 }
+        body: { keyword: cleanDomain, limit: 30 } // Updated limit to 30
       });
 
       if (error) {
