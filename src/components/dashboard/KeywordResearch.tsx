@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -87,6 +88,13 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   const handleGenerateContent = (keywords: string[]) => {
     if (onKeywordsSelected) {
       onKeywordsSelected(keywords);
+      
+      // Trigger navigation to the content tab
+      const event = new CustomEvent('navigate-to-tab', { 
+        detail: { tab: 'content' } 
+      });
+      window.dispatchEvent(event);
+      
       toast({
         title: "Keywords transferred",
         description: `${keywords.length} keywords sent to Content Generator`,

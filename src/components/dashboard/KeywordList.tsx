@@ -50,7 +50,9 @@ const KeywordList: React.FC<KeywordListProps> = ({
   const handleGenerateContent = () => {
     if (selectedKeywords.length > 0 && onGenerateContent) {
       onGenerateContent(selectedKeywords);
-      toast(`Creating content for ${selectedKeywords.length} keywords`);
+      toast.success(`Creating content for ${selectedKeywords.length} keywords`);
+    } else if (selectedKeywords.length === 0) {
+      toast.error("Please select at least one keyword");
     }
   };
 
@@ -67,13 +69,6 @@ const KeywordList: React.FC<KeywordListProps> = ({
     return sortDirection === 'asc' ? 
       <ArrowUp size={14} className="ml-1" /> : 
       <ArrowDown size={14} className="ml-1" />;
-  };
-
-  const handleKeywordClick = (keyword: string, e: React.MouseEvent<HTMLDivElement>) => {
-    // Don't toggle selection if clicking on the checkbox itself
-    if (!(e.target instanceof HTMLInputElement)) {
-      onKeywordToggle(keyword);
-    }
   };
 
   return (
@@ -124,9 +119,9 @@ const KeywordList: React.FC<KeywordListProps> = ({
               "grid grid-cols-12 gap-4 px-4 py-3 text-sm hover:bg-secondary/30 transition-colors cursor-pointer",
               selectedKeywords.includes(kw.keyword) && "bg-secondary/50"
             )}
-            onClick={(e) => handleKeywordClick(kw.keyword, e)}
+            onClick={() => onKeywordToggle(kw.keyword)}
           >
-            <div className="col-span-1">
+            <div className="col-span-1" onClick={(e) => e.stopPropagation()}>
               <Checkbox 
                 checked={selectedKeywords.includes(kw.keyword)}
                 onCheckedChange={() => onKeywordToggle(kw.keyword)}
@@ -160,6 +155,20 @@ const KeywordList: React.FC<KeywordListProps> = ({
           </div>
         ))}
       </div>
+      {keywords.length > 0 && selectedKeywords.length === 0 && (
+        <div className="flex justify-center mt-2">
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              toast.info("Please select at least one keyword");
+            }}
+          >
+            <FileText size={16} className="mr-2" />
+            Select keywords to generate content
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
