@@ -20,13 +20,14 @@ import {
   TrendingUp,
   BrainCircuit
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSidebar } from "@/components/ui/sidebar";
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { state, openMobile, setOpenMobile } = useSidebar();
 
   const navigationItems = [
@@ -96,16 +97,49 @@ const Sidebar = () => {
     
     // For tab links, check if the tab parameter matches
     if (href.includes("?tab=")) {
-      const tabMatch = href.match(/\?tab=([^&]*)/);
-      const currentTabMatch = location.search.match(/\?tab=([^&]*)/);
+      const tabParam = new URLSearchParams(href.split("?")[1]).get("tab");
+      const currentTabParam = new URLSearchParams(location.search).get("tab");
       
-      if (tabMatch && currentTabMatch) {
-        return tabMatch[1] === currentTabMatch[1];
-      }
+      return tabParam === currentTabParam;
     }
     
     // Default case for other routes
     return location.pathname === href;
+  };
+
+  // Handle navigation with proper event dispatching
+  const handleNavigation = (href: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Extract the tab parameter if it exists
+    if (href.includes("?tab=")) {
+      const tabParam = new URLSearchParams(href.split("?")[1]).get("tab");
+      
+      if (tabParam) {
+        // Close mobile sidebar if open
+        if (openMobile) {
+          setOpenMobile(false);
+        }
+        
+        // Navigate and dispatch event for tab changes
+        navigate(`/?tab=${tabParam}`);
+        
+        // Dispatch navigation event for the tab system
+        window.dispatchEvent(new CustomEvent('navigate-to-tab', { 
+          detail: { tab: tabParam } 
+        }));
+        
+        return;
+      }
+    }
+    
+    // For non-tab navigation or no tab parameter
+    navigate(href);
+    
+    // Close mobile sidebar if open
+    if (openMobile) {
+      setOpenMobile(false);
+    }
   };
 
   return (
@@ -123,9 +157,10 @@ const Sidebar = () => {
                 {section.title}
               </div>
               {section.items.map((item) => (
-                <NavLink
+                <a
                   key={item.title}
-                  to={item.href}
+                  href={item.href}
+                  onClick={(e) => handleNavigation(item.href, e)}
                   className={
                     isActive(item.href)
                       ? "flex items-center px-4 py-2.5 text-sm rounded-md bg-accent text-accent-foreground font-medium"
@@ -134,7 +169,7 @@ const Sidebar = () => {
                 >
                   {item.icon}
                   <span className="ml-2">{item.title}</span>
-                </NavLink>
+                </a>
               ))}
               <Separator className="my-2" />
             </div>
@@ -169,10 +204,10 @@ const Sidebar = () => {
                   {section.title}
                 </div>
                 {section.items.map((item) => (
-                  <NavLink
+                  <a
                     key={item.title}
-                    to={item.href}
-                    onClick={() => setOpenMobile(false)}
+                    href={item.href}
+                    onClick={(e) => handleNavigation(item.href, e)}
                     className={
                       isActive(item.href)
                         ? "flex items-center px-4 py-2.5 text-sm rounded-md bg-accent text-accent-foreground font-medium"
@@ -181,7 +216,7 @@ const Sidebar = () => {
                   >
                     {item.icon}
                     <span className="ml-2">{item.title}</span>
-                  </NavLink>
+                  </a>
                 ))}
                 <Separator className="my-2" />
               </div>
