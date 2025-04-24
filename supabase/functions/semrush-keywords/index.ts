@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
@@ -17,77 +16,33 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const SEMRUSH_API_KEY = Deno.env.get('SEMRUSH_API_KEY');
-  if (!SEMRUSH_API_KEY) {
-    return new Response(
-      JSON.stringify({ error: 'SEMrush API key not configured' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
   try {
-    const { keyword, limit = 30 } = await req.json(); // Updated default limit to 30
+    const { keyword, limit = 30 } = await req.json();
     console.log(`Request received for domain: ${keyword}, limit: ${limit}`);
 
-    let integration;
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('integrations')
-        .select('config')
-        .eq('type', 'semrush')
-        .single();
+    // Clean domain for consistency
+    const cleanDomain = keyword.replace(/^https?:\/\/(www\.)?/i, '');
 
-      if (!error) {
-        integration = data;
-        console.log('Found existing SEMrush configuration:', integration);
-      } else {
-        console.log('Could not find existing SEMrush integration configuration:', error.message);
-      }
-    } catch (dbError) {
-      console.error('Database error when fetching integrations:', dbError);
-    }
+    // Check existing keywords for this domain
+    const { data: existingKeywords, error: fetchError } = await supabaseAdmin
+      .from('semrush_keywords')
+      .select('*')
+      .eq('domain', cleanDomain);
 
-    const now = new Date();
-    const config = integration?.config || { 
-      requests: 0, 
-      lastReset: now.toISOString(),
-      dailyLimit: 100 // Default limit if not configured
-    };
-
-    // Reset counter if it's a new day
-    const lastReset = new Date(config.lastReset);
-    if (lastReset.getUTCDate() !== now.getUTCDate()) {
-      config.requests = 0;
-      config.lastReset = now.toISOString();
-    }
-
-    // Check if we've hit the daily limit
-    if (config.requests >= config.dailyLimit) {
+    if (existingKeywords && existingKeywords.length > 0) {
+      console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain}`);
       return new Response(
-        JSON.stringify({ error: 'Daily API limit reached' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          keywords: existingKeywords,
+          remaining: 100 - existingKeywords.length,
+          fromCache: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Making SEMrush API request for domain: ${keyword}`);
-    
-    // Update rate limit counter even with mock data
-    config.requests += 1;
-    
-    try {
-      await supabaseAdmin
-        .from('integrations')
-        .upsert([{
-          type: 'semrush',
-          name: 'SEMrush API',
-          config
-        }]);
-    } catch (updateError) {
-      console.error('Failed to update API usage counter:', updateError);
-    }
-
-    // Generate mock data based on the domain name with increased number of keywords
-    const domainWords = keyword.replace(/\.(com|org|net|io)$/, '').split(/[.-]/);
+    // Generate mock data since we found no existing keywords
+    const domainWords = cleanDomain.replace(/\.(com|org|net|io)$/, '').split(/[.-]/);
     const mockKeywords = [
       { keyword: `${domainWords[0]} software`, volume: 5400, difficulty: 78, cpc: 14.5, trend: "up" },
       { keyword: `${domainWords[0]} management system`, volume: 3800, difficulty: 65, cpc: 9.20, trend: "up" },
@@ -99,7 +54,6 @@ serve(async (req) => {
       { keyword: `${domainWords[0]} login`, volume: 2800, difficulty: 55, cpc: 9.60, trend: "up" },
       { keyword: `${domainWords[0]} app`, volume: 8500, difficulty: 85, cpc: 15.90, trend: "up" },
       { keyword: `${domainWords[0]} tutorial`, volume: 5600, difficulty: 67, cpc: 10.20, trend: "neutral" },
-      // Additional 20 mock keywords
       { keyword: `${domainWords[0]} enterprise solution`, volume: 4200, difficulty: 75, cpc: 16.50, trend: "up" },
       { keyword: `${domainWords[0]} cloud platform`, volume: 6100, difficulty: 80, cpc: 15.75, trend: "up" },
       { keyword: `${domainWords[0]} integration`, volume: 3500, difficulty: 60, cpc: 11.30, trend: "neutral" },
@@ -112,10 +66,27 @@ serve(async (req) => {
       { keyword: `${domainWords[0]} scalability`, volume: 4500, difficulty: 72, cpc: 13.80, trend: "up" }
     ];
 
+    // Store the mock keywords in the database
+    const { error: insertError } = await supabaseAdmin
+      .from('semrush_keywords')
+      .upsert(
+        mockKeywords.map(kw => ({
+          domain: cleanDomain,
+          ...kw
+        }))
+      );
+
+    if (insertError) {
+      console.error('Error storing keywords:', insertError);
+      throw new Error('Failed to store keywords in database');
+    }
+
+    console.log(`Stored ${mockKeywords.length} keywords for domain: ${cleanDomain}`);
+    
     return new Response(
       JSON.stringify({ 
-        keywords: mockKeywords, 
-        remaining: config.dailyLimit - config.requests 
+        keywords: mockKeywords,
+        remaining: 100 - mockKeywords.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

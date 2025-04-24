@@ -89,6 +89,42 @@ export type Database = {
         }
         Relationships: []
       }
+      semrush_keywords: {
+        Row: {
+          cpc: number
+          created_at: string
+          difficulty: number
+          domain: string
+          id: string
+          keyword: string
+          trend: string
+          updated_at: string
+          volume: number
+        }
+        Insert: {
+          cpc: number
+          created_at?: string
+          difficulty: number
+          domain: string
+          id?: string
+          keyword: string
+          trend: string
+          updated_at?: string
+          volume: number
+        }
+        Update: {
+          cpc?: number
+          created_at?: string
+          difficulty?: number
+          domain?: string
+          id?: string
+          keyword?: string
+          trend?: string
+          updated_at?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       webhook_configs: {
         Row: {
           created_at: string | null

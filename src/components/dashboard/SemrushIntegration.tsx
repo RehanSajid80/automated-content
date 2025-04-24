@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KeywordData } from "@/utils/excelUtils";
@@ -29,7 +28,6 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
     setIsLoading(true);
 
     try {
-      // Validate domain input
       const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
       const cleanDomain = domain.replace(/^https?:\/\/(www\.)?/i, '');
       
@@ -40,7 +38,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       console.log(`Fetching keywords for domain: ${cleanDomain}`);
       
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
-        body: { keyword: cleanDomain, limit: 30 } // Updated limit to 30
+        body: { keyword: cleanDomain, limit: 30 }
       });
 
       if (error) {
@@ -60,8 +58,8 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       onKeywordsReceived(data.keywords);
       
       toast({
-        title: "Success",
-        description: `Fetched ${data.keywords.length} keywords. ${data.remaining} API calls remaining today.`,
+        title: data.fromCache ? "Loaded from cache" : "Success",
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${data.keywords.length} keywords. ${data.remaining} API calls remaining today.`,
       });
     } catch (error) {
       console.error('Error fetching keywords:', error);
@@ -89,8 +87,17 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
         disabled={isLoading}
         variant="outline"
       >
-        <Search className="w-4 h-4 mr-2" />
-        {isLoading ? "Fetching..." : "Fetch Keywords"}
+        {isLoading ? (
+          <>
+            <Database className="w-4 h-4 mr-2 animate-spin" />
+            {isLoading ? "Fetching..." : "Fetch Keywords"}
+          </>
+        ) : (
+          <>
+            <Search className="w-4 h-4 mr-2" />
+            Fetch Keywords
+          </>
+        )}
       </Button>
     </div>
   );
