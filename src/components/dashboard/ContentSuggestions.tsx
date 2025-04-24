@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -243,7 +242,10 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   </p>
                 </div>
                 
-                <SemrushIntegration onKeywordsReceived={updateKeywords} />
+                <SemrushIntegration 
+                  onKeywordsReceived={updateKeywords} 
+                  topicArea={topicArea}
+                />
                 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">

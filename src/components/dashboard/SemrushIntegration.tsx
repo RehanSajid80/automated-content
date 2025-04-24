@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SemrushIntegrationProps {
   onKeywordsReceived: (keywords: KeywordData[]) => void;
+  topicArea?: string;
 }
 
 // Function to update SEMrush API metrics
@@ -33,7 +33,10 @@ const updateSemrushMetrics = (success: boolean) => {
   localStorage.setItem('semrush-api-metrics', JSON.stringify(currentMetrics));
 };
 
-const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsReceived }) => {
+const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ 
+  onKeywordsReceived,
+  topicArea 
+}) => {
   const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -77,8 +80,44 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
 
     try {
       const cleanDomain = extractDomain(domain);
-      console.log(`Fetching keywords for domain: ${cleanDomain}`);
+      console.log(`Fetching keywords for domain: ${cleanDomain} and topic: ${topicArea}`);
       
+      // Get the stored webhook URL
+      const storedWebhookUrl = localStorage.getItem('n8n-keyword-sync-webhook-url');
+      
+      if (storedWebhookUrl) {
+        // First attempt to use n8n webhook if configured
+        try {
+          const webhookResponse = await fetch(storedWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              domain: cleanDomain,
+              topicArea: topicArea || '',
+              source: "lovable" 
+            }),
+          });
+
+          if (webhookResponse.ok) {
+            const data = await webhookResponse.json();
+            if (Array.isArray(data)) {
+              onKeywordsReceived(data);
+              updateSemrushMetrics(true);
+              toast({
+                title: "Success",
+                description: `Fetched ${data.length} keywords from n8n workflow`,
+              });
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (webhookError) {
+          console.error('n8n webhook error:', webhookError);
+          // Continue to SEMrush API as fallback
+        }
+      }
+
+      // Fallback to SEMrush API
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { keyword: cleanDomain, limit: 30 }
       });
