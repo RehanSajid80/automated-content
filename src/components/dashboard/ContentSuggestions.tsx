@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -59,7 +58,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import SemrushIntegration from "./SemrushIntegration";
-import WebhookForm from "./WebhookForm";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -96,7 +94,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
-  const [n8nSuggestions, setN8nSuggestions] = useState<N8nContentSuggestion[]>([]);
   const [openCards, setOpenCards] = useState<{ [key: string]: boolean }>({});
   const [isApiConnectionsOpen, setIsApiConnectionsOpen] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -107,12 +104,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [checkingSupabase, setCheckingSupabase] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [apiKeyInfo, setApiKeyInfo] = useState<ApiKeyInfo | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [domain, setDomain] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchedKeywords, setSearchedKeywords] = useState<KeywordData[]>([]);
-  const [isN8nLoading, setIsN8nLoading] = useState(false);
-  const [topic, setTopic] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -127,7 +118,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       }
     };
     
-    // Load saved webhook URL if available
     const savedWebhookUrl = localStorage.getItem('n8n-content-suggestions-webhook-url');
     if (savedWebhookUrl) {
       setWebhookUrl(savedWebhookUrl);
@@ -151,21 +141,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       ...openCards,
       [index]: !openCards[index],
     });
-  };
-
-  const toggleN8nCard = (index: number) => {
-    setOpenCards({
-      ...openCards,
-      [`n8n-${index}`]: !openCards[`n8n-${index}`],
-    });
-  };
-
-  const toggleKeywordSelection = (keyword: string) => {
-    if (selectedKeywords.includes(keyword)) {
-      setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
-    } else {
-      setSelectedKeywords([...selectedKeywords, keyword]);
-    }
   };
 
   const autoSelectTrendingKeywords = () => {
@@ -244,75 +219,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     }
   };
 
-  const triggerN8nSuggestions = async () => {
-    if (!webhookUrl) {
-      toast({
-        title: "Webhook URL Required",
-        description: "Please set up your n8n webhook URL",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Save webhook URL for future use
-    localStorage.setItem('n8n-content-suggestions-webhook-url', webhookUrl);
-
-    setIsN8nLoading(true);
-    try {
-      // Prepare data to send to n8n
-      const payload = {
-        source: "content_suggestions",
-        keywords: selectedKeywords.length > 0 
-          ? selectedKeywords 
-          : keywords.slice(0, 5).map(kw => kw.keyword),
-        topic: topic || undefined
-      };
-
-      console.log("Sending to n8n webhook:", payload);
-      
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`n8n webhook responded with status: ${response.status}`);
-      }
-      
-      // Parse response from n8n
-      const data = await response.json();
-      console.log("Received from n8n:", data);
-      
-      if (Array.isArray(data) && data.length > 0) {
-        setN8nSuggestions(data);
-        setOpenCards({ "n8n-0": true });
-        
-        toast({
-          title: "Success",
-          description: `Received ${data.length} content suggestions from n8n`,
-        });
-      } else {
-        throw new Error("Invalid response format from n8n webhook");
-      }
-    } catch (error) {
-      console.error("Error triggering n8n webhook:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get suggestions from n8n",
-        variant: "destructive",
-      });
-    } finally {
-      setIsN8nLoading(false);
-    }
-  };
-
   const handleKeywordsReceived = (newKeywords: KeywordData[]) => {
     if (newKeywords && newKeywords.length > 0) {
       setSearchedKeywords(newKeywords);
-      // Auto-select first 5 keywords for suggestions
       setSelectedKeywords(newKeywords.slice(0, 5).map(kw => kw.keyword));
       
       toast({
@@ -358,7 +267,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       console.log("Storing content in library:", suggestion);
       const insertPromises = [];
       
-      // Store pillar content
       for (const content of suggestion.pillarContent) {
         console.log("Inserting pillar content:", content);
         insertPromises.push(
@@ -373,7 +281,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         );
       }
 
-      // Store support pages
       for (const content of suggestion.supportPages) {
         console.log("Inserting support page:", content);
         insertPromises.push(
@@ -388,7 +295,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         );
       }
 
-      // Store meta tags
       for (const content of suggestion.metaTags) {
         console.log("Inserting meta tag:", content);
         insertPromises.push(
@@ -403,7 +309,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         );
       }
 
-      // Store social media content
       for (const content of suggestion.socialMedia) {
         console.log("Inserting social media content:", content);
         insertPromises.push(
@@ -418,11 +323,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         );
       }
 
-      // Execute all insert promises
       console.log("Executing insert promises...");
       const results = await Promise.all(insertPromises);
       
-      // Check for errors and handle success
       const errors = results.filter(result => result.error);
       if (errors.length > 0) {
         console.error('Errors storing content:', errors);
@@ -432,7 +335,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         throw new Error(`Failed to store ${errors.length} content items`);
       }
 
-      // Navigate to content tab
       window.dispatchEvent(new CustomEvent('navigate-to-content', { 
         detail: { topicArea: suggestion.topicArea } 
       }));
@@ -442,7 +344,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         description: `Successfully stored content for "${suggestion.topicArea}"`,
       });
       
-      // Force a refresh of any components that show content from Supabase
       window.dispatchEvent(new CustomEvent('content-updated'));
       
     } catch (error) {
@@ -461,7 +362,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         <CardHeader>
           <CardTitle>AI Content Suggestions</CardTitle>
           <CardDescription>
-            Use OpenAI or n8n to analyze keywords and suggest content topics for your website
+            Use OpenAI to analyze keywords and suggest content topics for your website
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -484,7 +385,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               </Alert>
             )}
 
-            {/* Domain search section */}
             <div className="p-4 border border-border rounded-md bg-card">
               <h3 className="text-base font-medium mb-3">Search for Keywords</h3>
               <div className="space-y-4">
@@ -524,56 +424,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                 )}
               </div>
             </div>
-          
-            {/* n8n webhook integration section */}
-            <div className="p-4 border border-border rounded-md bg-card">
-              <h3 className="text-base font-medium mb-3">n8n AI Agent Integration</h3>
-              
-              <div className="space-y-4">
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="webhook-url" className="text-sm font-medium">n8n Webhook URL</label>
-                  <Input
-                    id="webhook-url"
-                    placeholder="https://your-n8n-instance.com/webhook/content-suggestions"
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Set up a webhook node in n8n that returns content suggestions
-                  </p>
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="topic-input" className="text-sm font-medium">Topic Area (Optional)</label>
-                  <Input
-                    id="topic-input"
-                    placeholder="e.g., Asset Management, Property Investment"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter a topic area to focus the AI's content suggestions
-                  </p>
-                </div>
-                
-                <Button
-                  onClick={triggerN8nSuggestions}
-                  disabled={isN8nLoading || !webhookUrl}
-                  variant="default"
-                  className="w-full relative overflow-hidden"
-                >
-                  <span className={isN8nLoading ? "invisible" : ""}>
-                    Suggest AI Content
-                  </span>
-                  {isN8nLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </div>
-            
+
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-medium">
@@ -749,231 +600,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* n8n suggestions section */}
-      {n8nSuggestions.length > 0 && (
-        <div className="space-y-4 mt-6">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <SparklesIcon className="h-5 w-5 text-primary" />
-            n8n AI Content Suggestions
-          </h3>
-          {n8nSuggestions.map((suggestion, index) => (
-            <Card key={`n8n-${index}`} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{suggestion.topicArea}</CardTitle>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleN8nCard(index)}
-                  >
-                    {openCards[`n8n-${index}`] ? (
-                      <ChevronUp className="h-5 w-5" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5" />
-                    )}
-                  </Button>
-                </div>
-                <div className="mt-3 text-sm text-muted-foreground">
-                  <Alert className="bg-secondary/50 border-none">
-                    <AlertTitle className="text-sm font-medium">AI Reasoning</AlertTitle>
-                    <AlertDescription className="mt-2 text-sm">
-                      {suggestion.reasoning}
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              </CardHeader>
-              <Collapsible open={openCards[`n8n-${index}`]} className="w-full">
-                <CollapsibleContent>
-                  <CardContent className="pt-0">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <h4 className="font-medium">Pillar Content</h4>
-                        </div>
-                        <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
-                          {suggestion.pillarContent.map((item, itemIndex) => (
-                            <li key={itemIndex}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <PenTool className="h-4 w-4 text-orange-500" />
-                          <h4 className="font-medium">Support Pages</h4>
-                        </div>
-                        <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
-                          {suggestion.supportPages.map((item, itemIndex) => (
-                            <li key={itemIndex}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Tag className="h-4 w-4 text-green-500" />
-                          <h4 className="font-medium">Meta Tags</h4>
-                        </div>
-                        <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
-                          {suggestion.metaTags.map((item, itemIndex) => (
-                            <li key={itemIndex}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <MessageSquare className="h-4 w-4 text-blue-500" />
-                          <h4 className="font-medium">Social Media</h4>
-                        </div>
-                        <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
-                          {suggestion.socialMedia.map((item, itemIndex) => (
-                            <li key={itemIndex}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="pt-0 pb-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="ml-auto"
-                      onClick={() => storeContentInLibrary(suggestion)}
-                    >
-                      <CheckSquare2Icon className="h-4 w-4 mr-2" />
-                      Use This Content
-                    </Button>
-                  </CardFooter>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* OpenAI suggestions section */}
-      {suggestions.length > 0 && (
-        <div className="space-y-4 mt-6">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <SparklesIcon className="h-5 w-5 text-primary" />
-            OpenAI Content Topic Suggestions
-          </h3>
-          {suggestions.map((suggestion, index) => (
-            <Card key={index} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{suggestion.topicArea}</CardTitle>
-                    {suggestion.searchAnalysis && (
-                      <div className="mt-2 space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <TrendingUp className="h-4 w-4 text-green-500" />
-                          <span className="font-medium">Search Volume:</span>
-                          <span>{suggestion.searchAnalysis.totalVolume?.toLocaleString() || 'N/A'}</span>
-                        </div>
-                        {suggestion.searchAnalysis.trendingKeywords?.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {suggestion.searchAnalysis.trendingKeywords.map((keyword, idx) => (
-                              <Badge key={idx} variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                <TrendingUp className="h-3 w-3 mr-1" />
-                                {keyword}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleCard(index)}
-                  >
-                    {openCards[index] ? (
-                      <ChevronUp className="h-5 w-5" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5" />
-                    )}
-                  </Button>
-                </div>
-                <div className="mt-3 text-sm text-muted-foreground">
-                  <Alert className="bg-secondary/50 border-none">
-                    <AlertTitle className="text-sm font-medium">AI Reasoning</AlertTitle>
-                    <AlertDescription className="mt-2 text-sm">
-                      {suggestion.reasoning}
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              </CardHeader>
-              <Collapsible open={openCards[index]} className="w-full">
-                <CollapsibleContent>
-                  <CardContent className="pt-0">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <h4 className="font-medium">Pillar Content</h4>
-                        </div>
-                        <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
-                          {suggestion.pillarContent.map((item, itemIndex) => (
-                            <li key={itemIndex}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <PenTool className="h-4 w-4 text-orange-500" />
-                          <h4 className="font-medium">Support Pages</h4>
-                        </div>
-                        <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
-                          {suggestion.supportPages.map((item, itemIndex) => (
-                            <li key={itemIndex}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Tag className="h-4 w-4 text-green-500" />
-                          <h4 className="font-medium">Meta Tags</h4>
-                        </div>
-                        <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
-                          {suggestion.metaTags.map((item, itemIndex) => (
-                            <li key={itemIndex}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <MessageSquare className="h-4 w-4 text-blue-500" />
-                          <h4 className="font-medium">Social Media</h4>
-                        </div>
-                        <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
-                          {suggestion.socialMedia.map((item, itemIndex) => (
-                            <li key={itemIndex}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="pt-0 pb-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="ml-auto"
-                      onClick={() => storeContentInLibrary(suggestion)}
-                    >
-                      <CheckSquare2Icon className="h-4 w-4 mr-2" />
-                      Use This Content
-                    </Button>
-                  </CardFooter>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
