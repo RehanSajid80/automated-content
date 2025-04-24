@@ -74,7 +74,7 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({ suggestions }) 
             </p>
           </div>
         </Card>
-      </Card>
+      ))}
     </div>
   );
 };
