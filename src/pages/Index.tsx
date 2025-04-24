@@ -15,6 +15,8 @@ import StatsSection from "@/components/dashboard/StatsSection";
 import ContentSection from "@/components/dashboard/ContentSection";
 import { useContentStats } from "@/hooks/useContentStats";
 import { useNavigationEvents } from "@/hooks/useNavigationEvents";
+import KeywordResearch from "@/components/dashboard/KeywordResearch";
+import ContentGenerator from "@/components/dashboard/ContentGenerator";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
