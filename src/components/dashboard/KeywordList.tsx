@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { TrendingUp, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface KeywordListProps {
   keywords: KeywordData[];
@@ -48,6 +50,7 @@ const KeywordList: React.FC<KeywordListProps> = ({
   const handleGenerateContent = () => {
     if (selectedKeywords.length > 0 && onGenerateContent) {
       onGenerateContent(selectedKeywords);
+      toast(`Creating content for ${selectedKeywords.length} keywords`);
     }
   };
 
@@ -66,14 +69,11 @@ const KeywordList: React.FC<KeywordListProps> = ({
       <ArrowDown size={14} className="ml-1" />;
   };
 
-  const handleKeywordClick = (keyword: string, e: React.MouseEvent) => {
-    if (e.target instanceof HTMLInputElement) return;
-    onKeywordToggle(keyword);
-  };
-
-  const handleCheckboxChange = (keyword: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    onKeywordToggle(keyword);
+  const handleKeywordClick = (keyword: string, e: React.MouseEvent<HTMLDivElement>) => {
+    // Don't toggle selection if clicking on the checkbox itself
+    if (!(e.target instanceof HTMLInputElement)) {
+      onKeywordToggle(keyword);
+    }
   };
 
   return (
@@ -87,6 +87,7 @@ const KeywordList: React.FC<KeywordListProps> = ({
             onClick={handleGenerateContent}
             size="sm"
             className="gap-2"
+            variant="create"
           >
             <FileText size={16} />
             Create Content
