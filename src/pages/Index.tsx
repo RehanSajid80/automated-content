@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import ManualContentCreator from "@/components/dashboard/ManualContentCreator";
@@ -17,13 +16,14 @@ import { useContentStats } from "@/hooks/useContentStats";
 import { useNavigationEvents } from "@/hooks/useNavigationEvents";
 import KeywordResearch from "@/components/dashboard/KeywordResearch";
 import ContentGenerator from "@/components/dashboard/ContentGenerator";
+import ContentLibrary from "@/components/dashboard/ContentLibrary";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [keywordData, setKeywordData] = useState<KeywordData[]>([]);
   const [selectedTopicArea, setSelectedTopicArea] = useState<string | null>(null);
-  const [contentViewMode, setContentViewMode] = useState<"selection" | "detail">("selection");
+  const [contentViewMode, setContentViewMode] = useState<"selection" | "detail" | "library">("selection");
   const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
   const [contentRefreshTrigger, setContentRefreshTrigger] = useState(0);
 
@@ -33,8 +33,14 @@ const Index = () => {
     setActiveTab(tab);
     if (tab === 'content') {
       setContentRefreshTrigger(prev => prev + 1);
+      if (contentViewMode === "library") {
+        // Keep library view when switching back to content tab
+      } else {
+        setContentViewMode("selection");
+        setSelectedTopicArea(null);
+      }
     }
-  }, []);
+  }, [contentViewMode]);
 
   useNavigationEvents({
     onTabChange: handleTabChange,
@@ -50,6 +56,26 @@ const Index = () => {
   const handleKeywordDataUpdated = (data: KeywordData[]) => {
     setKeywordData(data);
   };
+
+  const handleViewLibrary = () => {
+    setContentViewMode("library");
+    if (activeTab !== "content") {
+      setActiveTab("content");
+    }
+  };
+
+  useEffect(() => {
+    // Listen for view library events from RecentContent component
+    const handleViewLibrary = () => {
+      handleViewLibrary();
+    };
+    
+    window.addEventListener('view-library', handleViewLibrary);
+    
+    return () => {
+      window.removeEventListener('view-library', handleViewLibrary);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -118,6 +144,10 @@ const Index = () => {
                         key={`detail-${selectedContentIds.join('-')}-${contentRefreshTrigger}`}
                       />
                     )}
+                  </div>
+                ) : contentViewMode === "library" ? (
+                  <div className="rounded-xl border border-border bg-card p-6">
+                    <ContentLibrary key={`library-${contentRefreshTrigger}`} />
                   </div>
                 ) : (
                   <>
