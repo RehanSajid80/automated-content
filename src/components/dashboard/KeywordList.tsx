@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KeywordListProps {
@@ -10,7 +10,34 @@ interface KeywordListProps {
   onKeywordToggle: (keyword: string) => void;
 }
 
+type SortField = 'volume' | 'difficulty' | 'trend' | null;
+type SortDirection = 'asc' | 'desc';
+
 const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywords, onKeywordToggle }) => {
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedKeywords = [...keywords].sort((a, b) => {
+    if (!sortField) return 0;
+    
+    const multiplier = sortDirection === 'asc' ? 1 : -1;
+    
+    if (sortField === 'trend') {
+      return multiplier * (a.trend === 'up' ? 1 : -1) - (b.trend === 'up' ? 1 : -1);
+    }
+    
+    return multiplier * (Number(a[sortField]) - Number(b[sortField]));
+  });
+
   if (keywords.length === 0) {
     return (
       <div className="p-6 text-center text-muted-foreground">
@@ -19,9 +46,38 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywords, o
     );
   }
 
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' ? 
+      <ArrowUp size={14} className="ml-1" /> : 
+      <ArrowDown size={14} className="ml-1" />;
+  };
+
   return (
     <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
-      {keywords.map((kw) => (
+      <div className="bg-secondary/50 text-xs font-medium text-muted-foreground grid grid-cols-12 gap-4 px-4 py-3 sticky top-0">
+        <div className="col-span-1"></div>
+        <div className="col-span-5">Keyword</div>
+        <div 
+          className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
+          onClick={() => handleSort('volume')}
+        >
+          Volume <SortIcon field="volume" />
+        </div>
+        <div 
+          className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
+          onClick={() => handleSort('difficulty')}
+        >
+          Difficulty <SortIcon field="difficulty" />
+        </div>
+        <div 
+          className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
+          onClick={() => handleSort('trend')}
+        >
+          Trend <SortIcon field="trend" />
+        </div>
+      </div>
+      {sortedKeywords.map((kw) => (
         <div 
           key={kw.keyword}
           className={cn(
