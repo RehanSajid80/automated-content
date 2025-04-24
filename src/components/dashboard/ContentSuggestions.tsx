@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -108,6 +107,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   // New state for searched keywords
   const [searchedKeywords, setSearchedKeywords] = useState<KeywordData[]>([]);
   const { toast } = useToast();
+
+  const [topicArea, setTopicArea] = useState<string>("");
 
   useEffect(() => {
     const checkSupabaseConnection = async () => {
@@ -363,6 +364,66 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     }
   };
 
+  const handleN8nSync = async (webhookUrl: string) => {
+    if (!webhookUrl) {
+      toast({
+        title: "Enter Webhook URL",
+        description: "Please enter your n8n Webhook URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!topicArea) {
+      toast({
+        title: "Topic Area Required",
+        description: "Please select a topic area before syncing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setApiError(null);
+    setUsedModel(null);
+    
+    setIsSyncingFromN8n(true);
+    try {
+      localStorage.setItem('n8n-keyword-sync-webhook-url', webhookUrl);
+      const resp = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          trigger: "sync_keywords", 
+          source: "lovable",
+          topic_area: topicArea,
+          keywords: selectedKeywords 
+        }),
+      });
+
+      if (!resp.ok) throw new Error("n8n workflow did not respond successfully");
+
+      const data = await resp.json();
+      if (!Array.isArray(data)) throw new Error("Unexpected n8n response");
+      if (!data[0]?.keyword) throw new Error("No keyword data returned");
+
+      updateKeywords(data);
+      toast({
+        title: "Keywords Synced",
+        description: `Imported ${data.length} keywords from n8n workflow for topic "${topicArea}".`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Sync failed",
+        description: err.message || "Failed to sync keywords from n8n.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingFromN8n(false);
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
       <Card>
@@ -395,6 +456,27 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
             <div className="p-4 border border-border rounded-md bg-card">
               <h3 className="text-base font-medium mb-3">Search for Keywords</h3>
               <div className="space-y-4">
+                <div className="flex flex-col space-y-2">
+                  <label htmlFor="topic-area" className="text-sm font-medium">
+                    Topic Area
+                  </label>
+                  <Select value={topicArea} onValueChange={setTopicArea}>
+                    <SelectTrigger id="topic-area">
+                      <SelectValue placeholder="Select a topic area" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="workspace-management">Workspace Management</SelectItem>
+                      <SelectItem value="office-analytics">Office Analytics</SelectItem>
+                      <SelectItem value="desk-booking">Desk Booking</SelectItem>
+                      <SelectItem value="workplace-technology">Workplace Technology</SelectItem>
+                      <SelectItem value="facility-management">Facility Management</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Select the topic area for keyword analysis
+                  </p>
+                </div>
+                
                 <SemrushIntegration onKeywordsReceived={handleKeywordsReceived} />
                 
                 {searchedKeywords.length > 0 && (
