@@ -1,20 +1,26 @@
-
 import React, { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
-import { TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { TrendingUp, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 
 interface KeywordListProps {
   keywords: KeywordData[];
   selectedKeywords: string[];
   onKeywordToggle: (keyword: string) => void;
+  onGenerateContent?: (keywords: string[]) => void;
 }
 
 type SortField = 'volume' | 'difficulty' | 'trend' | null;
 type SortDirection = 'asc' | 'desc';
 
-const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywords, onKeywordToggle }) => {
+const KeywordList: React.FC<KeywordListProps> = ({ 
+  keywords, 
+  selectedKeywords, 
+  onKeywordToggle,
+  onGenerateContent 
+}) => {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -39,6 +45,12 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywords, o
     return multiplier * (Number(a[sortField]) - Number(b[sortField]));
   });
 
+  const handleGenerateContent = () => {
+    if (selectedKeywords.length > 0 && onGenerateContent) {
+      onGenerateContent(selectedKeywords);
+    }
+  };
+
   if (keywords.length === 0) {
     return (
       <div className="p-6 text-center text-muted-foreground">
@@ -55,7 +67,6 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywords, o
   };
 
   const handleKeywordClick = (keyword: string, e: React.MouseEvent) => {
-    // Prevent event from triggering twice
     if (e.target instanceof HTMLInputElement) return;
     onKeywordToggle(keyword);
   };
@@ -66,71 +77,88 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywords, o
   };
 
   return (
-    <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
-      <div className="bg-secondary/50 text-xs font-medium text-muted-foreground grid grid-cols-12 gap-4 px-4 py-3 sticky top-0">
-        <div className="col-span-1"></div>
-        <div className="col-span-5">Keyword</div>
-        <div 
-          className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
-          onClick={() => handleSort('volume')}
-        >
-          Volume <SortIcon field="volume" />
+    <div className="space-y-4">
+      {selectedKeywords.length > 0 && (
+        <div className="flex items-center justify-between px-4 py-2 bg-secondary/20 rounded-lg">
+          <span className="text-sm text-muted-foreground">
+            {selectedKeywords.length} keyword{selectedKeywords.length > 1 ? 's' : ''} selected
+          </span>
+          <Button
+            onClick={handleGenerateContent}
+            size="sm"
+            className="gap-2"
+          >
+            <FileText size={16} />
+            Create Content
+          </Button>
         </div>
-        <div 
-          className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
-          onClick={() => handleSort('difficulty')}
-        >
-          Difficulty <SortIcon field="difficulty" />
-        </div>
-        <div 
-          className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
-          onClick={() => handleSort('trend')}
-        >
-          Trend <SortIcon field="trend" />
-        </div>
-      </div>
-      {sortedKeywords.map((kw) => (
-        <div 
-          key={kw.keyword}
-          className={cn(
-            "grid grid-cols-12 gap-4 px-4 py-3 text-sm hover:bg-secondary/30 transition-colors cursor-pointer",
-            selectedKeywords.includes(kw.keyword) && "bg-secondary/50"
-          )}
-          onClick={(e) => handleKeywordClick(kw.keyword, e)}
-        >
-          <div className="col-span-1">
-            <Checkbox 
-              checked={selectedKeywords.includes(kw.keyword)}
-              onCheckedChange={() => onKeywordToggle(kw.keyword)}
-              className="rounded border-muted"
-            />
+      )}
+      <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+        <div className="bg-secondary/50 text-xs font-medium text-muted-foreground grid grid-cols-12 gap-4 px-4 py-3 sticky top-0">
+          <div className="col-span-1"></div>
+          <div className="col-span-5">Keyword</div>
+          <div 
+            className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
+            onClick={() => handleSort('volume')}
+          >
+            Volume <SortIcon field="volume" />
           </div>
-          <div className="col-span-5 font-medium flex items-center">
-            {kw.keyword}
-            {kw.trend === "up" && (
-              <TrendingUp size={14} className="ml-2 text-green-500" />
+          <div 
+            className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
+            onClick={() => handleSort('difficulty')}
+          >
+            Difficulty <SortIcon field="difficulty" />
+          </div>
+          <div 
+            className="col-span-2 text-right cursor-pointer flex items-center justify-end hover:text-foreground"
+            onClick={() => handleSort('trend')}
+          >
+            Trend <SortIcon field="trend" />
+          </div>
+        </div>
+        {sortedKeywords.map((kw) => (
+          <div 
+            key={kw.keyword}
+            className={cn(
+              "grid grid-cols-12 gap-4 px-4 py-3 text-sm hover:bg-secondary/30 transition-colors cursor-pointer",
+              selectedKeywords.includes(kw.keyword) && "bg-secondary/50"
             )}
-          </div>
-          <div className="col-span-2 text-right">{kw.volume.toLocaleString()}</div>
-          <div className="col-span-2 text-right">
-            <div className="inline-flex items-center">
-              <div className="w-8 h-2 rounded-full bg-muted overflow-hidden mr-2">
-                <div 
-                  className={cn(
-                    "h-full",
-                    kw.difficulty > 70 ? "bg-red-500" : 
-                    kw.difficulty > 50 ? "bg-orange-500" : 
-                    "bg-green-500"
-                  )}
-                  style={{ width: `${kw.difficulty}%` }}
-                ></div>
-              </div>
-              {kw.difficulty}
+            onClick={(e) => handleKeywordClick(kw.keyword, e)}
+          >
+            <div className="col-span-1">
+              <Checkbox 
+                checked={selectedKeywords.includes(kw.keyword)}
+                onCheckedChange={() => onKeywordToggle(kw.keyword)}
+                className="rounded border-muted"
+              />
             </div>
+            <div className="col-span-5 font-medium flex items-center">
+              {kw.keyword}
+              {kw.trend === "up" && (
+                <TrendingUp size={14} className="ml-2 text-green-500" />
+              )}
+            </div>
+            <div className="col-span-2 text-right">{kw.volume.toLocaleString()}</div>
+            <div className="col-span-2 text-right">
+              <div className="inline-flex items-center">
+                <div className="w-8 h-2 rounded-full bg-muted overflow-hidden mr-2">
+                  <div 
+                    className={cn(
+                      "h-full",
+                      kw.difficulty > 70 ? "bg-red-500" : 
+                      kw.difficulty > 50 ? "bg-orange-500" : 
+                      "bg-green-500"
+                    )}
+                    style={{ width: `${kw.difficulty}%` }}
+                  ></div>
+                </div>
+                {kw.difficulty}
+              </div>
+            </div>
+            <div className="col-span-2 text-right">{kw.cpc.toFixed(2)}</div>
           </div>
-          <div className="col-span-2 text-right">{kw.cpc.toFixed(2)}</div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

@@ -84,14 +84,12 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     );
   };
 
-  const handleGenerateContent = () => {
-    if (selectedKeywords.length === 0) return;
-    
+  const handleGenerateContent = (keywords: string[]) => {
     if (onKeywordsSelected) {
-      onKeywordsSelected(selectedKeywords);
+      onKeywordsSelected(keywords);
       toast({
         title: "Keywords transferred",
-        description: `${selectedKeywords.length} keywords sent to Content Generator`,
+        description: `${keywords.length} keywords sent to Content Generator`,
       });
     }
   };
@@ -169,6 +167,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
               keywords={filteredKeywords}
               selectedKeywords={selectedKeywords}
               onKeywordToggle={toggleKeywordSelection}
+              onGenerateContent={handleGenerateContent}
             />
           </div>
         </div>
