@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface KeywordListProps {
   keywords: KeywordData[];
@@ -53,6 +54,17 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywords, o
       <ArrowDown size={14} className="ml-1" />;
   };
 
+  const handleKeywordClick = (keyword: string, e: React.MouseEvent) => {
+    // Prevent event from triggering twice
+    if (e.target instanceof HTMLInputElement) return;
+    onKeywordToggle(keyword);
+  };
+
+  const handleCheckboxChange = (keyword: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    onKeywordToggle(keyword);
+  };
+
   return (
     <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
       <div className="bg-secondary/50 text-xs font-medium text-muted-foreground grid grid-cols-12 gap-4 px-4 py-3 sticky top-0">
@@ -84,16 +96,12 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywords, o
             "grid grid-cols-12 gap-4 px-4 py-3 text-sm hover:bg-secondary/30 transition-colors cursor-pointer",
             selectedKeywords.includes(kw.keyword) && "bg-secondary/50"
           )}
-          onClick={() => onKeywordToggle(kw.keyword)}
+          onClick={(e) => handleKeywordClick(kw.keyword, e)}
         >
           <div className="col-span-1">
-            <input 
-              type="checkbox"
+            <Checkbox 
               checked={selectedKeywords.includes(kw.keyword)}
-              onChange={(e) => {
-                e.stopPropagation();
-                onKeywordToggle(kw.keyword);
-              }}
+              onCheckedChange={() => onKeywordToggle(kw.keyword)}
               className="rounded border-muted"
             />
           </div>

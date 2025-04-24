@@ -39,6 +39,29 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Extract domain from URL if full URL is pasted
+  const extractDomain = (input: string): string => {
+    try {
+      // Check if it's already a valid domain without protocol
+      if (/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(input)) {
+        return input;
+      }
+      
+      // Try to extract domain from URL
+      if (input.startsWith('http')) {
+        const url = new URL(input);
+        return url.hostname;
+      }
+      
+      // If not starting with http, try adding it and parse
+      const url = new URL('https://' + input);
+      return url.hostname;
+    } catch (e) {
+      // If all fails, return the input as is
+      return input;
+    }
+  };
+
   const fetchKeywords = async () => {
     if (!domain) {
       toast({
@@ -53,10 +76,11 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
     setErrorMsg(null);
 
     try {
-      console.log(`Fetching keywords for domain: ${domain}`);
+      const cleanDomain = extractDomain(domain);
+      console.log(`Fetching keywords for domain: ${cleanDomain}`);
       
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
-        body: { keyword: domain, limit: 30 }
+        body: { keyword: cleanDomain, limit: 30 }
       });
 
       if (error) {
