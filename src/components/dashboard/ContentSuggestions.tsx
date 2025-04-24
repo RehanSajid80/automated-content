@@ -104,8 +104,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [checkingSupabase, setCheckingSupabase] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [apiKeyInfo, setApiKeyInfo] = useState<ApiKeyInfo | null>(null);
-  // New state for searched keywords
   const [searchedKeywords, setSearchedKeywords] = useState<KeywordData[]>([]);
+  const [isSyncingFromN8n, setIsSyncingFromN8n] = useState(false);
   const { toast } = useToast();
 
   const [topicArea, setTopicArea] = useState<string>("");
@@ -142,7 +142,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     });
   };
 
-  // Add the toggleKeywordSelection function
   const toggleKeywordSelection = (keyword: string) => {
     setSelectedKeywords(prev => 
       prev.includes(keyword) 
@@ -237,6 +236,29 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         description: `Loaded ${newKeywords.length} keywords for analysis`,
       });
     }
+  };
+
+  const updateKeywords = (newKeywords: KeywordData[]) => {
+    console.log(`Updating keywords with ${newKeywords.length} new entries`);
+    
+    setSearchedKeywords(prevKeywords => {
+      const keywordMap = new Map(prevKeywords.map(k => [k.keyword.toLowerCase(), k]));
+      
+      newKeywords.forEach(k => {
+        if (k && k.keyword) {
+          keywordMap.set(k.keyword.toLowerCase(), k);
+        }
+      });
+      
+      const updatedKeywords = Array.from(keywordMap.values());
+      console.log(`Updated keywords list now contains ${updatedKeywords.length} entries`);
+      return updatedKeywords;
+    });
+    
+    toast({
+      title: "Keywords Updated",
+      description: `Added or updated ${newKeywords.length} keywords in your workspace.`,
+    });
   };
 
   const checkApiKeyAvailability = async () => {
