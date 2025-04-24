@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Search, TrendingUp, ArrowRight, Upload, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import {
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import KeywordFilters, { FilterOptions } from "./KeywordFilters";
 import ContentSuggestions from "./ContentSuggestions";
+import KeywordSuggestions from "./KeywordSuggestions";
+import WebhookForm from "./WebhookForm";
 
 const mockKeywords: KeywordData[] = [
   { keyword: "office space management software", volume: 5400, difficulty: 78, cpc: 14.5, trend: "up" },
@@ -198,8 +200,8 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
-  const handleN8nSync = async () => {
-    if (!n8nWebhookUrl || n8nWebhookUrl.length < 8) {
+  const handleN8nSync = async (webhookUrl: string) => {
+    if (!webhookUrl) {
       toast({
         title: "Enter Webhook URL",
         description: "Please enter your n8n Webhook URL.",
@@ -212,9 +214,9 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     setImportError(null);
 
     try {
-      localStorage.setItem(N8N_WEBHOOK_KEY, n8nWebhookUrl);
+      localStorage.setItem(N8N_WEBHOOK_KEY, webhookUrl);
 
-      const resp = await fetch(n8nWebhookUrl, {
+      const resp = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trigger: "sync_keywords", source: "lovable" }),
@@ -259,6 +261,10 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
+  const suggestions = React.useMemo(() => {
+    return analyzeKeywords(filteredKeywords);
+  }, [filteredKeywords]);
+
   return (
     <div className={cn("", className)}>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -297,39 +303,10 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
               <DialogHeader>
                 <DialogTitle>Sync Keywords from n8n</DialogTitle>
                 <DialogDescription>
-                  Enter the n8n webhook URL that will return SEMrush keyword data.<br />
-                  This should return a JSON array of keyword objects as shown below.
+                  Connect to your n8n workflow to sync SEMrush keyword data
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                {importError && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertTitle>Sync Error</AlertTitle>
-                    <AlertDescription>{importError}</AlertDescription>
-                  </Alert>
-                )}
-                <Input
-                  placeholder="https://your-n8n-instance.com/webhook/keywords"
-                  value={n8nWebhookUrl}
-                  onChange={(e) => setN8nWebhookUrl(e.target.value)}
-                  disabled={isSyncingFromN8n}
-                />
-                <Button
-                  onClick={handleN8nSync}
-                  disabled={isSyncingFromN8n || !n8nWebhookUrl}
-                  className="w-full"
-                >
-                  {isSyncingFromN8n ? "Syncing..." : "Sync Now"}
-                </Button>
-                <div className="text-[11px] text-muted-foreground mt-2">
-                  <b>Expected response:</b>
-                  <pre>
-{`[
-  { "keyword": "office space management software", "volume": 5400, "difficulty": 78, "cpc": 14.5, "trend": "up" }
-]`}
-                  </pre>
-                </div>
-              </div>
+              <WebhookForm onSync={handleN8nSync} />
             </DialogContent>
           </Dialog>
           <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
@@ -460,35 +437,12 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
         </div>
       </div>
       
-      <div className="mt-4 flex flex-wrap justify-between items-center gap-4">
-        <div className="text-sm text-muted-foreground">
-          {selectedKeywords.length} keywords selected
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            size="sm" 
-            className="text-xs"
-            onClick={() => setShowContentSuggestions(!showContentSuggestions)}
-          >
-            {showContentSuggestions ? "Hide AI Suggestions" : "Show AI Suggestions"}
-          </Button>
-          <Button 
-            size="sm" 
-            disabled={selectedKeywords.length === 0}
-            className="text-xs"
-            onClick={handleGenerateContent}
-          >
-            Generate Content
-          </Button>
+      <div className="mt-6 space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Content Suggestions</h3>
+          <KeywordSuggestions suggestions={suggestions} />
         </div>
       </div>
-      
-      {showContentSuggestions && (
-        <div className="mt-6">
-          <ContentSuggestions keywords={keywords} />
-        </div>
-      )}
     </div>
   );
 };
