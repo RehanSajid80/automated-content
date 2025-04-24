@@ -100,6 +100,7 @@ export type Database = {
           domain: string
           id: string
           keyword: string
+          topic_area: string | null
           trend: string
           updated_at: string
           volume: number
@@ -111,6 +112,7 @@ export type Database = {
           domain: string
           id?: string
           keyword: string
+          topic_area?: string | null
           trend: string
           updated_at?: string
           volume: number
@@ -122,6 +124,7 @@ export type Database = {
           domain?: string
           id?: string
           keyword?: string
+          topic_area?: string | null
           trend?: string
           updated_at?: string
           volume?: number
