@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { generateContentByType } from "@/utils/contentGenerationUtils";
 import { toast } from "sonner";
-import { ContentGeneratorProps, contentTypes } from "./types/content";
+import { ContentGeneratorProps, contentTypes, ContentType } from "./types/content";
 import ContentGenerationForm from "./ContentGenerationForm";
 import GeneratedContent from "./GeneratedContent";
 
@@ -87,6 +87,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ className, keywords
       setIsGenerating(false);
       setGeneratingProgress("");
     }
+  };
+
+  const getContentTypeById = (id: string): ContentType => {
+    return contentTypes.find(type => type.id === id) || contentTypes[0];
   };
 
   return (

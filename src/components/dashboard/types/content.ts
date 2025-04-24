@@ -1,7 +1,15 @@
 
 import { ContentSuggestion } from "@/utils/contentSuggestionUtils";
 
-export const contentTypes = [
+export interface ContentType {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  sample: string;
+}
+
+export const contentTypes: ContentType[] = [
   { 
     id: "pillar", 
     name: "Pillar Content", 
@@ -44,4 +52,3 @@ export interface ContentGeneratorProps {
   className?: string;
   keywords?: string[];
 }
-

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
+import { ContentType } from "./types/content";
 
 interface ContentGenerationFormProps {
   activeTab: string;
@@ -13,7 +14,7 @@ interface ContentGenerationFormProps {
   onGenerate: () => void;
   isGenerating: boolean;
   generatingProgress: string;
-  contentType: { id: string; description: string };
+  contentType: ContentType; // Updated to use the ContentType interface
 }
 
 const ContentGenerationForm: React.FC<ContentGenerationFormProps> = ({
