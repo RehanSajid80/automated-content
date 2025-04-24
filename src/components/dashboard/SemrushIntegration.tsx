@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,27 @@ import { KeywordData } from "@/utils/excelUtils";
 interface SemrushIntegrationProps {
   onKeywordsReceived: (keywords: KeywordData[]) => void;
 }
+
+// Function to update SEMrush API metrics
+const updateSemrushMetrics = (success: boolean) => {
+  const metrics = localStorage.getItem('semrush-api-metrics');
+  let currentMetrics = metrics ? JSON.parse(metrics) : {
+    totalCalls: 0,
+    successfulCalls: 0,
+    failedCalls: 0,
+    lastCall: null
+  };
+
+  currentMetrics.totalCalls += 1;
+  if (success) {
+    currentMetrics.successfulCalls += 1;
+  } else {
+    currentMetrics.failedCalls += 1;
+  }
+  currentMetrics.lastCall = new Date().toISOString();
+
+  localStorage.setItem('semrush-api-metrics', JSON.stringify(currentMetrics));
+};
 
 const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsReceived }) => {
   const [domain, setDomain] = useState('');
@@ -44,20 +64,22 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
 
       if (error) {
         console.error('Function error:', error);
+        updateSemrushMetrics(false);
         throw new Error(error.message || "Failed to fetch keywords");
       }
 
       if (data.error) {
+        updateSemrushMetrics(false);
         throw new Error(data.error);
       }
 
       if (!data.keywords || !Array.isArray(data.keywords)) {
+        updateSemrushMetrics(false);
         throw new Error("Invalid response from SEMrush API");
       }
 
-      console.log(`Received ${data.keywords.length} keywords from edge function`);
-      
-      // Convert the response to the KeywordData format expected by the keyword list component
+      updateSemrushMetrics(true);
+
       const formattedKeywords: KeywordData[] = data.keywords.map(kw => ({
         keyword: kw.keyword,
         volume: kw.volume,
@@ -66,7 +88,6 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
         trend: kw.trend
       }));
       
-      // Pass the keywords to the parent component
       onKeywordsReceived(formattedKeywords);
       
       toast({
@@ -75,6 +96,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       });
     } catch (error) {
       console.error('Error fetching keywords:', error);
+      updateSemrushMetrics(false);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to fetch keywords",

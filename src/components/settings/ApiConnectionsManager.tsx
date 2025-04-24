@@ -1,9 +1,9 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Webhook, Braces, CheckCircle, XCircle } from "lucide-react";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
+import ApiUsageMetrics from "./ApiUsageMetrics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +17,6 @@ const ApiConnectionsManager = () => {
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   const { toast } = useToast();
 
-  // Reset all connections
   const resetConnections = async () => {
     try {
       await removeApiKey(API_KEYS.OPENAI);
@@ -40,7 +39,6 @@ const ApiConnectionsManager = () => {
     }
   };
 
-  // Check OpenAI connection
   React.useEffect(() => {
     const checkOpenAI = async () => {
       try {
@@ -49,7 +47,6 @@ const ApiConnectionsManager = () => {
           setOpenaiStatus('disconnected');
           return;
         }
-        // Test connection with a simple request
         const response = await fetch('https://api.openai.com/v1/models', {
           headers: {
             'Authorization': `Bearer ${key}`,
@@ -71,7 +68,6 @@ const ApiConnectionsManager = () => {
     checkOpenAI();
   }, []);
 
-  // Check webhook connection
   React.useEffect(() => {
     const checkWebhook = async () => {
       try {
@@ -82,7 +78,6 @@ const ApiConnectionsManager = () => {
         }
         setWebhookUrl(url);
         
-        // Ping webhook with a test request
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -186,6 +181,8 @@ const ApiConnectionsManager = () => {
           </div>
 
           <div className="space-y-6">
+            <ApiUsageMetrics />
+            
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
