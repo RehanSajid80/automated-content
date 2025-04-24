@@ -29,14 +29,29 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
     setIsLoading(true);
 
     try {
+      // Validate domain input
+      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
+      const cleanDomain = domain.replace(/^https?:\/\/(www\.)?/i, '');
+      
+      if (!domainRegex.test(cleanDomain)) {
+        throw new Error("Please enter a valid domain (e.g., example.com)");
+      }
+
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
-        body: { keyword: domain, limit: 20 }
+        body: { keyword: cleanDomain, limit: 20 }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Function error:', error);
+        throw new Error(error.message || "Failed to fetch keywords");
+      }
 
       if (data.error) {
         throw new Error(data.error);
+      }
+
+      if (!data.keywords || !Array.isArray(data.keywords)) {
+        throw new Error("Invalid response from SEMrush API");
       }
 
       onKeywordsReceived(data.keywords);
