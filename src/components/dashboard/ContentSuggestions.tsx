@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -104,6 +105,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [checkingSupabase, setCheckingSupabase] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [apiKeyInfo, setApiKeyInfo] = useState<ApiKeyInfo | null>(null);
+  // New state for searched keywords
+  const [searchedKeywords, setSearchedKeywords] = useState<KeywordData[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -117,11 +120,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         setCheckingSupabase(false);
       }
     };
-    
-    const savedWebhookUrl = localStorage.getItem('n8n-content-suggestions-webhook-url');
-    if (savedWebhookUrl) {
-      setWebhookUrl(savedWebhookUrl);
-    }
     
     checkSupabaseConnection();
   }, []);
@@ -141,6 +139,15 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       ...openCards,
       [index]: !openCards[index],
     });
+  };
+
+  // Add the toggleKeywordSelection function
+  const toggleKeywordSelection = (keyword: string) => {
+    setSelectedKeywords(prev => 
+      prev.includes(keyword) 
+        ? prev.filter(k => k !== keyword)
+        : [...prev, keyword]
+    );
   };
 
   const autoSelectTrendingKeywords = () => {
