@@ -1,10 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Link2Icon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface WebhookFormProps {
   onSync?: (webhookUrl: string) => Promise<void>;
@@ -13,20 +15,81 @@ interface WebhookFormProps {
 const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch existing webhook URL on component mount
+  useEffect(() => {
+    const fetchWebhook = async () => {
+      const { data, error } = await supabase
+        .from('webhook_configs')
+        .select('url')
+        .eq('type', 'keyword-sync')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching webhook:', error);
+        return;
+      }
+
+      if (data) {
+        setWebhookUrl(data.url);
+      }
+    };
+
+    fetchWebhook();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!webhookUrl) {
+      toast({
+        title: "Error",
+        description: "Please enter a webhook URL",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
 
     try {
-      await onSync?.(webhookUrl);
+      // Save to Supabase
+      const { data: existingWebhook } = await supabase
+        .from('webhook_configs')
+        .select('id')
+        .eq('type', 'keyword-sync')
+        .maybeSingle();
+
+      if (existingWebhook) {
+        // Update existing webhook
+        await supabase
+          .from('webhook_configs')
+          .update({ url: webhookUrl })
+          .eq('id', existingWebhook.id);
+      } else {
+        // Insert new webhook
+        await supabase
+          .from('webhook_configs')
+          .insert([{ url: webhookUrl, type: 'keyword-sync' }]);
+      }
+
+      // Test the connection if onSync is provided
+      if (onSync) {
+        await onSync(webhookUrl);
+      }
+
+      toast({
+        title: "Success",
+        description: "Webhook URL saved successfully",
+      });
     } catch (error) {
-      console.error("Error syncing keywords:", error);
+      console.error("Error saving webhook:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save webhook URL",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
