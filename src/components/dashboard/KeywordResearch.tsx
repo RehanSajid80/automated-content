@@ -18,6 +18,7 @@ import KeywordFilters, { FilterOptions } from "./KeywordFilters";
 import ContentSuggestions from "./ContentSuggestions";
 import KeywordSuggestions from "./KeywordSuggestions";
 import WebhookForm from "./WebhookForm";
+import { analyzeKeywords, ContentSuggestion } from "@/utils/contentSuggestionUtils";
 
 const mockKeywords: KeywordData[] = [
   { keyword: "office space management software", volume: 5400, difficulty: 78, cpc: 14.5, trend: "up" },
@@ -261,7 +262,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
-  const suggestions = React.useMemo(() => {
+  const suggestions = useMemo(() => {
     return analyzeKeywords(filteredKeywords);
   }, [filteredKeywords]);
 
