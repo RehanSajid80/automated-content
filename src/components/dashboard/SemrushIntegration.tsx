@@ -30,13 +30,15 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
 
     try {
       // Validate domain input
-      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
+      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
       const cleanDomain = domain.replace(/^https?:\/\/(www\.)?/i, '');
       
       if (!domainRegex.test(cleanDomain)) {
         throw new Error("Please enter a valid domain (e.g., example.com)");
       }
 
+      console.log(`Fetching keywords for domain: ${cleanDomain}`);
+      
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { keyword: cleanDomain, limit: 20 }
       });
@@ -54,6 +56,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
         throw new Error("Invalid response from SEMrush API");
       }
 
+      console.log(`Received ${data.keywords.length} keywords from edge function`);
       onKeywordsReceived(data.keywords);
       
       toast({
