@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Database } from "lucide-react";
+import { Search, Database, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KeywordData } from "@/utils/excelUtils";
@@ -49,13 +50,8 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
     setIsLoading(true);
 
     try {
-      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
+      // Clean the domain by removing protocol and www
       const cleanDomain = domain.replace(/^https?:\/\/(www\.)?/i, '');
-      
-      if (!domainRegex.test(cleanDomain)) {
-        throw new Error("Please enter a valid domain (e.g., example.com)");
-      }
-
       console.log(`Fetching keywords for domain: ${cleanDomain}`);
       
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {

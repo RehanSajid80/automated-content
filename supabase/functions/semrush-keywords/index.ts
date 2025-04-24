@@ -13,6 +13,12 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY') || '';
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+const isValidDomain = (domain: string): boolean => {
+  // Basic domain validation - accept domain.com or subdomain.domain.com format
+  const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
+  return domainRegex.test(domain);
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -22,8 +28,24 @@ serve(async (req) => {
     const { keyword, limit = 30 } = await req.json();
     console.log(`Request received for domain: ${keyword}, limit: ${limit}`);
 
+    if (!keyword) {
+      throw new Error("Missing required parameter: keyword");
+    }
+
     // Clean domain for consistency
     const cleanDomain = keyword.replace(/^https?:\/\/(www\.)?/i, '');
+    
+    if (!isValidDomain(cleanDomain)) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Please enter a valid domain (e.g., example.com)"
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     // Check existing keywords for this domain
     const { data: existingKeywords, error: fetchError } = await supabaseAdmin
@@ -48,12 +70,19 @@ serve(async (req) => {
       );
     }
 
+    if (!semrushApiKey) {
+      throw new Error('SEMrush API key is not configured');
+    }
+
     // Fetch keywords from SEMrush API
-    const semrushResponse = await fetch(`https://api.semrush.com/management/v1/keywords?key=${semrushApiKey}&type=domain&query=${cleanDomain}&limit=${limit}`);
+    const semrushUrl = `https://api.semrush.com/management/v1/keywords?key=${semrushApiKey}&type=domain&query=${cleanDomain}&limit=${limit}`;
+    console.log(`Calling SEMrush API for domain: ${cleanDomain}`);
+    
+    const semrushResponse = await fetch(semrushUrl);
     
     if (!semrushResponse.ok) {
       const errorText = await semrushResponse.text();
-      console.error('SEMrush API error:', errorText);
+      console.error(`SEMrush API error (${semrushResponse.status}):`, errorText);
       throw new Error(`Failed to fetch keywords from SEMrush API: ${errorText}`);
     }
 
