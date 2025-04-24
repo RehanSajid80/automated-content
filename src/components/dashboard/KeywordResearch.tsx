@@ -19,6 +19,7 @@ import ContentSuggestions from "./ContentSuggestions";
 import KeywordSuggestions from "./KeywordSuggestions";
 import WebhookForm from "./WebhookForm";
 import { analyzeKeywords, ContentSuggestion } from "@/utils/contentSuggestionUtils";
+import SemrushIntegration from "./SemrushIntegration";
 
 const mockKeywords: KeywordData[] = [
   { keyword: "office space management software", volume: 5400, difficulty: 78, cpc: 14.5, trend: "up" },
@@ -262,6 +263,14 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
+  const handleSemrushKeywords = (newKeywords: KeywordData[]) => {
+    setKeywords(prevKeywords => {
+      const keywordMap = new Map(prevKeywords.map(k => [k.keyword, k]));
+      newKeywords.forEach(k => keywordMap.set(k.keyword, k));
+      return Array.from(keywordMap.values());
+    });
+  };
+
   const suggestions = useMemo(() => {
     return analyzeKeywords(filteredKeywords);
   }, [filteredKeywords]);
@@ -287,6 +296,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
           >
             Reset Data
           </Button>
+          <SemrushIntegration onKeywordsReceived={handleSemrushKeywords} />
           <Dialog open={n8nDialogOpen} onOpenChange={setN8nDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="text-xs" disabled={isSyncingFromN8n}>
