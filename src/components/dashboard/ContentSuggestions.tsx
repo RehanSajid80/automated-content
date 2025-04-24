@@ -492,6 +492,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                       <SelectItem value="desk-booking">Desk Booking</SelectItem>
                       <SelectItem value="workplace-technology">Workplace Technology</SelectItem>
                       <SelectItem value="facility-management">Facility Management</SelectItem>
+                      <SelectItem value="asset-management">Asset Management</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
