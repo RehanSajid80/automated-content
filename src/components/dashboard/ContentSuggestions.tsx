@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
 import { getContentSuggestions, OPENAI_MODELS } from "@/utils/openaiUtils";
 import { useToast } from "@/hooks/use-toast";
-import { API_KEYS, getApiKey, getApiKeyInfo, ApiKeyInfo } from "@/utils/apiKeyUtils";
-import { supabase } from "@/integrations/supabase/client";
+import { API_KEYS, getApiKey } from "@/utils/apiKeyUtils";
 import {
   Card,
   CardContent,
@@ -84,6 +83,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [usedModel, setUsedModel] = useState<string | null>(null);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [topicArea, setTopicArea] = useState<string>("");
+  const [isSyncingFromN8n, setIsSyncingFromN8n] = useState(false);
 
   const { toast } = useToast();
 
@@ -116,6 +116,15 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       title: "Trending Keywords Selected",
       description: `Selected ${Math.min(trendingKeywords.length, 5)} trending keywords for analysis`,
     });
+  };
+
+  const updateKeywords = (newKeywords: KeywordData[]) => {
+    if (newKeywords && newKeywords.length > 0) {
+      toast({
+        title: "Keywords Updated",
+        description: `Added ${newKeywords.length} keywords for analysis`,
+      });
+    }
   };
 
   const generateSuggestions = async () => {
@@ -234,7 +243,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   </p>
                 </div>
                 
-                <SemrushIntegration />
+                <SemrushIntegration onKeywordsReceived={updateKeywords} />
                 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
