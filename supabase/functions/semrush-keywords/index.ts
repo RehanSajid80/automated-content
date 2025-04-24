@@ -74,7 +74,7 @@ serve(async (req) => {
       throw new Error('SEMrush API key is not configured');
     }
 
-    // Fetch keywords from SEMrush API - FIX: Use correct parameter format (domain_organic)
+    // Fetch keywords from SEMrush API
     const semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&domain=${cleanDomain}&database=us&display_limit=${limit}`;
     console.log(`Calling SEMrush API for domain: ${cleanDomain}`);
     
@@ -117,11 +117,24 @@ serve(async (req) => {
       }
     }
 
-    // Store the keywords in the database
+    // Clear existing keywords for this domain before inserting new ones
+    // This prevents the unique constraint violation
     if (keywords.length > 0) {
+      console.log(`Deleting existing keywords for domain: ${cleanDomain} before inserting new ones`);
+      const { error: deleteError } = await supabaseAdmin
+        .from('semrush_keywords')
+        .delete()
+        .eq('domain', cleanDomain);
+
+      if (deleteError) {
+        console.error('Error deleting existing keywords:', deleteError);
+        throw new Error('Failed to clear existing keywords');
+      }
+
+      // Now insert new keywords
       const { error: insertError } = await supabaseAdmin
         .from('semrush_keywords')
-        .upsert(keywords);
+        .insert(keywords);
 
       if (insertError) {
         console.error('Error storing keywords:', insertError);

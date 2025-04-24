@@ -65,11 +65,13 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       }
 
       if (data.error) {
+        console.error('API error:', data.error);
         updateSemrushMetrics(false);
         throw new Error(data.error);
       }
 
       if (!data.keywords || !Array.isArray(data.keywords)) {
+        console.error('Invalid response format:', data);
         updateSemrushMetrics(false);
         throw new Error("Invalid response from SEMrush API");
       }
@@ -88,7 +90,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       
       toast({
         title: data.fromCache ? "Loaded from cache" : "Success",
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${data.keywords.length} keywords. ${data.remaining} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords. ${data.remaining} API calls remaining today.`,
       });
     } catch (error) {
       console.error('Error fetching keywords:', error);
@@ -120,7 +122,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
         {isLoading ? (
           <>
             <Database className="w-4 h-4 mr-2 animate-spin" />
-            {isLoading ? "Fetching..." : "Fetch Keywords"}
+            Loading...
           </>
         ) : (
           <>
