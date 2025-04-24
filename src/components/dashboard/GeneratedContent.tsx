@@ -1,9 +1,10 @@
 
 import React from "react";
-import { Check } from "lucide-react";
+import { Check, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GeneratedContentProps {
   content: string;
@@ -21,6 +22,39 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
     toast("Content copied to clipboard", {
       description: "You can now paste it wherever you need it."
     });
+  };
+
+  const handleSave = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('content_library')
+        .insert([
+          {
+            content: content,
+            content_type: activeTab,
+            is_saved: true,
+            title: `Generated ${activeTab} content`,
+            topic_area: 'workspace-management'
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Content saved successfully!", {
+        description: "You can find it in your content library"
+      });
+
+      // Dispatch event to refresh content lists
+      window.dispatchEvent(new Event('content-updated'));
+
+    } catch (error) {
+      console.error('Error saving content:', error);
+      toast.error("Failed to save content", {
+        description: "Please try again or contact support if the issue persists"
+      });
+    }
   };
 
   return (
@@ -46,8 +80,12 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
           >
             Copy
           </Button>
-          <Button size="sm" className="h-8 text-xs px-2">
-            Save <Check size={14} className="ml-1" />
+          <Button 
+            size="sm" 
+            className="h-8 text-xs px-2"
+            onClick={handleSave}
+          >
+            Save <Save size={14} className="ml-1" />
           </Button>
         </div>
       </div>

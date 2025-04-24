@@ -15,6 +15,7 @@ export type Database = {
           content_type: string
           created_at: string
           id: string
+          is_saved: boolean | null
           is_selected: boolean | null
           keywords: string[]
           parent_topic_id: string | null
@@ -28,6 +29,7 @@ export type Database = {
           content_type: string
           created_at?: string
           id?: string
+          is_saved?: boolean | null
           is_selected?: boolean | null
           keywords?: string[]
           parent_topic_id?: string | null
@@ -41,6 +43,7 @@ export type Database = {
           content_type?: string
           created_at?: string
           id?: string
+          is_saved?: boolean | null
           is_selected?: boolean | null
           keywords?: string[]
           parent_topic_id?: string | null
