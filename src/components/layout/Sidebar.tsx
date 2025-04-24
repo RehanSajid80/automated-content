@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Sheet,
@@ -86,6 +87,27 @@ const Sidebar = () => {
     },
   ];
 
+  // Helper function to determine if a nav item is active
+  const isActive = (href: string) => {
+    if (href === "/") {
+      // Only consider exact match for homepage without params
+      return location.pathname === "/" && !location.search;
+    }
+    
+    // For tab links, check if the tab parameter matches
+    if (href.includes("?tab=")) {
+      const tabMatch = href.match(/\?tab=([^&]*)/);
+      const currentTabMatch = location.search.match(/\?tab=([^&]*)/);
+      
+      if (tabMatch && currentTabMatch) {
+        return tabMatch[1] === currentTabMatch[1];
+      }
+    }
+    
+    // Default case for other routes
+    return location.pathname === href;
+  };
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -104,10 +126,10 @@ const Sidebar = () => {
                 <NavLink
                   key={item.title}
                   to={item.href}
-                  className={({ isActive }) =>
-                    `flex items-center px-4 py-2.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground ${
-                      isActive ? "bg-accent text-accent-foreground font-medium" : "text-foreground"
-                    }`
+                  className={
+                    isActive(item.href)
+                      ? "flex items-center px-4 py-2.5 text-sm rounded-md bg-accent text-accent-foreground font-medium"
+                      : "flex items-center px-4 py-2.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground text-foreground"
                   }
                 >
                   {item.icon}
@@ -151,10 +173,10 @@ const Sidebar = () => {
                     key={item.title}
                     to={item.href}
                     onClick={() => setOpenMobile(false)}
-                    className={({ isActive }) =>
-                      `flex items-center px-4 py-2.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground ${
-                        isActive ? "bg-accent text-accent-foreground font-medium" : "text-foreground"
-                      }`
+                    className={
+                      isActive(item.href)
+                        ? "flex items-center px-4 py-2.5 text-sm rounded-md bg-accent text-accent-foreground font-medium"
+                        : "flex items-center px-4 py-2.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground text-foreground"
                     }
                   >
                     {item.icon}
@@ -190,3 +212,4 @@ const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
     </div>
   );
 };
+
