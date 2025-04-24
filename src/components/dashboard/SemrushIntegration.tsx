@@ -91,20 +91,27 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
 
       updateSemrushMetrics(true);
 
+      // Process keywords and format them correctly for the application
       const formattedKeywords: KeywordData[] = data.keywords.map(kw => ({
         keyword: kw.keyword,
-        volume: kw.volume,
-        difficulty: kw.difficulty,
-        cpc: kw.cpc,
+        volume: kw.volume || 0,
+        difficulty: kw.difficulty || 50,
+        cpc: kw.cpc || 0,
         trend: kw.trend || 'neutral'
       }));
       
+      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush`);
+      
+      // Call the callback function with the new keywords
       onKeywordsReceived(formattedKeywords);
       
       toast({
         title: data.fromCache ? "Loaded from cache" : "Success",
         description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''} ${data.remaining} API calls remaining today.`,
       });
+      
+      // Log to verify data is being passed
+      console.log(`Passing ${formattedKeywords.length} keywords to parent component`, formattedKeywords);
     } catch (error) {
       console.error('Error fetching keywords:', error);
       updateSemrushMetrics(false);
