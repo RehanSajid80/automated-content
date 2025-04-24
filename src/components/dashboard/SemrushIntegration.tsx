@@ -53,12 +53,10 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
     setErrorMsg(null);
 
     try {
-      // Clean the domain by removing protocol and www
-      const cleanDomain = domain.replace(/^https?:\/\/(www\.)?/i, '');
-      console.log(`Fetching keywords for domain: ${cleanDomain}`);
+      console.log(`Fetching keywords for domain: ${domain}`);
       
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
-        body: { keyword: cleanDomain, limit: 30 }
+        body: { keyword: domain, limit: 30 }
       });
 
       if (error) {
