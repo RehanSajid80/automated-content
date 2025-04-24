@@ -2,8 +2,10 @@
 import { useState, useEffect } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
+import { getFromCache, storeInCache } from "@/utils/contentLifecycleUtils";
 
 const STORAGE_KEY = 'office-space-keywords';
+const CACHE_KEY = 'keyword-data-cache';
 
 const mockKeywords: KeywordData[] = [
   { keyword: "office space management software", volume: 5400, difficulty: 78, cpc: 14.5, trend: "up" },
@@ -23,15 +25,23 @@ export const useKeywordData = (onKeywordDataUpdate?: (data: KeywordData[]) => vo
   const { toast } = useToast();
 
   useEffect(() => {
+    // First check for data in memory cache
+    const cachedKeywords = getFromCache<KeywordData[]>(CACHE_KEY);
+    if (cachedKeywords && cachedKeywords.length > 0) {
+      console.log(`Retrieved ${cachedKeywords.length} keywords from memory cache`);
+      setKeywords(cachedKeywords);
+      return;
+    }
+    
+    // Then check localStorage
     const savedKeywords = localStorage.getItem(STORAGE_KEY);
     if (savedKeywords) {
       try {
         const parsedKeywords = JSON.parse(savedKeywords) as KeywordData[];
+        console.log(`Loaded ${parsedKeywords.length} keywords from localStorage`);
         setKeywords(parsedKeywords);
-        toast({
-          title: "Keywords Loaded",
-          description: `Loaded ${parsedKeywords.length} keywords from your saved data.`,
-        });
+        // Store in memory cache for faster access later
+        storeInCache(CACHE_KEY, parsedKeywords);
       } catch (error) {
         console.error("Error loading saved keywords:", error);
         setKeywords(mockKeywords);
@@ -44,6 +54,9 @@ export const useKeywordData = (onKeywordDataUpdate?: (data: KeywordData[]) => vo
   useEffect(() => {
     if (keywords.length > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(keywords));
+      // Update in-memory cache too
+      storeInCache(CACHE_KEY, keywords);
+      console.log(`Saved ${keywords.length} keywords to localStorage and memory cache`);
     }
   }, [keywords]);
 
@@ -54,17 +67,41 @@ export const useKeywordData = (onKeywordDataUpdate?: (data: KeywordData[]) => vo
   }, [keywords, onKeywordDataUpdate]);
 
   const updateKeywords = (newKeywords: KeywordData[]) => {
+    console.log(`Updating keywords with ${newKeywords.length} new entries`);
+    
     setKeywords(prevKeywords => {
-      const keywordMap = new Map(prevKeywords.map(k => [k.keyword, k]));
-      newKeywords.forEach(k => keywordMap.set(k.keyword, k));
-      return Array.from(keywordMap.values());
+      // Create a map from previous keywords for easy lookup
+      const keywordMap = new Map(prevKeywords.map(k => [k.keyword.toLowerCase(), k]));
+      
+      // Update map with new keywords
+      newKeywords.forEach(k => {
+        if (k && k.keyword) {
+          keywordMap.set(k.keyword.toLowerCase(), k);
+        }
+      });
+      
+      // Convert map back to array
+      const updatedKeywords = Array.from(keywordMap.values());
+      console.log(`Updated keywords list now contains ${updatedKeywords.length} entries`);
+      return updatedKeywords;
+    });
+    
+    toast({
+      title: "Keywords Updated",
+      description: `Added or updated ${newKeywords.length} keywords in your workspace.`,
     });
   };
 
   const clearKeywords = () => {
     if (window.confirm("Are you sure you want to clear all keyword data? This cannot be undone.")) {
       localStorage.removeItem(STORAGE_KEY);
+      // Also clear from memory cache
+      storeInCache(CACHE_KEY, []);
       setKeywords(mockKeywords);
+      toast({
+        title: "Keywords Reset",
+        description: "Your keyword data has been reset to the default sample data.",
+      });
       return true;
     }
     return false;

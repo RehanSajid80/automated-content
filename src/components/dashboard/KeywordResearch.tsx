@@ -128,13 +128,13 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   const handleSemrushKeywords = (newKeywords: KeywordData[]) => {
     if (newKeywords && newKeywords.length > 0) {
       // Update the keywords state with new keywords
+      console.log(`KeywordResearch received ${newKeywords.length} keywords from SEMrush`);
+      
+      // Update using the function from useKeywordData hook
       updateKeywords(newKeywords);
       
       // Clear any existing keyword selection
       setSelectedKeywords([]);
-      
-      // Log to confirm keywords were received
-      console.log(`Updated keyword data with ${newKeywords.length} keywords from SEMrush`);
     }
   };
 
@@ -156,14 +156,6 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
         <div className="lg:col-span-3">
           <div className="rounded-lg border border-border overflow-hidden">
-            <div className="bg-secondary/50 text-xs font-medium text-muted-foreground grid grid-cols-12 gap-4 px-4 py-3">
-              <div className="col-span-1"></div>
-              <div className="col-span-5">Keyword</div>
-              <div className="col-span-2 text-right">Volume</div>
-              <div className="col-span-2 text-right">Difficulty</div>
-              <div className="col-span-2 text-right">CPC ($)</div>
-            </div>
-            
             <KeywordList
               keywords={filteredKeywords}
               selectedKeywords={selectedKeywords}

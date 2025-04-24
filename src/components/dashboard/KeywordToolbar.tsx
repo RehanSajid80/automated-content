@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import SemrushIntegration from "./SemrushIntegration";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import WebhookForm from "./WebhookForm";
+import { KeywordData } from "@/utils/excelUtils";
 
 interface KeywordToolbarProps {
   searchTerm: string;
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearData: () => void;
-  onSemrushKeywords: (keywords: any[]) => void;
+  onSemrushKeywords: (keywords: KeywordData[]) => void;
   isSyncingFromN8n: boolean;
   onN8nSync: (webhookUrl: string) => Promise<void>;
 }
