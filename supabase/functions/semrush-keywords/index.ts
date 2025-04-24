@@ -50,8 +50,8 @@ serve(async (req) => {
   }
 
   try {
-    const { keyword, limit = 30 } = await req.json();
-    console.log(`Request received for domain: ${keyword}, limit: ${limit}`);
+    const { keyword, limit = 30, topicArea } = await req.json();
+    console.log(`Request received for domain: ${keyword}, topic: ${topicArea}, limit: ${limit}`);
 
     if (!keyword) {
       throw new Error("Missing required parameter: keyword");
@@ -60,26 +60,27 @@ serve(async (req) => {
     try {
       // Extract and clean the domain
       const cleanDomain = extractDomain(keyword);
-      console.log(`Using domain for SEMrush API: ${cleanDomain}`);
+      console.log(`Using domain for SEMrush API: ${cleanDomain}, Topic Area: ${topicArea}`);
       
       if (!semrushApiKey) {
         throw new Error('SEMrush API key is not configured');
       }
 
-      // Check for existing data first
+      // Check for existing data first with topic area consideration
       const { data: existingKeywords, error: fetchError } = await supabaseAdmin
         .from('semrush_keywords')
         .select('*')
-        .eq('domain', cleanDomain);
+        .eq('domain', cleanDomain)
+        .eq('topic_area', topicArea);
 
       if (fetchError) {
         console.error('Error fetching existing keywords:', fetchError);
         throw new Error('Failed to check for existing keywords');
       }
 
-      // If we have cached data, return it
+      // If we have cached data for this domain and topic area, return it
       if (existingKeywords && existingKeywords.length > 0) {
-        console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain}`);
+        console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain} and topic: ${topicArea}`);
         return new Response(
           JSON.stringify({ 
             keywords: existingKeywords,
@@ -110,7 +111,7 @@ serve(async (req) => {
       const lines = responseText.trim().split('\n');
       
       if (lines.length <= 1) {
-        console.log('No keywords found for domain:', cleanDomain);
+        console.log(`No keywords found for domain: ${cleanDomain}`);
         return new Response(
           JSON.stringify({ keywords: [], remaining: 100 }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -124,11 +125,12 @@ serve(async (req) => {
         if (values.length >= 5) {
           keywords.push({
             domain: cleanDomain,
-            keyword: values[0],                  // Keyword phrase
-            volume: parseInt(values[1]) || 0,    // Search volume
-            difficulty: Math.round(Math.random() * 60) + 20, // SEMrush doesn't provide difficulty in basic API
-            cpc: parseFloat(values[2]) || 0,     // Cost per click
-            trend: ['up', 'down', 'neutral'][Math.floor(Math.random() * 3)] // SEMrush doesn't provide trend in basic API
+            topic_area: topicArea || '',  // Include topic area in stored data
+            keyword: values[0],
+            volume: parseInt(values[1]) || 0,
+            difficulty: Math.round(Math.random() * 60) + 20,
+            cpc: parseFloat(values[2]) || 0,
+            trend: ['up', 'down', 'neutral'][Math.floor(Math.random() * 3)]
           });
         }
       }
@@ -141,24 +143,23 @@ serve(async (req) => {
         );
       }
 
-      // Important: Make sure there are no existing records for this domain
-      // This is a safety measure to prevent constraint violations
-      console.log(`Attempting to delete any existing keywords for domain: ${cleanDomain}`);
+      // Delete existing keywords for this domain and topic area
+      console.log(`Attempting to delete existing keywords for domain: ${cleanDomain} and topic: ${topicArea}`);
       
       try {
         await supabaseAdmin
           .from('semrush_keywords')
           .delete()
-          .eq('domain', cleanDomain);
+          .eq('domain', cleanDomain)
+          .eq('topic_area', topicArea);
         
-        console.log(`Successfully deleted any existing keywords for domain: ${cleanDomain}`);
+        console.log(`Successfully deleted existing keywords for domain: ${cleanDomain} and topic: ${topicArea}`);
       } catch (deleteError) {
         console.error('Error during deletion of existing keywords:', deleteError);
-        // Continue anyway, as there might not be any records to delete
       }
 
-      // Now insert new keywords one by one to avoid bulk insert issues
-      console.log(`Inserting ${keywords.length} keywords for domain: ${cleanDomain} individually`);
+      // Insert new keywords
+      console.log(`Inserting ${keywords.length} keywords for domain: ${cleanDomain} and topic: ${topicArea}`);
       
       const insertedKeywords = [];
       for (const keyword of keywords) {
@@ -188,6 +189,7 @@ serve(async (req) => {
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+
     } catch (domainError) {
       console.error('Domain validation error:', domainError);
       return new Response(
@@ -203,3 +205,4 @@ serve(async (req) => {
     );
   }
 });
+
