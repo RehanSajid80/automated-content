@@ -75,11 +75,18 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
         throw new Error(data.error);
       }
 
-      if (!data.keywords || !Array.isArray(data.keywords)) {
-        console.error('Invalid response format:', data);
+      // Check if we got any keywords back
+      if (!data.keywords || !Array.isArray(data.keywords) || data.keywords.length === 0) {
+        console.warn('No keywords returned:', data);
         updateSemrushMetrics(false);
-        setErrorMsg("Invalid response format from API");
-        throw new Error("Invalid response from SEMrush API");
+        setErrorMsg("No keywords found for this domain");
+        toast({
+          title: "No keywords found",
+          description: "Try a different domain with more organic search presence",
+          variant: "default",
+        });
+        setIsLoading(false);
+        return;
       }
 
       updateSemrushMetrics(true);
@@ -96,7 +103,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       
       toast({
         title: data.fromCache ? "Loaded from cache" : "Success",
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords. ${data.remaining} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''} ${data.remaining} API calls remaining today.`,
       });
     } catch (error) {
       console.error('Error fetching keywords:', error);

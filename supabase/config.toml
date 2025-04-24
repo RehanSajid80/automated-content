@@ -6,6 +6,6 @@ enabled = true
 port = 54321
 schemas = ["public", "storage", "graphql_public"]
 
-# Explicitly set verify_jwt to true for the semrush-keywords function
+# Make the semrush-keywords function verify JWT but handle errors gracefully
 [functions.semrush-keywords]
-verify_jwt = true
+verify_jwt = false

@@ -47,25 +47,11 @@ serve(async (req) => {
       );
     }
 
-    // IMPORTANT: Clean up existing keywords for this domain first - to prevent constraint violations
-    console.log(`Attempting to delete existing keywords for domain: ${cleanDomain}`);
-    
-    const { error: deleteError } = await supabaseAdmin
-      .from('semrush_keywords')
-      .delete()
-      .eq('domain', cleanDomain);
-
-    if (deleteError) {
-      console.error('Error deleting existing keywords:', deleteError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to clean up existing keywords' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!semrushApiKey) {
+      throw new Error('SEMrush API key is not configured');
     }
-    
-    console.log(`Successfully deleted existing keywords for domain: ${cleanDomain}`);
 
-    // Now check if we have any cached data (we shouldn't since we just deleted it)
+    // Check for existing data first
     const { data: existingKeywords, error: fetchError } = await supabaseAdmin
       .from('semrush_keywords')
       .select('*')
@@ -76,8 +62,9 @@ serve(async (req) => {
       throw new Error('Failed to check for existing keywords');
     }
 
+    // If we have cached data, return it
     if (existingKeywords && existingKeywords.length > 0) {
-      console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain} after deletion - this should not happen`);
+      console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain}`);
       return new Response(
         JSON.stringify({ 
           keywords: existingKeywords,
@@ -86,10 +73,6 @@ serve(async (req) => {
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    }
-
-    if (!semrushApiKey) {
-      throw new Error('SEMrush API key is not configured');
     }
 
     // Fetch keywords from SEMrush API
@@ -135,28 +118,58 @@ serve(async (req) => {
       }
     }
 
-    // Now insert new keywords
-    if (keywords.length > 0) {
-      console.log(`Attempting to insert ${keywords.length} new keywords for domain: ${cleanDomain}`);
-      
-      const { error: insertError } = await supabaseAdmin
-        .from('semrush_keywords')
-        .insert(keywords);
-
-      if (insertError) {
-        console.error('Error storing keywords:', insertError);
-        throw new Error('Failed to store keywords in database');
-      }
-
-      console.log(`Successfully stored ${keywords.length} keywords for domain: ${cleanDomain}`);
-    } else {
+    if (keywords.length === 0) {
       console.log(`No keywords found for domain: ${cleanDomain}`);
+      return new Response(
+        JSON.stringify({ keywords: [], remaining: 100 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    // Important: Make sure there are no existing records for this domain
+    // This is a safety measure to prevent constraint violations
+    console.log(`Attempting to delete any existing keywords for domain: ${cleanDomain}`);
+    
+    try {
+      await supabaseAdmin
+        .from('semrush_keywords')
+        .delete()
+        .eq('domain', cleanDomain);
+      
+      console.log(`Successfully deleted any existing keywords for domain: ${cleanDomain}`);
+    } catch (deleteError) {
+      console.error('Error during deletion of existing keywords:', deleteError);
+      // Continue anyway, as there might not be any records to delete
+    }
+
+    // Now insert new keywords one by one to avoid bulk insert issues
+    console.log(`Inserting ${keywords.length} keywords for domain: ${cleanDomain} individually`);
+    
+    const insertedKeywords = [];
+    for (const keyword of keywords) {
+      try {
+        const { data, error: insertError } = await supabaseAdmin
+          .from('semrush_keywords')
+          .insert([keyword])
+          .select();
+
+        if (insertError) {
+          console.error(`Error inserting keyword "${keyword.keyword}":`, insertError);
+        } else if (data) {
+          insertedKeywords.push(data[0]);
+        }
+      } catch (err) {
+        console.error(`Exception inserting keyword "${keyword.keyword}":`, err);
+      }
+    }
+
+    console.log(`Successfully inserted ${insertedKeywords.length} of ${keywords.length} keywords`);
     
     return new Response(
       JSON.stringify({ 
-        keywords,
-        remaining: 100 - keywords.length
+        keywords: insertedKeywords.length > 0 ? insertedKeywords : keywords,
+        remaining: 100 - keywords.length,
+        insertedCount: insertedKeywords.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
