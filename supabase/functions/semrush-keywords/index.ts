@@ -47,7 +47,25 @@ serve(async (req) => {
       );
     }
 
-    // Check existing keywords for this domain
+    // IMPORTANT: Clean up existing keywords for this domain first - to prevent constraint violations
+    console.log(`Attempting to delete existing keywords for domain: ${cleanDomain}`);
+    
+    const { error: deleteError } = await supabaseAdmin
+      .from('semrush_keywords')
+      .delete()
+      .eq('domain', cleanDomain);
+
+    if (deleteError) {
+      console.error('Error deleting existing keywords:', deleteError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to clean up existing keywords' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log(`Successfully deleted existing keywords for domain: ${cleanDomain}`);
+
+    // Now check if we have any cached data (we shouldn't since we just deleted it)
     const { data: existingKeywords, error: fetchError } = await supabaseAdmin
       .from('semrush_keywords')
       .select('*')
@@ -59,7 +77,7 @@ serve(async (req) => {
     }
 
     if (existingKeywords && existingKeywords.length > 0) {
-      console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain}`);
+      console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain} after deletion - this should not happen`);
       return new Response(
         JSON.stringify({ 
           keywords: existingKeywords,
@@ -117,21 +135,10 @@ serve(async (req) => {
       }
     }
 
-    // Clear existing keywords for this domain before inserting new ones
-    // This prevents the unique constraint violation
+    // Now insert new keywords
     if (keywords.length > 0) {
-      console.log(`Deleting existing keywords for domain: ${cleanDomain} before inserting new ones`);
-      const { error: deleteError } = await supabaseAdmin
-        .from('semrush_keywords')
-        .delete()
-        .eq('domain', cleanDomain);
-
-      if (deleteError) {
-        console.error('Error deleting existing keywords:', deleteError);
-        throw new Error('Failed to clear existing keywords');
-      }
-
-      // Now insert new keywords
+      console.log(`Attempting to insert ${keywords.length} new keywords for domain: ${cleanDomain}`);
+      
       const { error: insertError } = await supabaseAdmin
         .from('semrush_keywords')
         .insert(keywords);
@@ -141,7 +148,7 @@ serve(async (req) => {
         throw new Error('Failed to store keywords in database');
       }
 
-      console.log(`Stored ${keywords.length} keywords for domain: ${cleanDomain}`);
+      console.log(`Successfully stored ${keywords.length} keywords for domain: ${cleanDomain}`);
     } else {
       console.log(`No keywords found for domain: ${cleanDomain}`);
     }

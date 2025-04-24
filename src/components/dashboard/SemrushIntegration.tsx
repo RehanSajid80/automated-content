@@ -6,6 +6,7 @@ import { Search, Database, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KeywordData } from "@/utils/excelUtils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SemrushIntegrationProps {
   onKeywordsReceived: (keywords: KeywordData[]) => void;
@@ -35,6 +36,7 @@ const updateSemrushMetrics = (success: boolean) => {
 const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsReceived }) => {
   const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchKeywords = async () => {
@@ -48,6 +50,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
     }
 
     setIsLoading(true);
+    setErrorMsg(null);
 
     try {
       // Clean the domain by removing protocol and www
@@ -61,18 +64,21 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
       if (error) {
         console.error('Function error:', error);
         updateSemrushMetrics(false);
+        setErrorMsg(`Function error: ${error.message || "Unknown error"}`);
         throw new Error(error.message || "Failed to fetch keywords");
       }
 
       if (data.error) {
         console.error('API error:', data.error);
         updateSemrushMetrics(false);
+        setErrorMsg(`API error: ${data.error}`);
         throw new Error(data.error);
       }
 
       if (!data.keywords || !Array.isArray(data.keywords)) {
         console.error('Invalid response format:', data);
         updateSemrushMetrics(false);
+        setErrorMsg("Invalid response format from API");
         throw new Error("Invalid response from SEMrush API");
       }
 
@@ -106,31 +112,40 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ onKeywordsRecei
   };
 
   return (
-    <div className="flex gap-2 items-center">
-      <Input
-        type="text"
-        placeholder="Enter domain (e.g., example.com)"
-        value={domain}
-        onChange={(e) => setDomain(e.target.value)}
-        className="max-w-sm"
-      />
-      <Button 
-        onClick={fetchKeywords} 
-        disabled={isLoading}
-        variant="outline"
-      >
-        {isLoading ? (
-          <>
-            <Database className="w-4 h-4 mr-2 animate-spin" />
-            Loading...
-          </>
-        ) : (
-          <>
-            <Search className="w-4 h-4 mr-2" />
-            Fetch Keywords
-          </>
-        )}
-      </Button>
+    <div className="space-y-2">
+      <div className="flex gap-2 items-center">
+        <Input
+          type="text"
+          placeholder="Enter domain (e.g., example.com)"
+          value={domain}
+          onChange={(e) => setDomain(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button 
+          onClick={fetchKeywords} 
+          disabled={isLoading}
+          variant="outline"
+        >
+          {isLoading ? (
+            <>
+              <Database className="w-4 h-4 mr-2 animate-spin" />
+              Loading...
+            </>
+          ) : (
+            <>
+              <Search className="w-4 h-4 mr-2" />
+              Fetch Keywords
+            </>
+          )}
+        </Button>
+      </div>
+      
+      {errorMsg && (
+        <Alert variant="destructive" className="mt-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMsg}</AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 };
