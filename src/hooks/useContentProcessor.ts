@@ -34,6 +34,7 @@ export const useContentProcessor = (generatedContent: any[]) => {
         console.log("Processing output content:", output.substring(0, 100) + "...");
         
         try {
+          // Check if this content has section markers
           const hasSections = output.includes("### Support Content") || 
                            output.includes("### Meta Tags") || 
                            output.includes("### Social Media Posts");
@@ -47,16 +48,36 @@ export const useContentProcessor = (generatedContent: any[]) => {
           
           if (hasSections) {
             console.log("Found section markers, parsing sections");
-            sections = {
-              pillar: output.split("### Support Content")[0] || "",
-              support: output.split("### Support Content")[1]?.split("### Meta Tags")[0] || "",
-              meta: output.split("### Meta Tags")[1]?.split("### Social Media Posts")[0] || "",
-              social: output.split("### Social Media Posts")[1] || ""
-            };
+            
+            // More robust section parsing
+            const fullContent = output.trim();
+            
+            // Extract pillar content (everything before "### Support Content")
+            sections.pillar = fullContent.split("### Support Content")[0]?.trim() || "";
+            
+            // Extract support content
+            if (fullContent.includes("### Support Content")) {
+              const afterSupport = fullContent.split("### Support Content")[1] || "";
+              sections.support = afterSupport.split("### Meta Tags")[0]?.trim() || 
+                                afterSupport.split("### Social Media Posts")[0]?.trim() || 
+                                afterSupport.trim();
+            }
+            
+            // Extract meta content
+            if (fullContent.includes("### Meta Tags")) {
+              const afterMeta = fullContent.split("### Meta Tags")[1] || "";
+              sections.meta = afterMeta.split("### Social Media Posts")[0]?.trim() || 
+                             afterMeta.trim();
+            }
+            
+            // Extract social content
+            if (fullContent.includes("### Social Media Posts")) {
+              sections.social = fullContent.split("### Social Media Posts")[1]?.trim() || "";
+            }
           } else {
             console.log("No section markers found, using full output as pillar content");
             sections = {
-              pillar: output,
+              pillar: output.trim(),
               support: "",
               meta: "",
               social: ""
@@ -68,8 +89,9 @@ export const useContentProcessor = (generatedContent: any[]) => {
           setContentProcessed(true);
         } catch (sectionError) {
           console.error("Error parsing content sections:", sectionError);
+          // Fallback to using full output as pillar content
           setEditableContent({
-            pillar: output,
+            pillar: output.trim(),
             support: "",
             meta: "",
             social: ""
@@ -85,6 +107,7 @@ export const useContentProcessor = (generatedContent: any[]) => {
   }, [generatedContent]);
 
   const retryProcessing = () => {
+    // Force re-processing of content
     setContentProcessed(false);
     setTimeout(() => setContentProcessed(true), 100);
   };

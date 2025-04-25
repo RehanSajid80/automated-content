@@ -20,7 +20,14 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   onSuggestionSelect,
   isLoading
 }) => {
-  const { suggestions, generatedContent, sendToN8n, isLoading: n8nLoading, error: n8nError } = useN8nAgent();
+  const { 
+    suggestions, 
+    generatedContent, 
+    sendToN8n, 
+    isLoading: n8nLoading, 
+    error: n8nError 
+  } = useN8nAgent();
+  
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const {
     editableContent,
@@ -29,6 +36,14 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     retryProcessing,
     setEditableContent
   } = useContentProcessor(generatedContent);
+
+  console.log("Current state:", {
+    generatedContentLength: generatedContent.length,
+    contentProcessed,
+    isEditing,
+    editableContentKeys: Object.keys(editableContent),
+    processingError
+  });
 
   const handleContentChange = (sectionKey: string, newContent: string) => {
     setEditableContent(prev => ({

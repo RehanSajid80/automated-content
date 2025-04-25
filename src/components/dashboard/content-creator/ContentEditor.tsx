@@ -17,16 +17,24 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
   onRegenerateContent,
   onSaveContent,
 }) => {
+  console.log("ContentEditor rendering with content keys:", Object.keys(editableContent));
+  console.log("Pillar content length:", editableContent.pillar?.length || 0);
+  
+  // Filter out empty sections
+  const availableSections = Object.entries(editableContent)
+    .filter(([key, value]) => key === 'pillar' || value?.trim().length > 0)
+    .map(([key]) => key);
+  
   return (
     <Tabs defaultValue="pillar">
       <TabsList>
         <TabsTrigger value="pillar">Pillar Content</TabsTrigger>
-        <TabsTrigger value="support">Support Content</TabsTrigger>
-        <TabsTrigger value="meta">Meta Tags</TabsTrigger>
-        <TabsTrigger value="social">Social Posts</TabsTrigger>
+        {availableSections.includes('support') && <TabsTrigger value="support">Support Content</TabsTrigger>}
+        {availableSections.includes('meta') && <TabsTrigger value="meta">Meta Tags</TabsTrigger>}
+        {availableSections.includes('social') && <TabsTrigger value="social">Social Posts</TabsTrigger>}
       </TabsList>
       
-      {["pillar", "support", "meta", "social"].map((sectionKey) => (
+      {availableSections.map((sectionKey) => (
         <TabsContent key={sectionKey} value={sectionKey}>
           <GeneratedContentCard
             content={editableContent[sectionKey] || ""}
