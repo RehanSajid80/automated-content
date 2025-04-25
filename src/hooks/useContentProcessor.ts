@@ -16,7 +16,7 @@ export const useContentProcessor = (generatedContent: any[]) => {
   const [processingError, setProcessingError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (generatedContent.length > 0) {
+    if (generatedContent && generatedContent.length > 0) {
       console.log("Processing generatedContent:", generatedContent);
       setProcessingError(null);
       
@@ -24,6 +24,7 @@ export const useContentProcessor = (generatedContent: any[]) => {
         const contentItem = generatedContent[0];
         console.log("Processing content item:", contentItem);
         
+        // Handle different content formats (output, content, or direct string)
         const output = contentItem.output || contentItem.content || "";
         if (!output) {
           console.error("No output content found in:", contentItem);
@@ -31,13 +32,18 @@ export const useContentProcessor = (generatedContent: any[]) => {
           return;
         }
         
-        console.log("Processing output content:", output.substring(0, 100) + "...");
+        console.log("Processing output content length:", output.length);
+        console.log("Processing output content preview:", output.substring(0, 100) + "...");
         
         try {
           // Check if this content has section markers
           const hasSections = output.includes("### Support Content") || 
-                           output.includes("### Meta Tags") || 
-                           output.includes("### Social Media Posts");
+                          output.includes("# Support Content") ||
+                          output.includes("<h1>Common Questions") ||
+                          output.includes("### Meta Tags") || 
+                          output.includes("# Meta Tags") ||
+                          output.includes("### Social Media Posts") ||
+                          output.includes("# Social Media Posts");
           
           let sections: ContentSections = {
             pillar: "",
@@ -49,30 +55,50 @@ export const useContentProcessor = (generatedContent: any[]) => {
           if (hasSections) {
             console.log("Found section markers, parsing sections");
             
-            // More robust section parsing
+            // More robust section parsing with multiple possible delimiters
             const fullContent = output.trim();
             
-            // Extract pillar content (everything before "### Support Content")
-            sections.pillar = fullContent.split("### Support Content")[0]?.trim() || "";
+            // Extract pillar content (everything before any support content marker)
+            const supportMarkers = ["### Support Content", "# Support Content", "<h1>Common Questions"];
+            let pillarContent = fullContent;
+            
+            for (const marker of supportMarkers) {
+              if (fullContent.includes(marker)) {
+                pillarContent = fullContent.split(marker)[0];
+                break;
+              }
+            }
+            sections.pillar = pillarContent.trim();
             
             // Extract support content
-            if (fullContent.includes("### Support Content")) {
-              const afterSupport = fullContent.split("### Support Content")[1] || "";
-              sections.support = afterSupport.split("### Meta Tags")[0]?.trim() || 
-                                afterSupport.split("### Social Media Posts")[0]?.trim() || 
-                                afterSupport.trim();
+            const supportStartRegex = /(### Support Content|# Support Content|<h1>Common Questions)/i;
+            const metaStartRegex = /(### Meta Tags|# Meta Tags)/i;
+            const socialStartRegex = /(### Social Media Posts|# Social Media Posts)/i;
+            
+            if (supportStartRegex.test(fullContent)) {
+              const afterSupportMatch = fullContent.split(supportStartRegex)[1] || "";
+              if (metaStartRegex.test(afterSupportMatch)) {
+                sections.support = afterSupportMatch.split(metaStartRegex)[0].trim();
+              } else if (socialStartRegex.test(afterSupportMatch)) {
+                sections.support = afterSupportMatch.split(socialStartRegex)[0].trim();
+              } else {
+                sections.support = afterSupportMatch.trim();
+              }
             }
             
             // Extract meta content
-            if (fullContent.includes("### Meta Tags")) {
-              const afterMeta = fullContent.split("### Meta Tags")[1] || "";
-              sections.meta = afterMeta.split("### Social Media Posts")[0]?.trim() || 
-                             afterMeta.trim();
+            if (metaStartRegex.test(fullContent)) {
+              const afterMetaMatch = fullContent.split(metaStartRegex)[1] || "";
+              if (socialStartRegex.test(afterMetaMatch)) {
+                sections.meta = afterMetaMatch.split(socialStartRegex)[0].trim();
+              } else {
+                sections.meta = afterMetaMatch.trim();
+              }
             }
             
             // Extract social content
-            if (fullContent.includes("### Social Media Posts")) {
-              sections.social = fullContent.split("### Social Media Posts")[1]?.trim() || "";
+            if (socialStartRegex.test(fullContent)) {
+              sections.social = fullContent.split(socialStartRegex)[1].trim();
             }
           } else {
             console.log("No section markers found, using full output as pillar content");
@@ -109,7 +135,25 @@ export const useContentProcessor = (generatedContent: any[]) => {
   const retryProcessing = () => {
     // Force re-processing of content
     setContentProcessed(false);
-    setTimeout(() => setContentProcessed(true), 100);
+    setTimeout(() => {
+      try {
+        if (generatedContent && generatedContent.length > 0) {
+          const contentItem = generatedContent[0];
+          const output = contentItem.output || contentItem.content || "";
+          
+          setEditableContent({
+            pillar: output.trim(),
+            support: "",
+            meta: "",
+            social: ""
+          });
+        }
+        setContentProcessed(true);
+      } catch (error) {
+        console.error("Error in retry processing:", error);
+        setProcessingError("Error reprocessing content.");
+      }
+    }, 100);
   };
 
   return {
