@@ -31,6 +31,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
   const { toast } = useToast();
   const { isLoading, apiError, usedModel, selectedModel } = useContentSuggestions();
+  const { sendToN8n } = useN8nAgent();
 
   const toggleKeywordSelection = (keyword: string) => {
     if (isAISuggestionMode) return;
@@ -209,3 +210,4 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 };
 
 export default ContentSuggestions;
+
