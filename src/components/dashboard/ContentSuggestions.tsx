@@ -16,6 +16,8 @@ import SemrushIntegration from "./SemrushIntegration";
 import { KeywordSelector } from "./KeywordSelector";
 import { useContentSuggestions } from "@/hooks/useContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
+import { AISuggestion } from "./types/aiSuggestions";
+import { AISuggestionsList } from "./AISuggestionsList";
 
 interface ContentSuggestionsProps {
   keywords: KeywordData[];
@@ -31,6 +33,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [localKeywords, setLocalKeywords] = useState<KeywordData[]>(keywords);
   const [isN8nLoading, setIsN8nLoading] = useState(false);
   const [n8nResponse, setN8nResponse] = useState<any[]>([]);
+  const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
   const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
   const { toast } = useToast();
   
@@ -82,36 +85,22 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     setN8nResponse([]);
     
     try {
-      const targetUrl = localStorage.getItem("target-url") || "https://officespacesoftware.com";
+      // For now, we'll use mock data instead of the actual API call
+      const mockSuggestions: AISuggestion[] = Array.from({ length: 5 }).map((_, index) => ({
+        id: `suggestion-${index + 1}`,
+        title: `${topicArea} Content Idea ${index + 1}`,
+        description: `AI-generated content idea based on your keywords and topic area: ${topicArea}`,
+        contentType: ['pillar', 'support', 'meta', 'social'][Math.floor(Math.random() * 4)] as any,
+        keywords: localKeywords.slice(0, 5).map(k => k.keyword),
+      }));
       
-      const response = await sendToN8n({
-        keywords: localKeywords, // Send ALL keywords
-        topicArea,
-        targetUrl,
-        requestType: "contentSuggestions"
-      });
-      
-      if (!response || !response.suggestions || !Array.isArray(response.suggestions)) {
-        throw new Error("Invalid response from n8n agent");
-      }
-      
-      setN8nResponse(response.suggestions);
+      setAiSuggestions(mockSuggestions);
       
       toast({
-        title: "AI Suggestions Received",
-        description: `Received ${response.suggestions.length} content suggestions from the AI agent`,
+        title: "AI Suggestions Ready",
+        description: "Select one of the suggestions below to proceed",
       });
       
-      if (response.suggestions.length > 0) {
-        const event = new CustomEvent('navigate-to-tab', { 
-          detail: { 
-            tab: 'content',
-            contentSuggestions: response.suggestions,
-            sourceKeywords: localKeywords.map(k => k.keyword)
-          } 
-        });
-        window.dispatchEvent(event);
-      }
     } catch (error) {
       console.error("Error getting AI suggestions:", error);
       toast({
@@ -121,8 +110,19 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       });
     } finally {
       setIsN8nLoading(false);
-      setIsAISuggestionMode(false);
     }
+  };
+
+  const handleSuggestionSelect = (suggestion: AISuggestion) => {
+    toast({
+      title: "Suggestion Selected",
+      description: `You selected: ${suggestion.title}`,
+    });
+    
+    // Here you would typically handle the selection, such as:
+    // - Navigate to content creation with the selected suggestion
+    // - Store the selection in state
+    // - Trigger content generation, etc.
   };
 
   const autoSelectTrendingKeywords = () => {
@@ -221,39 +221,33 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   disabled={isAISuggestionMode}
                 />
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button
-                    onClick={() => generateSuggestions(localKeywords, selectedKeywords)}
-                    disabled={isLoading || selectedKeywords.length === 0 || isAISuggestionMode}
-                    className="w-full relative overflow-hidden"
-                  >
-                    <span className={isLoading ? "invisible" : ""}>
-                      {`Generate Content Suggestions (${selectedKeywords.length} keywords)`}
-                    </span>
-                    {isLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    onClick={handleAISuggestions}
-                    disabled={isN8nLoading || isN8nAgentLoading || isAISuggestionMode}
-                    className="w-full sm:w-auto relative overflow-hidden"
-                    variant="n8n"
-                  >
-                    <BrainCircuit className={isN8nLoading ? "invisible" : "mr-2"} size={16} />
-                    <span className={isN8nLoading ? "invisible" : ""}>
-                      AI Suggestions
-                    </span>
-                    {(isN8nLoading) && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleAISuggestions}
+                  disabled={isN8nLoading || !topicArea}
+                  className="w-full relative overflow-hidden"
+                  variant="default"
+                >
+                  <BrainCircuit className={isN8nLoading ? "invisible" : "mr-2"} size={16} />
+                  <span className={isN8nLoading ? "invisible" : ""}>
+                    AI Suggestions
+                  </span>
+                  {isN8nLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </Button>
+
+                {isAISuggestionMode && aiSuggestions.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
+                    <AISuggestionsList 
+                      suggestions={aiSuggestions}
+                      onSelect={handleSuggestionSelect}
+                      isLoading={isN8nLoading}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
