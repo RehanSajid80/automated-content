@@ -1,7 +1,7 @@
 
 import React from "react";
 import { TopicAreaSelector } from "../TopicAreaSelector";
-import { SemrushIntegration } from "../SemrushIntegration";
+import SemrushIntegration from "../SemrushIntegration";  // Changed to default import
 import { KeywordSelector } from "../KeywordSelector";
 import { KeywordData } from "@/utils/excelUtils";
 
@@ -53,3 +53,4 @@ export const KeywordSearchSection: React.FC<KeywordSearchSectionProps> = ({
     </div>
   );
 };
+
