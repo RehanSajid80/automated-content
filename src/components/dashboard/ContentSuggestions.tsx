@@ -1,24 +1,16 @@
+
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { AlertTriangle, SparklesIcon, BrainCircuit } from "lucide-react";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { TopicAreaSelector } from "./TopicAreaSelector";
 import { AIContentGenerator } from "./AIContentGenerator";
-import SemrushIntegration from "./SemrushIntegration";
-import { KeywordSelector } from "./KeywordSelector";
 import { useContentSuggestions } from "@/hooks/useContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
-import { AISuggestion, ContentSuggestionsProps } from "./types/aiSuggestions";
+import { ContentSuggestionsProps, AISuggestion } from "./types/aiSuggestions";
 import { KeywordData } from "@/utils/excelUtils";
+import { ContentSuggestionsHeader } from "./content-suggestions/ContentSuggestionsHeader";
+import { KeywordSearchSection } from "./content-suggestions/KeywordSearchSection";
+import { AISuggestionsButton } from "./content-suggestions/AISuggestionsButton";
 
 const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   keywords,
@@ -32,11 +24,10 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const { toast } = useToast();
   const { isLoading, apiError, usedModel, selectedModel } = useContentSuggestions();
   const { sendToN8n } = useN8nAgent();
-  const { targetUrl, setTargetUrl, handleSuggestUrl } = useUrlSuggestions();
+  const { targetUrl } = useUrlSuggestions();
 
   const toggleKeywordSelection = (keyword: string) => {
     if (isAISuggestionMode) return;
-    
     setSelectedKeywords(prev => 
       prev.includes(keyword) 
         ? prev.filter(k => k !== keyword)
@@ -80,10 +71,12 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     
     try {
       await sendToN8n({
-        keywords: selectedKeywords.length > 0 ? localKeywords.filter(kw => selectedKeywords.includes(kw.keyword)) : localKeywords,
+        keywords: selectedKeywords.length > 0 
+          ? localKeywords.filter(kw => selectedKeywords.includes(kw.keyword)) 
+          : localKeywords,
         topicArea,
-        targetUrl: targetUrl || window.location.origin,
-        url: targetUrl || undefined,
+        targetUrl: targetUrl || "https://www.officespacesoftware.com",
+        url: targetUrl || "https://www.officespacesoftware.com",
         requestType: 'contentSuggestions'
       });
       
@@ -131,74 +124,37 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         </CardHeader>
         <CardContent className="w-full">
           <div className="space-y-6 w-full">
-            {apiError && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>OpenAI Error</AlertTitle>
-                <AlertDescription>{apiError}</AlertDescription>
-              </Alert>
-            )}
+            <ContentSuggestionsHeader 
+              apiError={apiError}
+              usedModel={usedModel}
+              selectedModel={selectedModel}
+            />
             
-            {usedModel && usedModel !== selectedModel && (
-              <Alert variant="destructive" className="mb-4 bg-yellow-50 border-yellow-200 text-yellow-800">
-                <SparklesIcon className="h-4 w-4" />
-                <AlertTitle>Model Fallback Activated</AlertTitle>
-                <AlertDescription>
-                  Due to rate limits, we used an alternative model.
-                </AlertDescription>
-              </Alert>
+            <KeywordSearchSection 
+              topicArea={topicArea}
+              setTopicArea={setTopicArea}
+              updateKeywords={updateKeywords}
+              localKeywords={localKeywords}
+              selectedKeywords={selectedKeywords}
+              toggleKeywordSelection={toggleKeywordSelection}
+              autoSelectTrendingKeywords={autoSelectTrendingKeywords}
+              isAISuggestionMode={isAISuggestionMode}
+            />
+
+            <AISuggestionsButton 
+              onClick={handleAISuggestions}
+              isLoading={isN8nLoading}
+              disabled={!topicArea}
+            />
+
+            {isAISuggestionMode && (
+              <AIContentGenerator 
+                keywords={localKeywords}
+                topicArea={topicArea}
+                onSuggestionSelect={handleSuggestionSelect}
+                isLoading={isN8nLoading}
+              />
             )}
-
-            <div className="p-4 border border-border rounded-md bg-card w-full">
-              <h3 className="text-base font-medium mb-3">Search for Keywords</h3>
-              <div className="space-y-4 w-full">
-                <TopicAreaSelector 
-                  value={topicArea}
-                  onChange={setTopicArea}
-                  disabled={isAISuggestionMode}
-                />
-                
-                <SemrushIntegration 
-                  onKeywordsReceived={updateKeywords} 
-                  topicArea={topicArea}
-                  disabled={isAISuggestionMode}
-                />
-                
-                <KeywordSelector
-                  keywords={localKeywords}
-                  selectedKeywords={selectedKeywords}
-                  onKeywordToggle={toggleKeywordSelection}
-                  onAutoSelect={autoSelectTrendingKeywords}
-                  disabled={isAISuggestionMode}
-                />
-
-                <Button
-                  onClick={handleAISuggestions}
-                  disabled={isN8nLoading || !topicArea}
-                  className="w-full relative overflow-hidden"
-                  variant="default"
-                >
-                  <BrainCircuit className={isN8nLoading ? "invisible" : "mr-2"} size={16} />
-                  <span className={isN8nLoading ? "invisible" : ""}>
-                    AI Suggestions
-                  </span>
-                  {isN8nLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
-                </Button>
-
-                {isAISuggestionMode && (
-                  <AIContentGenerator 
-                    keywords={localKeywords}
-                    topicArea={topicArea}
-                    onSuggestionSelect={handleSuggestionSelect}
-                    isLoading={isN8nLoading}
-                  />
-                )}
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
