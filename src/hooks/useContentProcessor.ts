@@ -1,11 +1,13 @@
 
 import { useState, useEffect } from "react";
 
+// Modified interface to include index signature
 interface ContentSections {
   pillar: string;
   support: string;
   meta: string;
   social: string;
+  [key: string]: string; // Added index signature
 }
 
 export const useContentProcessor = (generatedContent: any[]) => {
