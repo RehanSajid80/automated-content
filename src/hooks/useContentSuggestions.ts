@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { KeywordData } from "@/utils/excelUtils";
-import { getContentSuggestions, OPENAI_MODELS } from "@/utils/openaiUtils";
+import { getContentSuggestions } from "@/services/openai/contentSuggestions";
 import { useToast } from "@/hooks/use-toast";
 import { API_KEYS, getApiKey } from "@/utils/apiKeyUtils";
 
@@ -25,7 +24,7 @@ export const useContentSuggestions = () => {
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
   const [openCards, setOpenCards] = useState<{ [key: string]: boolean }>({});
   const [apiError, setApiError] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>(OPENAI_MODELS.PREMIUM);
+  const [selectedModel, setSelectedModel] = useState<string>("PREMIUM");
   const [usedModel, setUsedModel] = useState<string | null>(null);
 
   const { toast } = useToast();

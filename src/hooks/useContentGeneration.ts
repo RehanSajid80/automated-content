@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { generateContentByType } from "@/utils/contentGenerationUtils";
+import { generateContentByType } from "@/services/openai/contentGeneration";
 import { toast } from "sonner";
 
 export const useContentGeneration = () => {
