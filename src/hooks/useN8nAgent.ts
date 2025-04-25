@@ -76,7 +76,7 @@ export const useN8nAgent = () => {
       
       toast("Webhook Error", {
         description: errorMessage,
-        variant: "destructive",
+        style: { backgroundColor: 'red', color: 'white' }
       });
       
       throw err;
