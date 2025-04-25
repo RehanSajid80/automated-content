@@ -26,7 +26,7 @@ const KeywordList: React.FC<KeywordListProps> = ({
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (keywords.length > 0) {
       clearCache('keyword-data-cache');
       console.log('Cleared keyword cache after receiving new keywords');

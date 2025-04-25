@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -77,6 +76,10 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     });
   }, [keywords, filterOptions]);
 
+  useEffect(() => {
+    setSelectedKeywords([]);
+  }, [keywords]);
+
   const toggleKeywordSelection = (keyword: string) => {
     setSelectedKeywords(prev => 
       prev.includes(keyword) 
@@ -89,7 +92,6 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     if (onKeywordsSelected) {
       onKeywordsSelected(keywords);
       
-      // Trigger navigation to the content tab
       const event = new CustomEvent('navigate-to-tab', { 
         detail: { tab: 'content' } 
       });
