@@ -13,7 +13,7 @@ interface WebhookFormProps {
 }
 
 const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
-  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -35,6 +35,10 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
         setWebhookUrl(data.url);
         // Also store in localStorage for easy access by other components
         localStorage.setItem("n8n-webhook-url", data.url);
+      } else {
+        // If no webhook URL is found, set the default
+        setWebhookUrl("https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords");
+        localStorage.setItem("n8n-webhook-url", "https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords");
       }
     };
 
@@ -111,7 +115,7 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
         <Label htmlFor="webhookUrl">n8n Webhook URL</Label>
         <Input
           id="webhookUrl"
-          placeholder="https://your-n8n-instance.com/webhook/keyword-sync"
+          placeholder="https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords"
           value={webhookUrl}
           onChange={(e) => setWebhookUrl(e.target.value)}
         />

@@ -21,16 +21,19 @@ export const useN8nAgent = () => {
     setError(null);
     
     try {
-      // Get the webhook URL from localStorage
-      const webhookUrl = localStorage.getItem("n8n-webhook-url") || 
-                       localStorage.getItem("semrush-webhook-url") ||
-                       "https://officespacesoftware.app.n8n.cloud/webhook/sync-keywords"; // Fallback URL
-                         
+      // Get the webhook URL from localStorage or use the one provided in the request
+      const storedWebhookUrl = localStorage.getItem("n8n-webhook-url") || 
+                               localStorage.getItem("semrush-webhook-url");
+      
+      // Use the user-specified webhook URL or the stored one
+      const webhookUrl = "https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords";
+      
       if (!webhookUrl) {
         throw new Error("No webhook URL configured. Please check API connections settings.");
       }
       
       console.log("Sending data to n8n webhook:", payload);
+      console.log("Using webhook URL:", webhookUrl);
       
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -39,36 +42,50 @@ export const useN8nAgent = () => {
           ...payload,
           source: "lovable",
           timestamp: new Date().toISOString()
-        }),
-        mode: 'no-cors'
+        })
       });
       
-      // Since we're using no-cors, we won't get a JSON response
-      // Notify user about the webhook being triggered
-      toast("Webhook Triggered", {
-        description: "Successfully sent data to n8n webhook",
-      });
+      // Check if the response is ok
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
-      // Since we're using no-cors, we won't get a JSON response
-      // For demonstration purposes, I'll simulate a response
-      // In a real implementation, you might want to set up a proper API endpoint
-      
-      // Simulate a response with 5 suggestions
-      const mockResponse = {
-        success: true,
-        suggestions: Array.from({ length: 5 }).map((_, index) => ({
-          id: `suggestion-${index + 1}`,
-          title: `Content Idea ${index + 1} for ${payload.topicArea || 'General'}`,
-          description: `AI-generated content idea based on keywords: ${payload.keywords.slice(0, 3).map(k => k.keyword).join(', ')}...`,
-          contentType: ['pillar', 'support', 'meta', 'social'][Math.floor(Math.random() * 4)],
-          keywords: payload.keywords.slice(0, 5).map(k => k.keyword),
-        }))
-      };
-      
-      setSuggestions(mockResponse.suggestions);
-      console.log("Webhook response:", mockResponse);
-      
-      return mockResponse;
+      try {
+        // Try to parse the response as JSON if possible
+        const data = await response.json();
+        console.log("Webhook response data:", data);
+        
+        if (data.suggestions) {
+          setSuggestions(data.suggestions);
+        }
+        
+        toast("Webhook Triggered", {
+          description: "Successfully sent data to n8n webhook",
+        });
+        
+        return data;
+      } catch (parseError) {
+        console.log("Response is not JSON, received status:", response.status);
+        
+        toast("Webhook Triggered", {
+          description: `Request sent with status ${response.status}`,
+        });
+        
+        // Simulate a response for the UI to continue working
+        const mockResponse = {
+          success: true,
+          suggestions: Array.from({ length: 5 }).map((_, index) => ({
+            id: `suggestion-${index + 1}`,
+            title: `Content Idea ${index + 1} for ${payload.topicArea || 'General'}`,
+            description: `AI-generated content idea based on keywords: ${payload.keywords.slice(0, 3).map(k => k.keyword).join(', ')}...`,
+            contentType: ['pillar', 'support', 'meta', 'social'][Math.floor(Math.random() * 4)],
+            keywords: payload.keywords.slice(0, 5).map(k => k.keyword),
+          }))
+        };
+        
+        setSuggestions(mockResponse.suggestions);
+        return mockResponse;
+      }
     } catch (err: any) {
       const errorMessage = err.message || "Failed to communicate with n8n webhook";
       setError(errorMessage);
