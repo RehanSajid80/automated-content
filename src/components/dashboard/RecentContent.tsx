@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { FileText, Tag, Share2, Eye, Copy, ArrowRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,7 +73,6 @@ const RecentContent: React.FC<RecentContentProps> = ({ className }) => {
   const fetchRecentContent = async () => {
     try {
       setIsLoading(true);
-      // Fetch the latest content from Supabase
       const { data, error } = await supabase
         .from('content_library')
         .select('id, title, content_type, created_at, keywords')
@@ -92,9 +90,7 @@ const RecentContent: React.FC<RecentContentProps> = ({ className }) => {
       }
 
       if (data && data.length > 0) {
-        // Transform the data to match our component's expected format
         const formattedContent = data.map(item => {
-          // Generate a random view count for demo purposes
           const randomViews = Math.floor(Math.random() * 150) + 10;
           
           return {
@@ -126,7 +122,6 @@ const RecentContent: React.FC<RecentContentProps> = ({ className }) => {
   useEffect(() => {
     fetchRecentContent();
     
-    // Listen for content updates from other components
     const handleContentUpdated = () => {
       fetchRecentContent();
     };
@@ -194,13 +189,11 @@ const RecentContent: React.FC<RecentContentProps> = ({ className }) => {
   };
 
   const viewLibrary = () => {
-    // Navigate to content tab
     const event = new CustomEvent('tab-change', { detail: { tab: 'content' } });
     window.dispatchEvent(event);
   };
 
   const viewContent = (contentId: string, topicArea: string) => {
-    // Navigate to content details view
     window.dispatchEvent(new CustomEvent('navigate-to-content-details', { 
       detail: { contentIds: [contentId], topicArea: topicArea || 'generated-content' } 
     }));
