@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface SemrushIntegrationProps {
   onKeywordsReceived: (keywords: KeywordData[]) => void;
   topicArea?: string;
+  disabled?: boolean;
 }
 
 // Function to update SEMrush API metrics
@@ -35,7 +37,8 @@ const updateSemrushMetrics = (success: boolean) => {
 
 const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ 
   onKeywordsReceived,
-  topicArea 
+  topicArea,
+  disabled = false
 }) => {
   const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -172,10 +175,11 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           className="max-w-sm"
+          disabled={disabled}
         />
         <Button 
           onClick={fetchKeywords} 
-          disabled={isLoading}
+          disabled={isLoading || disabled}
           variant="outline"
         >
           {isLoading ? (

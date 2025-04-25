@@ -12,6 +12,7 @@ interface KeywordSelectorProps {
   selectedKeywords: string[];
   onKeywordToggle: (keyword: string) => void;
   onAutoSelect: () => void;
+  disabled?: boolean;
 }
 
 export const KeywordSelector: React.FC<KeywordSelectorProps> = ({
@@ -19,6 +20,7 @@ export const KeywordSelector: React.FC<KeywordSelectorProps> = ({
   selectedKeywords,
   onKeywordToggle,
   onAutoSelect,
+  disabled = false,
 }) => {
   const { toast } = useToast();
 
@@ -41,6 +43,7 @@ export const KeywordSelector: React.FC<KeywordSelectorProps> = ({
               size="sm" 
               onClick={onAutoSelect}
               className="text-xs flex items-center gap-1"
+              disabled={disabled}
             >
               <TrendingUpIcon className="h-3 w-3" />
               Auto-select Trending
@@ -64,10 +67,11 @@ export const KeywordSelector: React.FC<KeywordSelectorProps> = ({
                 id={`kw-${idx}`} 
                 checked={selectedKeywords.includes(kw.keyword)}
                 onCheckedChange={() => onKeywordToggle(kw.keyword)}
+                disabled={disabled}
               />
               <label 
                 htmlFor={`kw-${idx}`}
-                className="text-sm cursor-pointer flex items-center"
+                className={`text-sm cursor-pointer flex items-center ${disabled ? 'text-muted-foreground' : ''}`}
               >
                 {kw.keyword}
                 {kw.trend === "up" && (
