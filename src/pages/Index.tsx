@@ -175,16 +175,16 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="ai-suggestions" className="m-0">
-            <div className="container py-8 px-4 md:px-6 lg:px-8">
+            <div className="container py-8 px-4 md:px-6 lg:px-8 w-full max-w-full">
               <DashboardHeader 
                 title="AI Content Suggestions"
                 description="Use OpenAI to analyze your keyword data and suggest content topic areas"
               />
               
-              <div className="rounded-xl border border-border bg-card p-6">
+              <div className="rounded-xl border border-border bg-card p-6 w-full max-w-full">
                 <ContentSuggestions 
                   keywords={keywordData} 
-                  className="max-w-none" 
+                  className="max-w-full w-full" 
                 />
               </div>
             </div>
