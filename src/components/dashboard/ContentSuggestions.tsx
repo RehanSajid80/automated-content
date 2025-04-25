@@ -18,6 +18,7 @@ import { KeywordSelector } from "./KeywordSelector";
 import { useContentSuggestions } from "@/hooks/useContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { AISuggestion, ContentSuggestionsProps } from "./types/aiSuggestions";
+import { KeywordData } from "@/utils/excelUtils";
 
 const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   keywords,
@@ -39,6 +40,30 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         ? prev.filter(k => k !== keyword)
         : [...prev, keyword]
     );
+  };
+  
+  // Define the missing autoSelectTrendingKeywords function
+  const autoSelectTrendingKeywords = () => {
+    if (isAISuggestionMode) return;
+    
+    // Filter keywords with "up" trend and select them automatically
+    const trendingKeywords = localKeywords
+      .filter(kw => kw.trend === "up")
+      .map(kw => kw.keyword);
+    
+    setSelectedKeywords(trendingKeywords);
+    
+    if (trendingKeywords.length > 0) {
+      toast({
+        title: "Trending Keywords Selected",
+        description: `Selected ${trendingKeywords.length} trending keywords automatically`,
+      });
+    } else {
+      toast({
+        title: "No Trending Keywords Found",
+        description: "No trending keywords were found in your dataset",
+      });
+    }
   };
 
   const handleAISuggestions = async () => {
@@ -177,4 +202,3 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 };
 
 export default ContentSuggestions;
-

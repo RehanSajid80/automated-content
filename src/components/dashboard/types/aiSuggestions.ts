@@ -1,3 +1,6 @@
+
+import { KeywordData } from "@/utils/excelUtils";
+
 export interface AISuggestion {
   id: string;
   title: string;
