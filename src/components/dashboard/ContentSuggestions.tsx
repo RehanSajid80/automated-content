@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -77,7 +78,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   };
 
   return (
-    <div className={`space-y-4 max-w-full w-full ${className}`}>
+    <div className={`space-y-4 w-full ${className}`}>
       <Card className="w-full">
         <CardHeader>
           <CardTitle>AI Content Suggestions</CardTitle>
@@ -107,13 +108,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
             <div className="p-4 border border-border rounded-md bg-card w-full">
               <h3 className="text-base font-medium mb-3">Search for Keywords</h3>
-              <div className="space-y-4">
+              <div className="space-y-4 w-full">
                 <div className="flex flex-col space-y-2">
                   <label htmlFor="topic-area" className="text-sm font-medium">
                     Topic Area
                   </label>
                   <Select value={topicArea} onValueChange={setTopicArea}>
-                    <SelectTrigger id="topic-area">
+                    <SelectTrigger id="topic-area" className="w-full">
                       <SelectValue placeholder="Select a topic area" />
                     </SelectTrigger>
                     <SelectContent>

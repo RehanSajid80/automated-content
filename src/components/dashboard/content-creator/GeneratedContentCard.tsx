@@ -29,7 +29,7 @@ export const GeneratedContentCard: React.FC<GeneratedContentCardProps> = ({
   };
 
   return (
-    <Card className="mt-6 animate-fade-in">
+    <Card className="mt-6 animate-fade-in w-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Generated Content</CardTitle>
         <CardDescription>Based on your specified keywords and parameters</CardDescription>
@@ -38,7 +38,7 @@ export const GeneratedContentCard: React.FC<GeneratedContentCardProps> = ({
         <Textarea 
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
-          className="min-h-[200px] font-mono text-sm"
+          className="min-h-[200px] font-mono text-sm w-full"
         />
       </CardContent>
       <CardFooter className="flex justify-end pt-3">
