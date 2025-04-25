@@ -2,9 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
-import { getContentSuggestions, OPENAI_MODELS } from "@/utils/openaiUtils";
 import { useToast } from "@/hooks/use-toast";
-import { API_KEYS, getApiKey } from "@/utils/apiKeyUtils";
 import {
   Card,
   CardContent,
@@ -12,59 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  FileText, 
-  Tag, 
-  MessageSquare, 
-  PenTool,
-  KeyIcon,
-  RefreshCwIcon,
-  SettingsIcon,
-  AlertTriangleIcon,
-  SparklesIcon,
-  CheckSquare2Icon,
-  TrendingUpIcon,
-  TrendingUp,
-  Search,
-  Database
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AlertTriangleIcon, SparklesIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import SemrushIntegration from "./SemrushIntegration";
-
-interface ContentSuggestion {
-  topicArea: string;
-  pillarContent: string[];
-  supportPages: string[];
-  metaTags: string[];
-  socialMedia: string[];
-  reasoning: string;
-  searchAnalysis?: {
-    totalVolume?: number;
-    averageDifficulty?: number;
-    trendingKeywords?: string[];
-    competitiveLandscape?: string;
-  };
-}
+import { KeywordSelector } from "./KeywordSelector";
+import { useContentSuggestions } from "@/hooks/useContentSuggestions";
 
 interface ContentSuggestionsProps {
   keywords: KeywordData[];
@@ -75,16 +26,17 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   keywords,
   className,
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
-  const [openCards, setOpenCards] = useState<{ [key: string]: boolean }>({});
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>(OPENAI_MODELS.PREMIUM);
-  const [usedModel, setUsedModel] = useState<string | null>(null);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [topicArea, setTopicArea] = useState<string>("");
-
   const { toast } = useToast();
+  
+  const {
+    isLoading,
+    apiError,
+    usedModel,
+    selectedModel,
+    generateSuggestions
+  } = useContentSuggestions();
 
   const toggleKeywordSelection = (keyword: string) => {
     setSelectedKeywords(prev => 
@@ -109,74 +61,11 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
   const updateKeywords = (newKeywords: KeywordData[]) => {
     if (newKeywords && newKeywords.length > 0) {
-      // Reset selected keywords when new keywords are added
       setSelectedKeywords([]);
       toast({
         title: "Keywords Updated",
         description: `Added ${newKeywords.length} keywords for analysis`,
       });
-    }
-  };
-
-  const generateSuggestions = async () => {
-    let apiKey = null;
-    
-    try {
-      apiKey = await getApiKey(API_KEYS.OPENAI);
-    } catch (error) {
-      console.error("Error getting API key:", error);
-    }
-    
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please set up your OpenAI API connection",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedKeywords.length === 0) {
-      toast({
-        title: "No Keywords Selected",
-        description: "Please select at least one keyword for suggestions",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setApiError(null);
-    setUsedModel(null);
-    
-    try {
-      const filteredKeywords = keywords.filter(kw => 
-        selectedKeywords.includes(kw.keyword)
-      );
-      
-      console.log("Generating content for keywords:", filteredKeywords);
-      const results = await getContentSuggestions(filteredKeywords, undefined, selectedModel);
-      setSuggestions(results);
-      
-      setUsedModel(selectedModel);
-      
-      if (results.length > 0) {
-        setOpenCards({ 0: true });
-      }
-      
-      toast({
-        title: "Success",
-        description: `Generated ${results.length} content topic suggestions`,
-      });
-    } catch (error) {
-      console.error("Error generating suggestions:", error);
-      if (error instanceof Error) {
-        setApiError(error.message);
-      } else {
-        setApiError("An unknown error occurred");
-      }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -239,62 +128,15 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   topicArea={topicArea}
                 />
                 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium">
-                      Select Keywords for Analysis
-                    </label>
-                    {keywords.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={autoSelectTrendingKeywords}
-                          className="text-xs flex items-center gap-1"
-                        >
-                          <TrendingUpIcon className="h-3 w-3" />
-                          Auto-select Trending
-                        </Button>
-                        <div className="text-xs text-muted-foreground">
-                          {selectedKeywords.length} of {keywords.length} selected
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {keywords.length === 0 ? (
-                    <div className="bg-secondary/30 p-3 rounded-md text-muted-foreground text-sm">
-                      No keywords available. Please search for keywords using the domain search above or add keywords from the Keyword Research tab.
-                    </div>
-                  ) : (
-                    <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-                      {keywords.map((kw, idx) => (
-                        <div key={idx} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`kw-${idx}`} 
-                            checked={selectedKeywords.includes(kw.keyword)}
-                            onCheckedChange={() => toggleKeywordSelection(kw.keyword)}
-                          />
-                          <label 
-                            htmlFor={`kw-${idx}`}
-                            className="text-sm cursor-pointer flex items-center"
-                          >
-                            {kw.keyword}
-                            {kw.trend === "up" && (
-                              <Badge variant="outline" className="ml-2 text-xs flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
-                                <TrendingUpIcon className="h-3 w-3" />
-                                Trending
-                              </Badge>
-                            )}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <KeywordSelector
+                  keywords={keywords}
+                  selectedKeywords={selectedKeywords}
+                  onKeywordToggle={toggleKeywordSelection}
+                  onAutoSelect={autoSelectTrendingKeywords}
+                />
 
                 <Button
-                  onClick={generateSuggestions}
+                  onClick={() => generateSuggestions(keywords, selectedKeywords)}
                   disabled={isLoading || selectedKeywords.length === 0}
                   className="w-full relative overflow-hidden"
                 >
