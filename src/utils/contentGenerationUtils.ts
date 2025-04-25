@@ -8,6 +8,7 @@ interface ContentGenerationParams {
   keywords: string[];
   targetUrl?: string;
   minWords?: number;
+  socialContext?: string;
 }
 
 interface ContentSuggestion {
@@ -120,6 +121,8 @@ CONTENT REQUIREMENTS:
 - Each post should start with the most relevant emoji for its content
 - Space emojis naturally throughout the text, don't cluster them
 - Include a strong call-to-action in each post
+
+${params.socialContext ? `\nADDITIONAL CONTEXT:\n${params.socialContext}` : ''}
 
 Format each post clearly with "LinkedIn:" or "Twitter:" prefix, and separate each post with a line break. Include a brief note about the best time to post each type of content.`;
       break;
