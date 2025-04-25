@@ -44,8 +44,8 @@ export const useN8nAgent = () => {
       console.log("Using webhook URL:", webhookUrl);
       
       const controller = new AbortController();
-      // Increase timeout from 10 to 30 seconds
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      // Increase timeout to 60 seconds
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
       
       try {
         const response = await fetch(webhookUrl, {
@@ -98,7 +98,7 @@ export const useN8nAgent = () => {
         clearTimeout(timeoutId);
         
         if (fetchError.name === 'AbortError') {
-          throw new Error('Webhook request timed out after 30 seconds');
+          throw new Error('Webhook request timed out after 60 seconds');
         }
         
         throw fetchError;
@@ -128,3 +128,4 @@ export const useN8nAgent = () => {
     sendToN8n
   };
 };
+
