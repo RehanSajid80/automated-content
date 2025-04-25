@@ -4,6 +4,7 @@ import { BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIContentGeneratorProps, AISuggestion } from "./types/aiSuggestions";
 import { AISuggestionsList } from "./AISuggestionsList";
+import AIContentDisplay from "./AIContentDisplay";
 
 export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   keywords,
@@ -11,6 +12,8 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   onSuggestionSelect,
   isLoading
 }) => {
+  const [generatedContent, setGeneratedContent] = React.useState<any[]>([]);
+
   const getMockSuggestions = (): AISuggestion[] => {
     return Array.from({ length: 5 }).map((_, index) => ({
       id: `suggestion-${index + 1}`,
@@ -29,7 +32,10 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
         onSelect={onSuggestionSelect}
         isLoading={isLoading}
       />
+      
+      {generatedContent.length > 0 && (
+        <AIContentDisplay content={generatedContent} />
+      )}
     </div>
   );
 };
-
