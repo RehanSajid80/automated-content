@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,13 +75,12 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       return;
     }
 
-    if (!topicArea) {
-      toast({
-        title: "Warning",
-        description: "Please select a topic area for best results",
-        variant: "default",
-      });
-      // Continue anyway, but with a warning
+    // Topic area warning moved but still tracked
+    const hasTopicArea = !!topicArea;
+    if (!hasTopicArea) {
+      console.log("No topic area specified, using general search");
+    } else {
+      console.log(`Using topic area: ${topicArea}`);
     }
 
     setIsLoading(true);
@@ -90,13 +88,14 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
 
     try {
       const cleanDomain = extractDomain(domain);
-      console.log(`Fetching keywords for domain: ${cleanDomain} and topic: ${topicArea}`);
+      console.log(`Fetching keywords for domain: ${cleanDomain} and topic: ${topicArea || "general"}`);
+      console.log(`Requesting 100 keywords from SEMrush API`);
 
-      // Call SEMrush API through edge function
+      // Call SEMrush API through edge function with explicit limit of 100
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { 
           keyword: cleanDomain, 
-          limit: 100,
+          limit: 100,  // Explicitly set to 100
           topicArea: topicArea || '' 
         }
       });
@@ -129,6 +128,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         return;
       }
 
+      console.log(`Received ${data.keywords.length} keywords from SEMrush API`);
       updateSemrushMetrics(true);
 
       // Process keywords and format them correctly for the application
@@ -140,7 +140,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         trend: kw.trend || 'neutral'
       }));
       
-      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for topic: ${topicArea}`);
+      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for topic: ${topicArea || "general"}`);
       
       // Call the callback function with the new keywords
       onKeywordsReceived(formattedKeywords);

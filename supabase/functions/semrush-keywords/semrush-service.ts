@@ -13,7 +13,12 @@ export const fetchSemrushKeywords = async (domain: string, limit: number) => {
     throw new Error(`Failed to fetch keywords from SEMrush API: ${errorText}`);
   }
 
-  return await response.text();
+  // Log the first part of the response to debug
+  const responseText = await response.text();
+  console.log(`SEMrush response first 100 chars: ${responseText.substring(0, 100)}...`);
+  console.log(`SEMrush response lines count: ${responseText.split('\n').length - 1}`);
+  
+  return responseText;
 };
 
 // Process SEMrush API response and format keywords
@@ -24,6 +29,9 @@ export const processKeywords = (responseText: string, domain: string, topicArea:
     console.log(`No keywords found for domain: ${domain}`);
     return [];
   }
+  
+  // Log for debugging
+  console.log(`Processing ${lines.length - 1} keywords from SEMrush response`);
   
   const keywords = [];
   for (let i = 1; i < lines.length; i++) {
