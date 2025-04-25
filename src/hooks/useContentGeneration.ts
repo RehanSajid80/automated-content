@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { generateContentByType } from "@/utils/contentGenerationUtils";
 import { toast } from "sonner";
@@ -8,7 +7,12 @@ export const useContentGeneration = () => {
   const [generatingProgress, setGeneratingProgress] = useState<string>("");
   const [generatedContent, setGeneratedContent] = useState<string>("");
 
-  const generateContent = async (activeTab: string, keywords: string, targetUrl?: string) => {
+  const generateContent = async (
+    activeTab: string, 
+    keywords: string, 
+    targetUrl?: string,
+    socialContext?: string
+  ) => {
     setIsGenerating(true);
     setGeneratedContent("");
     
@@ -47,7 +51,8 @@ export const useContentGeneration = () => {
         mainKeyword,
         keywords: keywords.split(',').map(k => k.trim()),
         minWords,
-        targetUrl
+        targetUrl,
+        socialContext
       });
       
       if (progressInterval !== null) {

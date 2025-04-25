@@ -2,6 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { LoadingState } from "./LoadingState";
 import { Globe, ExternalLink } from "lucide-react";
 
@@ -9,8 +10,10 @@ interface ContentGeneratorFormProps {
   activeTab: string;
   keywords: string;
   targetUrl: string;
+  socialContext?: string;
   onKeywordsChange: (value: string) => void;
   onUrlChange: (value: string) => void;
+  onSocialContextChange: (value: string) => void;
   onGenerate: () => void;
   onSuggestUrl: () => void;
   isGenerating: boolean;
@@ -22,8 +25,10 @@ export const ContentGeneratorForm: React.FC<ContentGeneratorFormProps> = ({
   activeTab,
   keywords,
   targetUrl,
+  socialContext,
   onKeywordsChange,
   onUrlChange,
+  onSocialContextChange,
   onGenerate,
   onSuggestUrl,
   isGenerating,
@@ -66,6 +71,20 @@ export const ContentGeneratorForm: React.FC<ContentGeneratorFormProps> = ({
               <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           </div>
+        </div>
+      )}
+
+      {activeTab === "social" && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium flex items-center gap-2">
+            Social Media Context
+          </label>
+          <Textarea
+            value={socialContext}
+            onChange={(e) => onSocialContextChange(e.target.value)}
+            placeholder="Describe your target audience, campaign goals, brand voice, and any specific messaging points to include..."
+            className="min-h-[100px]"
+          />
         </div>
       )}
       

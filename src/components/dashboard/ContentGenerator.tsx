@@ -15,6 +15,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState("pillar");
   const [keywords, setKeywords] = useState("");
+  const [socialContext, setSocialContext] = useState("");
   
   const {
     targetUrl,
@@ -40,7 +41,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   }, [initialKeywords]);
 
   const handleGenerate = () => {
-    generateContent(activeTab, keywords, targetUrl);
+    generateContent(activeTab, keywords, targetUrl, socialContext);
   };
 
   const handleSuggestUrlClick = () => {
@@ -72,8 +73,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
               activeTab={activeTab}
               keywords={keywords}
               targetUrl={targetUrl}
+              socialContext={socialContext}
               onKeywordsChange={setKeywords}
               onUrlChange={setTargetUrl}
+              onSocialContextChange={setSocialContext}
               onGenerate={handleGenerate}
               onSuggestUrl={handleSuggestUrlClick}
               isGenerating={isGenerating}
