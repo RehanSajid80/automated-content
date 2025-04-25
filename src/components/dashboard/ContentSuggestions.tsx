@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -16,7 +15,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import SemrushIntegration from "./SemrushIntegration";
 import { KeywordSelector } from "./KeywordSelector";
 import { useContentSuggestions } from "@/hooks/useContentSuggestions";
-import { useState as useN8nState } from "@/hooks/useN8nAgent";
+import { useN8nAgent } from "@/hooks/useN8nAgent";
 
 interface ContentSuggestionsProps {
   keywords: KeywordData[];
@@ -45,7 +44,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const { 
     sendToN8n, 
     isLoading: isN8nAgentLoading 
-  } = useN8nState();
+  } = useN8nAgent();
 
   useEffect(() => {
     setLocalKeywords(keywords);
@@ -136,7 +135,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         description: `Received ${response.suggestions.length} content suggestions from the AI agent`,
       });
       
-      // Trigger navigation to content tab with these suggestions
       if (response.suggestions.length > 0) {
         const event = new CustomEvent('navigate-to-tab', { 
           detail: { 

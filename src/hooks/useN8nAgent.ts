@@ -10,7 +10,7 @@ interface N8nAgentPayload {
   requestType: 'contentSuggestions' | 'keywordAnalysis';
 }
 
-export const useState = () => {
+export const useN8nAgent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
