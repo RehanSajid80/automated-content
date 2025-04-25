@@ -217,8 +217,9 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
                   if (generatedContent.length > 0) {
                     // Force retry content processing
                     const content = [...generatedContent];
-                    setGeneratedContent([]);
-                    setTimeout(() => setGeneratedContent(content), 100);
+                    // These lines had the error - we need to use the setContentProcessed from useState
+                    setContentProcessed(false);
+                    setTimeout(() => setContentProcessed(true), 100);
                   }
                 }}
               >
