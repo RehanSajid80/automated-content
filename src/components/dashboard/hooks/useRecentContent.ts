@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ContentItem } from "../types/recent-content";
+import { getTypeLabel } from "../utils/content-type-utils";
 
 export const useRecentContent = () => {
   const [recentContent, setRecentContent] = useState<ContentItem[]>([]);
