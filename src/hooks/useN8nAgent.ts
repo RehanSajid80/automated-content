@@ -31,8 +31,18 @@ export const useN8nAgent = () => {
       if (!webhookUrl) {
         throw new Error("No webhook URL configured. Please check API connections settings.");
       }
+
+      // Set default targetUrl if none provided
+      const defaultUrl = "https://www.officespacesoftware.com";
+      const targetUrl = payload.targetUrl || defaultUrl;
       
-      console.log("Sending data to n8n webhook:", payload);
+      const finalPayload = {
+        ...payload,
+        targetUrl,
+        url: targetUrl, // Keep url and targetUrl in sync
+      };
+      
+      console.log("Sending data to n8n webhook:", finalPayload);
       console.log("Using webhook URL:", webhookUrl);
       
       // Try to send the request, but add timeout to prevent hanging
@@ -44,7 +54,7 @@ export const useN8nAgent = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ...payload,
+            ...finalPayload,
             source: "lovable",
             timestamp: new Date().toISOString()
           }),
@@ -83,7 +93,7 @@ export const useN8nAgent = () => {
           });
           
           // Simulate a response for the UI to continue working
-          const mockResponse = generateMockResponse(payload);
+          const mockResponse = generateMockResponse(finalPayload);
           setSuggestions(mockResponse.suggestions);
           return mockResponse;
         }
