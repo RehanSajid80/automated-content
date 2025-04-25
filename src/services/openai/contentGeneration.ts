@@ -1,6 +1,8 @@
 
 import { API_KEYS, getApiKey } from "@/utils/apiKeyUtils";
 import { OPENAI_MODELS } from "@/utils/openaiUtils";
+import { getPrompts } from "./prompts";
+import { generatePillarContentWithExtension } from "./pillarContent";
 
 interface ContentGenerationParams {
   contentType: string;
@@ -64,4 +66,3 @@ export async function generateContentByType(params: ContentGenerationParams): Pr
 function countWords(text: string): number {
   return text.split(/\s+/).filter(word => word.length > 0).length;
 }
-

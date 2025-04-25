@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { getContentSuggestions } from "@/services/openai/contentSuggestions";
@@ -66,7 +67,8 @@ export const useContentSuggestions = () => {
       );
       
       console.log("Generating content for keywords:", filteredKeywords);
-      const results = await getContentSuggestions(filteredKeywords, undefined, selectedModel);
+      // Fix here: Remove the third argument (selectedModel)
+      const results = await getContentSuggestions(filteredKeywords);
       setSuggestions(results);
       
       setUsedModel(selectedModel);
