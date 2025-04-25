@@ -17,8 +17,8 @@ import SemrushIntegration from "./SemrushIntegration";
 import { KeywordSelector } from "./KeywordSelector";
 import { useContentSuggestions } from "@/hooks/useContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
+import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
 import { AISuggestion, ContentSuggestionsProps } from "./types/aiSuggestions";
-import { KeywordData } from "@/utils/excelUtils";
 
 const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   keywords,
@@ -29,6 +29,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [localKeywords, setLocalKeywords] = useState(keywords);
   const [isN8nLoading, setIsN8nLoading] = useState(false);
   const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
+  const [targetUrl, setTargetUrl] = useState<string>("");
   const { toast } = useToast();
   const { isLoading, apiError, usedModel, selectedModel } = useContentSuggestions();
   const { sendToN8n } = useN8nAgent();
@@ -79,13 +80,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
     setIsN8nLoading(true);
     setIsAISuggestionMode(true);
-    setSelectedKeywords([]);
     
     try {
       await sendToN8n({
-        keywords: localKeywords,
+        keywords: selectedKeywords.length > 0 ? localKeywords.filter(kw => selectedKeywords.includes(kw.keyword)) : localKeywords,
         topicArea,
-        targetUrl: window.location.origin,
+        targetUrl: targetUrl || window.location.origin,
+        url: targetUrl || undefined,
         requestType: 'contentSuggestions'
       });
       
@@ -161,6 +162,21 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   disabled={isAISuggestionMode}
                 />
                 
+                <div className="space-y-2">
+                  <label htmlFor="target-url" className="text-sm font-medium">
+                    Target URL (optional)
+                  </label>
+                  <input
+                    id="target-url"
+                    type="url"
+                    value={targetUrl}
+                    onChange={(e) => setTargetUrl(e.target.value)}
+                    placeholder="Enter target URL (optional)"
+                    className="w-full px-3 py-2 border rounded-md"
+                    disabled={isAISuggestionMode}
+                  />
+                </div>
+                
                 <SemrushIntegration 
                   onKeywordsReceived={updateKeywords} 
                   topicArea={topicArea}
@@ -210,4 +226,3 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 };
 
 export default ContentSuggestions;
-
