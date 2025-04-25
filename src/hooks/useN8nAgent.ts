@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -85,14 +86,12 @@ export const useN8nAgent = () => {
         } catch (parseError) {
           console.log("Response is not JSON, received status:", response.status);
           
-          toast("Webhook Triggered", {
-            description: `Request sent with status ${response.status}`,
+          toast("Webhook Request Sent", {
+            description: `Request sent with status ${response.status}, but response was not valid JSON`,
           });
           
-          const mockResponse = generateMockResponse(finalPayload);
-          setSuggestions(mockResponse.suggestions);
-          setGeneratedContent(mockResponse.content);
-          return mockResponse;
+          // Return empty data instead of mock data
+          return { suggestions: [], content: [] };
         }
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
@@ -113,38 +112,11 @@ export const useN8nAgent = () => {
         style: { backgroundColor: 'red', color: 'white' }
       });
       
-      const mockResponse = generateMockResponse(payload);
-      setSuggestions(mockResponse.suggestions);
-      setGeneratedContent(mockResponse.content);
-      
-      return mockResponse;
+      // Return empty data instead of mock data
+      return { suggestions: [], content: [] };
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const generateMockResponse = (payload: N8nAgentPayload) => {
-    console.log("Generating mock response for", payload.requestType);
-    
-    return {
-      success: true,
-      suggestions: Array.from({ length: 5 }).map((_, index) => ({
-        id: `suggestion-${index + 1}`,
-        title: `Content Idea ${index + 1} for ${payload.topicArea || 'General'}`,
-        description: `AI-generated content idea based on keywords: ${payload.keywords.slice(0, 3).map(k => k.keyword).join(', ')}...`,
-        contentType: ['pillar', 'support', 'meta', 'social'][Math.floor(Math.random() * 4)],
-        keywords: payload.keywords.slice(0, 5).map(k => k.keyword),
-        targetUrl: payload.targetUrl
-      })),
-      content: Array.from({ length: 5 }).map((_, index) => ({
-        id: `content-${index + 1}`,
-        title: `Generated Content ${index + 1} for ${payload.topicArea || 'General'}`,
-        description: `AI-generated content based on keywords: ${payload.keywords.slice(0, 3).map(k => k.keyword).join(', ')}...`,
-        contentType: ['pillar', 'support', 'meta', 'social'][Math.floor(Math.random() * 4)],
-        keywords: payload.keywords.slice(0, 5).map(k => k.keyword),
-        targetUrl: payload.targetUrl
-      }))
-    };
   };
   
   return {
