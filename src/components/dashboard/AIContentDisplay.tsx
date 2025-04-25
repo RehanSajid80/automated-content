@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Save, AlertTriangle } from "lucide-react";
+import { Save, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,6 +18,8 @@ interface AIContentDisplayProps {
 }
 
 const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose }) => {
+  const [isSaving, setIsSaving] = React.useState(false);
+  
   if (!content || content.length === 0) {
     console.error("No content provided to AIContentDisplay");
     return (
@@ -31,15 +33,16 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose })
   }
 
   console.log("Rendering AIContentDisplay with content:", content[0]);
-  // Fix the type error by checking for output first, then falling back to content property if it exists
-  const output = content[0].output || (content[0] as any).content || "";
-  if (!output) {
+  
+  // Get the content from either output or content property
+  const rawContent = content[0].output || (content[0] as any).content || "";
+  if (!rawContent) {
     console.error("Content item has no output property:", content[0]);
     return null;
   }
 
   // Parse different sections
-  const fullContent = output.trim();
+  const fullContent = rawContent.trim();
   
   // More robust section parsing
   const sections = {
@@ -70,6 +73,7 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose })
   
   const handleSaveContent = async (type: string, content: string) => {
     try {
+      setIsSaving(true);
       const { data, error } = await supabase
         .from('content_library')
         .insert([
@@ -88,12 +92,17 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose })
       toast.success("Content saved successfully!", {
         description: `Your ${type} content has been saved to the library`
       });
+      
+      // Dispatch event to notify other components about content update
+      window.dispatchEvent(new CustomEvent('content-updated'));
 
     } catch (error) {
       console.error('Error saving content:', error);
       toast.error("Failed to save content", {
         description: "Please try again or contact support"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -122,9 +131,19 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose })
                 <Button 
                   onClick={() => handleSaveContent('pillar', sections.pillar)}
                   className="mt-4"
+                  disabled={isSaving}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Pillar Content
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Pillar Content
+                    </>
+                  )}
                 </Button>
               )}
             </ScrollArea>
@@ -140,9 +159,19 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose })
                 <Button 
                   onClick={() => handleSaveContent('support', sections.support)}
                   className="mt-4"
+                  disabled={isSaving}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Support Content
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Support Content
+                    </>
+                  )}
                 </Button>
               </ScrollArea>
             </TabsContent>
@@ -158,9 +187,19 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose })
                 <Button 
                   onClick={() => handleSaveContent('meta', sections.meta)}
                   className="mt-4"
+                  disabled={isSaving}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Meta Content
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Meta Content
+                    </>
+                  )}
                 </Button>
               </ScrollArea>
             </TabsContent>
@@ -180,9 +219,19 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose })
                 <Button 
                   onClick={() => handleSaveContent('social', sections.social)}
                   className="mt-4"
+                  disabled={isSaving}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Social Posts
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Social Posts
+                    </>
+                  )}
                 </Button>
               </ScrollArea>
             </TabsContent>

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AIContentGeneratorProps } from "./types/aiSuggestions";
 import { AISuggestionsList } from "./AISuggestionsList";
 import AIContentDisplay from "./AIContentDisplay";
@@ -7,7 +7,7 @@ import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { useContentProcessor } from "@/hooks/useContentProcessor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingState } from "./content-creator/LoadingState";
@@ -25,10 +25,13 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     generatedContent, 
     sendToN8n, 
     isLoading: n8nLoading, 
-    error: n8nError 
+    error: n8nError,
+    rawResponse
   } = useN8nAgent();
   
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [hasDisplayedContent, setHasDisplayedContent] = useState<boolean>(false);
+  
   const {
     editableContent,
     contentProcessed,
@@ -37,13 +40,31 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     setEditableContent
   } = useContentProcessor(generatedContent);
 
-  console.log("Current state:", {
-    generatedContentLength: generatedContent.length,
-    contentProcessed,
-    isEditing,
-    editableContentKeys: Object.keys(editableContent),
-    processingError
-  });
+  // Check if we have content to display when content is processed
+  useEffect(() => {
+    if (contentProcessed && generatedContent.length > 0) {
+      console.log("Content is processed, editableContent:", editableContent);
+      const hasContent = Object.values(editableContent).some(content => content && content.trim().length > 0);
+      if (hasContent) {
+        setHasDisplayedContent(true);
+        console.log("Content is available for display");
+      } else {
+        console.log("No content to display despite being processed");
+        toast.error("No content found in the response", {
+          description: "The response format might not be as expected."
+        });
+      }
+    }
+  }, [contentProcessed, editableContent, generatedContent]);
+
+  // Log when raw content is available
+  useEffect(() => {
+    if (rawResponse) {
+      console.log("Raw response available:", typeof rawResponse === 'string' ? 
+        rawResponse.substring(0, 100) + "..." : 
+        "Non-string response");
+    }
+  }, [rawResponse]);
 
   const handleContentChange = (sectionKey: string, newContent: string) => {
     setEditableContent(prev => ({
@@ -61,6 +82,10 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     }
     
     try {
+      toast("Regenerating content", {
+        description: `Regenerating ${sectionKey} content...`
+      });
+      
       await sendToN8n({
         keywords: keywords,
         topicArea,
@@ -69,45 +94,51 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
         requestType: 'contentSuggestions',
         contentType: sectionKey
       });
-      
-      toast("Regeneration requested", {
-        description: `Regenerating ${sectionKey} content...`
-      });
     } catch (error) {
       console.error("Error regenerating content:", error);
-      toast("Error", {
-        description: "Failed to regenerate content. Please try again.",
-        style: { backgroundColor: 'red', color: 'white' }
+      toast.error("Failed to regenerate content", {
+        description: "Please try again."
       });
     }
   };
 
   const handleSaveContent = async (sectionKey: string) => {
     try {
+      const contentToSave = editableContent[sectionKey];
+      
+      if (!contentToSave || contentToSave.trim().length === 0) {
+        toast.error("No content to save", {
+          description: "The content section is empty"
+        });
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('content_library')
         .insert([
           {
             content_type: sectionKey,
-            content: editableContent[sectionKey],
+            content: contentToSave,
             title: `Generated ${sectionKey} content`,
-            topic_area: topicArea,
+            topic_area: topicArea || 'general',
             is_saved: true
           }
         ])
-        .single();
+        .select();
 
       if (error) throw error;
 
-      toast("Content saved", {
+      toast.success("Content saved", {
         description: `Your ${sectionKey} content has been saved to the library`
       });
+      
+      // Dispatch event to notify other components about content update
+      window.dispatchEvent(new CustomEvent('content-updated'));
 
     } catch (error) {
       console.error('Error saving content:', error);
-      toast("Error saving content", {
-        description: "Please try again or contact support",
-        style: { backgroundColor: 'red', color: 'white' }
+      toast.error("Error saving content", {
+        description: "Please try again or contact support"
       });
     }
   };
@@ -116,7 +147,7 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     return (
       <div className="mt-6">
         <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
-        <LoadingState />
+        <LoadingState message="Generating content..." />
       </div>
     );
   }
@@ -141,26 +172,6 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
           error={processingError}
           onRetry={retryProcessing}
         />
-      </div>
-    );
-  }
-
-  if (suggestions.length === 0 && generatedContent.length === 0) {
-    return (
-      <div className="mt-6">
-        <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
-        <AISuggestionsList 
-          suggestions={[]}
-          onSelect={onSuggestionSelect}
-          isLoading={isLoading}
-        />
-        
-        {n8nError && (
-          <ProcessingError 
-            error={n8nError}
-            onRetry={() => {}}
-          />
-        )}
       </div>
     );
   }
@@ -206,6 +217,22 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
             )}
           </CardContent>
         </Card>
+      )}
+      
+      {n8nError && generatedContent.length === 0 && (
+        <ProcessingError 
+          error={n8nError}
+          onRetry={() => {}}
+        />
+      )}
+      
+      {generatedContent.length === 0 && !n8nError && suggestions.length === 0 && (
+        <div className="p-4 text-center border rounded-md bg-muted/20">
+          <p className="text-muted-foreground">No content generated yet.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Try adjusting your keywords or topic area and generate content again.
+          </p>
+        </div>
       )}
     </div>
   );

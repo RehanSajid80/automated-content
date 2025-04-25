@@ -1,5 +1,7 @@
 
 import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 interface LoadingStateProps {
   message?: string;
@@ -7,18 +9,20 @@ interface LoadingStateProps {
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({ 
-  message = "Processing your content...",
-  submessage
+  message = "Loading...", 
+  submessage 
 }) => {
   return (
-    <div className="p-8 flex flex-col justify-center items-center border rounded-lg bg-background">
-      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mb-3" />
-      <span className="text-base font-medium">{message}</span>
-      {submessage && (
-        <span className="text-sm text-muted-foreground mt-1">
-          {submessage}
-        </span>
-      )}
-    </div>
+    <Card className="w-full">
+      <CardContent className="flex items-center justify-center p-12">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground font-medium">{message}</p>
+          {submessage && (
+            <p className="text-sm text-muted-foreground">{submessage}</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };

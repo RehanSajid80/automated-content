@@ -22,8 +22,16 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
   
   // Filter out empty sections
   const availableSections = Object.entries(editableContent)
-    .filter(([key, value]) => key === 'pillar' || value?.trim().length > 0)
+    .filter(([key, value]) => key === 'pillar' || (value && value.trim().length > 0))
     .map(([key]) => key);
+  
+  if (availableSections.length === 0) {
+    return (
+      <div className="p-4 text-center border rounded-md bg-muted/20">
+        <p className="text-muted-foreground">No content sections available.</p>
+      </div>
+    );
+  }
   
   return (
     <Tabs defaultValue="pillar">
