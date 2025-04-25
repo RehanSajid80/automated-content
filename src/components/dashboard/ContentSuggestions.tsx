@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -30,10 +29,10 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [localKeywords, setLocalKeywords] = useState(keywords);
   const [isN8nLoading, setIsN8nLoading] = useState(false);
   const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
-  const [targetUrl, setTargetUrl] = useState<string>("");
   const { toast } = useToast();
   const { isLoading, apiError, usedModel, selectedModel } = useContentSuggestions();
   const { sendToN8n } = useN8nAgent();
+  const { targetUrl, setTargetUrl, handleSuggestUrl } = useUrlSuggestions();
 
   const toggleKeywordSelection = (keyword: string) => {
     if (isAISuggestionMode) return;
@@ -45,11 +44,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     );
   };
   
-  // Define the missing autoSelectTrendingKeywords function
   const autoSelectTrendingKeywords = () => {
     if (isAISuggestionMode) return;
     
-    // Filter keywords with "up" trend and select them automatically
     const trendingKeywords = localKeywords
       .filter(kw => kw.trend === "up")
       .map(kw => kw.keyword);
@@ -74,7 +71,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       toast({
         title: "Topic Area Required",
         description: "Please select a topic area before getting AI suggestions",
-        variant: "destructive",
       });
       return;
     }
@@ -100,7 +96,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to get AI suggestions",
-        variant: "destructive",
       });
     } finally {
       setIsN8nLoading(false);
@@ -162,21 +157,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   onChange={setTopicArea}
                   disabled={isAISuggestionMode}
                 />
-                
-                <div className="space-y-2">
-                  <label htmlFor="target-url" className="text-sm font-medium">
-                    Target URL (optional)
-                  </label>
-                  <input
-                    id="target-url"
-                    type="url"
-                    value={targetUrl}
-                    onChange={(e) => setTargetUrl(e.target.value)}
-                    placeholder="Enter target URL (optional)"
-                    className="w-full px-3 py-2 border rounded-md"
-                    disabled={isAISuggestionMode}
-                  />
-                </div>
                 
                 <SemrushIntegration 
                   onKeywordsReceived={updateKeywords} 
