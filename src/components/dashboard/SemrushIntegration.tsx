@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +87,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { 
           keyword: cleanDomain, 
-          limit: 30,
+          limit: 100,
           topicArea: topicArea || '' // Include topic area in the request
         }
       });

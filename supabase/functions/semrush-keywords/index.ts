@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
@@ -146,7 +145,7 @@ serve(async (req) => {
   }
 
   try {
-    const { keyword, limit = 30, topicArea } = await req.json();
+    const { keyword, limit = 100, topicArea } = await req.json();
     console.log(`Request received for domain: ${keyword}, topic: ${topicArea}, limit: ${limit}`);
 
     if (!keyword) {
@@ -216,4 +215,3 @@ serve(async (req) => {
     );
   }
 });
-
