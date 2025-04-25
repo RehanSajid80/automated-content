@@ -45,8 +45,7 @@ export const useN8nAgent = () => {
       
       // Since we're using no-cors, we won't get a JSON response
       // Notify user about the webhook being triggered
-      toast({
-        title: "Webhook Triggered",
+      toast("Webhook Triggered", {
         description: "Successfully sent data to n8n webhook",
       });
       
@@ -75,8 +74,7 @@ export const useN8nAgent = () => {
       setError(errorMessage);
       console.error("N8n webhook error:", err);
       
-      toast({
-        title: "Webhook Error",
+      toast("Webhook Error", {
         description: errorMessage,
         variant: "destructive",
       });
