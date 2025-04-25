@@ -45,8 +45,8 @@ export const useN8nAgent = () => {
       console.log("Using webhook URL:", webhookUrl);
       
       const controller = new AbortController();
-      // Increase timeout to 60 seconds
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      // Increase timeout to 120 seconds (2 minutes)
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
       
       try {
         const response = await fetch(webhookUrl, {
@@ -76,32 +76,56 @@ export const useN8nAgent = () => {
             setSuggestions(data.suggestions);
           }
           
+          // Handle multiple possible response formats
           if (data.output || data.content) {
-            const formattedContent = data.output ? [{ output: data.output }] : Array.isArray(data.content) ? data.content : [data.content];
-            setGeneratedContent(formattedContent);
-            console.log("Setting generated content:", formattedContent);
+            let formattedContent;
+            
+            if (data.output) {
+              console.log("Found output in response");
+              formattedContent = [{ output: data.output }];
+            } else if (data.content) {
+              console.log("Found content in response");
+              formattedContent = Array.isArray(data.content) ? data.content : [data.content];
+            }
+            
+            if (formattedContent) {
+              console.log("Setting generated content:", formattedContent);
+              setGeneratedContent(formattedContent);
+            }
           }
           
           toast("Webhook Triggered", {
-            description: "Successfully sent data to n8n webhook",
+            description: "Successfully received data from n8n webhook",
           });
           
           return data;
         } catch (parseError) {
           console.log("Response is not JSON, received status:", response.status);
+          const responseText = await response.text();
+          console.log("Raw response:", responseText);
+          
+          // Try to extract content even from malformed JSON or HTML
+          try {
+            if (responseText.includes('output') || responseText.includes('content')) {
+              const extractedContent = { output: responseText };
+              console.log("Extracted content from raw response:", extractedContent);
+              setGeneratedContent([extractedContent]);
+            }
+          } catch (extractError) {
+            console.error("Failed to extract content from response:", extractError);
+          }
           
           toast("Webhook Request Sent", {
             description: `Request sent with status ${response.status}, but response was not valid JSON`,
           });
           
-          // Return empty data instead of mock data
           return { suggestions: [], content: [] };
         }
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
         
         if (fetchError.name === 'AbortError') {
-          throw new Error('Webhook request timed out after 60 seconds');
+          throw new Error('Webhook request timed out after 120 seconds');
         }
         
         throw fetchError;
@@ -116,7 +140,6 @@ export const useN8nAgent = () => {
         style: { backgroundColor: 'red', color: 'white' }
       });
       
-      // Return empty data instead of mock data
       return { suggestions: [], content: [] };
     } finally {
       setIsLoading(false);

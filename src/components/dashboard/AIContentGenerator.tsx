@@ -21,23 +21,39 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   const { suggestions, generatedContent, sendToN8n, isLoading: n8nLoading } = useN8nAgent();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editableContent, setEditableContent] = useState<{[key: string]: string}>({});
+  const [contentProcessed, setContentProcessed] = useState<boolean>(false);
 
   // Initialize editable content when generatedContent changes
   useEffect(() => {
     console.log("Generated content updated:", generatedContent);
+    
     if (generatedContent.length > 0) {
-      const output = generatedContent[0].output || "";
+      setContentProcessed(true);
       
-      // Parse different sections
-      const sections = {
-        pillar: output.split("### Support Content")[0] || "",
-        support: output.split("### Support Content")[1]?.split("### Meta Tags")[0] || "",
-        meta: output.split("### Meta Tags")[1]?.split("### Social Media Posts")[0] || "",
-        social: output.split("### Social Media Posts")[1] || ""
-      };
-      
-      setEditableContent(sections);
-      console.log("Parsed content sections:", sections);
+      try {
+        const output = generatedContent[0].output || "";
+        console.log("Processing output content:", output.substring(0, 100) + "...");
+        
+        // Parse different sections
+        const sections = {
+          pillar: output.split("### Support Content")[0] || "",
+          support: output.split("### Support Content")[1]?.split("### Meta Tags")[0] || "",
+          meta: output.split("### Meta Tags")[1]?.split("### Social Media Posts")[0] || "",
+          social: output.split("### Social Media Posts")[1] || ""
+        };
+        
+        console.log("Parsed content sections:", sections);
+        setEditableContent(sections);
+      } catch (error) {
+        console.error("Error parsing content sections:", error);
+        // If parsing fails, store the whole content in pillar
+        setEditableContent({
+          pillar: generatedContent[0].output || generatedContent[0].content || JSON.stringify(generatedContent[0]),
+          support: "",
+          meta: "",
+          social: ""
+        });
+      }
     }
   }, [generatedContent]);
 
@@ -57,6 +73,8 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     }
     
     try {
+      setContentProcessed(false);
+      
       await sendToN8n({
         keywords: keywords,
         topicArea,
@@ -115,6 +133,22 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
         <div className="p-8 flex justify-center items-center">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
           <span className="ml-3">Processing your content...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Check for new content that hasn't been processed yet
+  if (generatedContent.length > 0 && !contentProcessed) {
+    return (
+      <div className="mt-6">
+        <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
+        <div className="p-8 flex flex-col justify-center items-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mb-3"></div>
+          <span>Processing content...</span>
+          <span className="text-sm text-muted-foreground mt-1">
+            Content received, parsing sections...
+          </span>
         </div>
       </div>
     );
