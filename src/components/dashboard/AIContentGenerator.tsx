@@ -10,7 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GeneratedContentCard } from "./content-creator/GeneratedContentCard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil } from "lucide-react";
+import { Pencil, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   keywords,
@@ -18,41 +19,85 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   onSuggestionSelect,
   isLoading
 }) => {
-  const { suggestions, generatedContent, sendToN8n, isLoading: n8nLoading } = useN8nAgent();
+  const { suggestions, generatedContent, rawResponse, sendToN8n, isLoading: n8nLoading, error: n8nError } = useN8nAgent();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editableContent, setEditableContent] = useState<{[key: string]: string}>({});
   const [contentProcessed, setContentProcessed] = useState<boolean>(false);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+
+  // Debug logs for tracking state changes
+  useEffect(() => {
+    console.log("AIContentGenerator: generatedContent updated:", generatedContent);
+    console.log("AIContentGenerator: suggestions updated:", suggestions);
+    console.log("AIContentGenerator: rawResponse:", rawResponse);
+  }, [generatedContent, suggestions, rawResponse]);
 
   // Initialize editable content when generatedContent changes
   useEffect(() => {
-    console.log("Generated content updated:", generatedContent);
-    
     if (generatedContent.length > 0) {
-      setContentProcessed(true);
+      console.log("Processing generatedContent:", generatedContent);
+      setProcessingError(null);
       
       try {
-        const output = generatedContent[0].output || "";
+        // Get the first content item
+        const contentItem = generatedContent[0];
+        console.log("Processing content item:", contentItem);
+        
+        // Make sure we have an output property
+        const output = contentItem.output || contentItem.content || "";
+        if (!output) {
+          console.error("No output content found in:", contentItem);
+          setProcessingError("No content found in the response");
+          return;
+        }
+        
         console.log("Processing output content:", output.substring(0, 100) + "...");
         
-        // Parse different sections
-        const sections = {
-          pillar: output.split("### Support Content")[0] || "",
-          support: output.split("### Support Content")[1]?.split("### Meta Tags")[0] || "",
-          meta: output.split("### Meta Tags")[1]?.split("### Social Media Posts")[0] || "",
-          social: output.split("### Social Media Posts")[1] || ""
-        };
-        
-        console.log("Parsed content sections:", sections);
-        setEditableContent(sections);
+        // Attempt to parse different sections
+        try {
+          // Check if output contains section markers
+          const hasSections = output.includes("### Support Content") || 
+                             output.includes("### Meta Tags") || 
+                             output.includes("### Social Media Posts");
+          
+          let sections = {};
+          
+          if (hasSections) {
+            console.log("Found section markers, parsing sections");
+            sections = {
+              pillar: output.split("### Support Content")[0] || "",
+              support: output.split("### Support Content")[1]?.split("### Meta Tags")[0] || "",
+              meta: output.split("### Meta Tags")[1]?.split("### Social Media Posts")[0] || "",
+              social: output.split("### Social Media Posts")[1] || ""
+            };
+          } else {
+            console.log("No section markers found, using full output as pillar content");
+            sections = {
+              pillar: output,
+              support: "",
+              meta: "",
+              social: ""
+            };
+          }
+          
+          console.log("Parsed content sections:", sections);
+          setEditableContent(sections);
+          setContentProcessed(true);
+        } catch (sectionError) {
+          console.error("Error parsing content sections:", sectionError);
+          // If section parsing fails, store the whole content in pillar
+          setEditableContent({
+            pillar: output,
+            support: "",
+            meta: "",
+            social: ""
+          });
+          setContentProcessed(true);
+        }
       } catch (error) {
-        console.error("Error parsing content sections:", error);
-        // If parsing fails, store the whole content in pillar
-        setEditableContent({
-          pillar: generatedContent[0].output || generatedContent[0].content || JSON.stringify(generatedContent[0]),
-          support: "",
-          meta: "",
-          social: ""
-        });
+        console.error("Error processing content:", error);
+        setProcessingError("Error processing content. Please try again.");
+        setContentProcessed(false);
       }
     }
   }, [generatedContent]);
@@ -154,6 +199,38 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     );
   }
 
+  // Show error if there was a processing error
+  if (processingError) {
+    return (
+      <div className="mt-6">
+        <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error Processing Content</AlertTitle>
+          <AlertDescription>
+            {processingError}
+            <div className="mt-2">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => {
+                  if (generatedContent.length > 0) {
+                    // Force retry content processing
+                    const content = [...generatedContent];
+                    setGeneratedContent([]);
+                    setTimeout(() => setGeneratedContent(content), 100);
+                  }
+                }}
+              >
+                Retry Processing
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   if (suggestions.length === 0 && generatedContent.length === 0) {
     return (
       <div className="mt-6">
@@ -163,6 +240,14 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
           onSelect={onSuggestionSelect}
           isLoading={isLoading}
         />
+        
+        {n8nError && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{n8nError}</AlertDescription>
+          </Alert>
+        )}
       </div>
     );
   }
@@ -181,7 +266,7 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
         </div>
       )}
       
-      {generatedContent.length > 0 && (
+      {generatedContent.length > 0 && contentProcessed && (
         <Card className="mt-4">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-lg">Generated Content</CardTitle>
