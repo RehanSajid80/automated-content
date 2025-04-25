@@ -8,7 +8,7 @@ export const useContentGeneration = () => {
   const [generatingProgress, setGeneratingProgress] = useState<string>("");
   const [generatedContent, setGeneratedContent] = useState<string>("");
 
-  const generateContent = async (activeTab: string, keywords: string) => {
+  const generateContent = async (activeTab: string, keywords: string, targetUrl?: string) => {
     setIsGenerating(true);
     setGeneratedContent("");
     
@@ -46,7 +46,8 @@ export const useContentGeneration = () => {
         contentType,
         mainKeyword,
         keywords: keywords.split(',').map(k => k.trim()),
-        minWords
+        minWords,
+        targetUrl
       });
       
       if (progressInterval !== null) {

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ContentGeneratorProps, contentTypes } from "./types/content";
 import { ContentGeneratorForm } from "./content-creator/ContentGeneratorForm";
 import { useContentGeneration } from "@/hooks/useContentGeneration";
+import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
 import AIContentDisplay from "./AIContentDisplay";
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ 
@@ -15,6 +16,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   const [activeTab, setActiveTab] = useState("pillar");
   const [keywords, setKeywords] = useState("");
   
+  const {
+    targetUrl,
+    handleSuggestUrl,
+    isCheckingExistence,
+    setTargetUrl,
+  } = useUrlSuggestions();
+
   const {
     isGenerating,
     generatingProgress,
@@ -32,7 +40,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   }, [initialKeywords]);
 
   const handleGenerate = () => {
-    generateContent(activeTab, keywords);
+    generateContent(activeTab, keywords, targetUrl);
+  };
+
+  const handleSuggestUrlClick = () => {
+    handleSuggestUrl(keywords);
   };
 
   return (
@@ -59,9 +71,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
             <ContentGeneratorForm
               activeTab={activeTab}
               keywords={keywords}
+              targetUrl={targetUrl}
               onKeywordsChange={setKeywords}
+              onUrlChange={setTargetUrl}
               onGenerate={handleGenerate}
+              onSuggestUrl={handleSuggestUrlClick}
               isGenerating={isGenerating}
+              isCheckingUrl={isCheckingExistence}
               generatingProgress={generatingProgress}
             />
             
