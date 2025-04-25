@@ -86,16 +86,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (keywords.length > 0) {
-      const trendingKeywords = keywords
-        .filter(kw => kw.trend === "up")
-        .map(kw => kw.keyword);
-      
-      setSelectedKeywords(trendingKeywords.slice(0, 5));
-    }
-  }, [keywords]);
-
   const toggleKeywordSelection = (keyword: string) => {
     setSelectedKeywords(prev => 
       prev.includes(keyword) 
