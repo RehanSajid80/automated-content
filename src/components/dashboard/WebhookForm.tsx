@@ -20,32 +20,34 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
   // Fetch existing webhook URL on component mount
   useEffect(() => {
     const fetchWebhook = async () => {
-      const { data, error } = await supabase
-        .from('webhook_configs')
-        .select('url')
-        .eq('type', 'keyword-sync')
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('webhook_configs')
+          .select('url')
+          .eq('type', 'keyword-sync')
+          .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching webhook:', error);
-        return;
-      }
+        if (error) {
+          console.error('Error fetching webhook:', error);
+          return;
+        }
 
-      if (data) {
-        setWebhookUrl(data.url);
-        // Also store in localStorage for easy access by other components
-        localStorage.setItem("n8n-webhook-url", data.url);
-      } else {
-        // If no webhook URL is found, set the default
-        setWebhookUrl("https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords");
-        localStorage.setItem("n8n-webhook-url", "https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords");
+        if (data) {
+          setWebhookUrl(data.url);
+          // Also store in localStorage for easy access by other components
+          localStorage.setItem("n8n-webhook-url", data.url);
+        }
+      } catch (err) {
+        console.error("Error in fetchWebhook:", err);
       }
     };
 
+    // First try to get from localStorage for faster load
     const savedUrl = localStorage.getItem("n8n-webhook-url");
     if (savedUrl) {
       setWebhookUrl(savedUrl);
     } else {
+      // If not in localStorage, try to fetch from Supabase
       fetchWebhook();
     }
   }, []);
@@ -65,32 +67,48 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
     setIsLoading(true);
 
     try {
-      // Save to Supabase
-      const { data: existingWebhook } = await supabase
-        .from('webhook_configs')
-        .select('id')
-        .eq('type', 'keyword-sync')
-        .maybeSingle();
-
-      if (existingWebhook) {
-        // Update existing webhook
-        await supabase
-          .from('webhook_configs')
-          .update({ url: webhookUrl })
-          .eq('id', existingWebhook.id);
-      } else {
-        // Insert new webhook
-        await supabase
-          .from('webhook_configs')
-          .insert([{ url: webhookUrl, type: 'keyword-sync' }]);
-      }
-
-      // Store in localStorage for easy access
+      // Save to localStorage first for immediate access
       localStorage.setItem("n8n-webhook-url", webhookUrl);
+      
+      // Save to Supabase
+      try {
+        const { data: existingWebhook } = await supabase
+          .from('webhook_configs')
+          .select('id')
+          .eq('type', 'keyword-sync')
+          .maybeSingle();
+
+        if (existingWebhook) {
+          // Update existing webhook
+          await supabase
+            .from('webhook_configs')
+            .update({ url: webhookUrl })
+            .eq('id', existingWebhook.id);
+        } else {
+          // Insert new webhook
+          await supabase
+            .from('webhook_configs')
+            .insert([{ url: webhookUrl, type: 'keyword-sync' }]);
+        }
+      } catch (dbError) {
+        console.error("Error saving webhook to database:", dbError);
+        // Continue since we already saved to localStorage
+      }
 
       // Test the connection if onSync is provided
       if (onSync) {
-        await onSync(webhookUrl);
+        try {
+          await onSync(webhookUrl);
+        } catch (syncError) {
+          console.error("Error testing webhook connection:", syncError);
+          toast({
+            title: "Connection Test Failed",
+            description: "Saved the URL but could not establish a connection.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
       }
 
       toast({
@@ -146,7 +164,7 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={isLoading}>
           <Link2Icon className="w-4 h-4 mr-2" />
-          {isLoading ? "Syncing..." : "Test Connection"}
+          {isLoading ? "Syncing..." : "Save & Test Connection"}
         </Button>
       </div>
     </form>
