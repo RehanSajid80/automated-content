@@ -7,7 +7,7 @@ import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { useContentProcessor } from "@/hooks/useContentProcessor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil, Loader2 } from "lucide-react";
+import { Pencil, Loader2, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingState } from "./content-creator/LoadingState";
@@ -31,6 +31,7 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [hasDisplayedContent, setHasDisplayedContent] = useState<boolean>(false);
+  const [forceRefresh, setForceRefresh] = useState<number>(0);
   
   const {
     editableContent,
@@ -40,9 +41,18 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     setEditableContent
   } = useContentProcessor(generatedContent);
 
+  // Debug log generatedContent changes
+  useEffect(() => {
+    console.log("AIContentGenerator: generatedContent updated:", generatedContent);
+    console.log("Number of content items:", generatedContent?.length || 0);
+    if (generatedContent && generatedContent.length > 0) {
+      console.log("First content item:", generatedContent[0]);
+    }
+  }, [generatedContent]);
+
   // Check if we have content to display when content is processed
   useEffect(() => {
-    if (contentProcessed && generatedContent.length > 0) {
+    if (contentProcessed && generatedContent?.length > 0) {
       console.log("Content is processed, editableContent:", editableContent);
       const hasContent = Object.values(editableContent).some(content => content && content.trim().length > 0);
       if (hasContent) {
@@ -61,7 +71,7 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   useEffect(() => {
     if (rawResponse) {
       console.log("Raw response available:", typeof rawResponse === 'string' ? 
-        rawResponse.substring(0, 100) + "..." : 
+        `${rawResponse.substring(0, 100)}... (${rawResponse.length} chars)` : 
         "Non-string response");
     }
   }, [rawResponse]);
@@ -143,6 +153,11 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     }
   };
 
+  const forceRender = () => {
+    console.log("Forcing re-render");
+    setForceRefresh(prev => prev + 1);
+  };
+
   if (isLoading || n8nLoading) {
     return (
       <div className="mt-6">
@@ -152,7 +167,7 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     );
   }
 
-  if (generatedContent.length > 0 && !contentProcessed) {
+  if (generatedContent && generatedContent.length > 0 && !contentProcessed) {
     return (
       <div className="mt-6">
         <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
@@ -176,11 +191,32 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
     );
   }
 
+  // Debug display the content for troubleshooting
+  const debugDisplayContent = () => {
+    if (generatedContent && generatedContent.length > 0) {
+      try {
+        const contentItem = generatedContent[0];
+        const output = contentItem.output || contentItem.content || JSON.stringify(contentItem);
+        return (
+          <div className="p-4 mb-4 bg-slate-50 dark:bg-slate-900 border rounded overflow-auto">
+            <h4 className="text-sm font-medium mb-2">Raw Content Preview:</h4>
+            <p className="text-xs font-mono whitespace-pre-line">
+              {output.substring(0, 300)}...
+            </p>
+          </div>
+        );
+      } catch (e) {
+        return <p>Error displaying debug content: {String(e)}</p>;
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="mt-6">
       <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
       
-      {suggestions.length > 0 && (
+      {suggestions && suggestions.length > 0 && (
         <div className="mb-6">
           <AISuggestionsList 
             suggestions={suggestions}
@@ -190,21 +226,35 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
         </div>
       )}
       
-      {generatedContent.length > 0 && contentProcessed && (
+      {generatedContent && generatedContent.length > 0 && contentProcessed && (
         <Card className="mt-4">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-lg">Generated Content</CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              <Pencil className="h-4 w-4" />
-              {isEditing ? "View Overview" : "Edit Content"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1"
+                onClick={forceRender}
+                title="Force refresh content display"
+              >
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                <Pencil className="h-4 w-4" />
+                {isEditing ? "View Overview" : "Edit Content"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
+            {/* Debug display content */}
+            {debugDisplayContent()}
+            
             {isEditing ? (
               <ContentEditor
                 editableContent={editableContent}
@@ -213,20 +263,22 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
                 onSaveContent={handleSaveContent}
               />
             ) : (
-              <AIContentDisplay content={generatedContent} onClose={() => {}} />
+              <React.Fragment key={`content-display-${forceRefresh}`}>
+                <AIContentDisplay content={generatedContent} onClose={() => {}} />
+              </React.Fragment>
             )}
           </CardContent>
         </Card>
       )}
       
-      {n8nError && generatedContent.length === 0 && (
+      {n8nError && (!generatedContent || generatedContent.length === 0) && (
         <ProcessingError 
           error={n8nError}
           onRetry={() => {}}
         />
       )}
       
-      {generatedContent.length === 0 && !n8nError && suggestions.length === 0 && (
+      {(!generatedContent || generatedContent.length === 0) && !n8nError && suggestions.length === 0 && (
         <div className="p-4 text-center border rounded-md bg-muted/20">
           <p className="text-muted-foreground">No content generated yet.</p>
           <p className="text-sm text-muted-foreground mt-1">

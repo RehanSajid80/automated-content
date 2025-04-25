@@ -20,9 +20,12 @@ interface AIContentDisplayProps {
 }
 
 const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content }) => {
+  console.log("AIContentDisplay rendering with content:", content);
   const sections = useContentSections(content);
+  console.log("Processed sections:", sections);
   
   if (!content || content.length === 0) {
+    console.log("No content available to display");
     return (
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
         <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
@@ -34,7 +37,10 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content }) => {
   }
 
   const rawContent = content[0]?.output || content[0]?.content || "";
+  console.log("Raw content length:", rawContent.length);
+  
   if (!rawContent) {
+    console.log("Content format is not recognized");
     return (
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
         <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
@@ -46,7 +52,7 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content }) => {
           size="sm" 
           className="mt-2" 
           onClick={() => {
-            navigator.clipboard.writeText(rawContent);
+            navigator.clipboard.writeText(JSON.stringify(content));
             toast.success("Raw content copied to clipboard");
           }}
         >
@@ -57,10 +63,13 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content }) => {
   }
 
   const availableSections = Object.entries(sections)
-    .filter(([_, content]) => content.trim().length > 0)
+    .filter(([_, content]) => content && content.trim().length > 0)
     .map(([key]) => key);
+  
+  console.log("Available sections for display:", availableSections);
 
   if (availableSections.length === 0) {
+    console.log("No available sections to display");
     return (
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
         <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">

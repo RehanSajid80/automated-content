@@ -34,6 +34,12 @@ export const useContentProcessor = (generatedContent: any[]) => {
         
         console.log("Processing output content length:", output.length);
         console.log("Processing output content preview:", output.substring(0, 100) + "...");
+
+        // Log the markers we're looking for
+        console.log("Looking for section markers in content");
+        console.log("Contains '### Support Content':", output.includes("### Support Content"));
+        console.log("Contains '### Meta Tags':", output.includes("### Meta Tags"));
+        console.log("Contains '### Social Media Posts':", output.includes("### Social Media Posts"));
         
         try {
           // Check if this content has section markers
@@ -100,6 +106,10 @@ export const useContentProcessor = (generatedContent: any[]) => {
             if (socialStartRegex.test(fullContent)) {
               sections.social = fullContent.split(socialStartRegex)[1].trim();
             }
+
+            // Log the parsed sections for debugging
+            console.log("Parsed sections from content:", 
+              Object.keys(sections).map(key => `${key}: ${sections[key].substring(0, 30)}...`));
           } else {
             console.log("No section markers found, using full output as pillar content");
             sections = {
@@ -110,7 +120,9 @@ export const useContentProcessor = (generatedContent: any[]) => {
             };
           }
           
-          console.log("Parsed content sections:", sections);
+          console.log("Final parsed content sections:", 
+            Object.keys(sections).filter(key => sections[key].length > 0));
+          
           setEditableContent(sections);
           setContentProcessed(true);
         } catch (sectionError) {
@@ -129,6 +141,8 @@ export const useContentProcessor = (generatedContent: any[]) => {
         setProcessingError("Error processing content. Please try again.");
         setContentProcessed(false);
       }
+    } else {
+      console.log("No content to process - generatedContent is empty or undefined");
     }
   }, [generatedContent]);
 

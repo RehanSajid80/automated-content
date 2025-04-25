@@ -18,14 +18,22 @@ export const ContentActions: React.FC<ContentActionsProps> = ({
   const [isSaving, setIsSaving] = React.useState(false);
 
   const handleCopyContent = () => {
-    navigator.clipboard.writeText(content);
-    toast.success("Content copied to clipboard");
+    try {
+      navigator.clipboard.writeText(content);
+      toast.success("Content copied to clipboard");
+    } catch (err) {
+      console.error("Failed to copy content:", err);
+      toast.error("Failed to copy content");
+    }
   };
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
       await onSave();
+    } catch (err) {
+      console.error("Error in ContentActions.handleSave:", err);
+      toast.error("Failed to save content");
     } finally {
       setIsSaving(false);
     }
