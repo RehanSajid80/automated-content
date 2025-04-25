@@ -85,6 +85,15 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   };
 
   const handleN8nSuggestions = async () => {
+    if (!topicArea) {
+      toast({
+        title: "Topic Area Required",
+        description: "Please select a topic area before getting AI suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (selectedKeywords.length === 0) {
       toast({
         title: "No Keywords Selected",
@@ -191,10 +200,10 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               <div className="space-y-4 w-full">
                 <div className="flex flex-col space-y-2">
                   <label htmlFor="topic-area" className="text-sm font-medium">
-                    Topic Area
+                    Topic Area <span className="text-red-500">*</span>
                   </label>
                   <Select value={topicArea} onValueChange={setTopicArea}>
-                    <SelectTrigger id="topic-area" className="w-full">
+                    <SelectTrigger id="topic-area" className={`w-full ${!topicArea ? 'border-red-300' : ''}`}>
                       <SelectValue placeholder="Select a topic area" />
                     </SelectTrigger>
                     <SelectContent>
@@ -241,7 +250,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   
                   <Button
                     onClick={handleN8nSuggestions}
-                    disabled={isN8nLoading || isN8nAgentLoading || selectedKeywords.length === 0}
+                    disabled={isN8nLoading || isN8nAgentLoading || selectedKeywords.length === 0 || !topicArea}
                     className="w-full sm:w-auto relative overflow-hidden"
                     variant="n8n"
                   >
