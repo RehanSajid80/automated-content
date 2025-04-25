@@ -18,13 +18,13 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   onSuggestionSelect,
   isLoading
 }) => {
-  const { suggestions, generatedContent, sendToN8n } = useN8nAgent();
-  const [activeTab, setActiveTab] = useState<string>("overview");
-  const [editableContent, setEditableContent] = useState<{[key: string]: string}>({});
+  const { suggestions, generatedContent, sendToN8n, isLoading: n8nLoading } = useN8nAgent();
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editableContent, setEditableContent] = useState<{[key: string]: string}>({});
 
   // Initialize editable content when generatedContent changes
   React.useEffect(() => {
+    console.log("Generated content updated:", generatedContent);
     if (generatedContent.length > 0) {
       const output = generatedContent[0].output || "";
       
@@ -37,6 +37,7 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
       };
       
       setEditableContent(sections);
+      console.log("Parsed content sections:", sections);
     }
   }, [generatedContent]);
 
@@ -106,6 +107,18 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
       });
     }
   };
+
+  if (isLoading || n8nLoading) {
+    return (
+      <div className="mt-6">
+        <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
+        <div className="p-8 flex justify-center items-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          <span className="ml-3">Processing your content...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (suggestions.length === 0 && generatedContent.length === 0) {
     return (

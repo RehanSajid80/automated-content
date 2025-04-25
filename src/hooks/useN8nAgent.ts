@@ -26,7 +26,7 @@ export const useN8nAgent = () => {
       const storedWebhookUrl = localStorage.getItem("n8n-webhook-url") || 
                                localStorage.getItem("semrush-webhook-url");
       
-      const webhookUrl = storedWebhookUrl || "https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords";
+      const webhookUrl = storedWebhookUrl || "https://officespacesoftware.app.n8n.cloud/webhook/sync-keywords";
       
       if (!webhookUrl) {
         throw new Error("No webhook URL configured. Please check API connections settings.");
@@ -76,8 +76,10 @@ export const useN8nAgent = () => {
             setSuggestions(data.suggestions);
           }
           
-          if (data.content) {
-            setGeneratedContent(Array.isArray(data.content) ? data.content : [data.content]);
+          if (data.output || data.content) {
+            const formattedContent = data.output ? [{ output: data.output }] : Array.isArray(data.content) ? data.content : [data.content];
+            setGeneratedContent(formattedContent);
+            console.log("Setting generated content:", formattedContent);
           }
           
           toast("Webhook Triggered", {
@@ -129,4 +131,3 @@ export const useN8nAgent = () => {
     sendToN8n
   };
 };
-
