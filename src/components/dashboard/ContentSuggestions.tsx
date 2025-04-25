@@ -81,6 +81,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     setSelectedKeywords([]);
     
     try {
+      await sendToN8n({
+        keywords: localKeywords,
+        topicArea,
+        targetUrl: window.location.origin,
+        requestType: 'contentSuggestions'
+      });
+      
       toast({
         title: "AI Suggestions Ready",
         description: "Select one of the suggestions below to proceed",
