@@ -7,7 +7,7 @@ interface N8nAgentPayload {
   keywords: KeywordData[];
   topicArea: string;
   targetUrl: string;
-  url?: string; // Adding the optional url property
+  url?: string;
   requestType: 'contentSuggestions' | 'keywordAnalysis';
 }
 
@@ -23,13 +23,14 @@ export const useN8nAgent = () => {
     try {
       // Get the webhook URL from localStorage
       const webhookUrl = localStorage.getItem("n8n-webhook-url") || 
-                         localStorage.getItem("semrush-webhook-url");
+                       localStorage.getItem("semrush-webhook-url") ||
+                       "https://officespacesoftware.app.n8n.cloud/webhook/sync-keywords"; // Fallback URL
                          
       if (!webhookUrl) {
         throw new Error("No webhook URL configured. Please check API connections settings.");
       }
       
-      console.log("Sending data to n8n agent:", payload);
+      console.log("Sending data to n8n webhook:", payload);
       
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -40,6 +41,13 @@ export const useN8nAgent = () => {
           timestamp: new Date().toISOString()
         }),
         mode: 'no-cors'
+      });
+      
+      // Since we're using no-cors, we won't get a JSON response
+      // Notify user about the webhook being triggered
+      toast({
+        title: "Webhook Triggered",
+        description: "Successfully sent data to n8n webhook",
       });
       
       // Since we're using no-cors, we won't get a JSON response
@@ -59,13 +67,20 @@ export const useN8nAgent = () => {
       };
       
       setSuggestions(mockResponse.suggestions);
-      console.log("Received n8n agent response:", mockResponse);
+      console.log("Webhook response:", mockResponse);
       
       return mockResponse;
     } catch (err: any) {
-      const errorMessage = err.message || "Failed to communicate with n8n agent";
+      const errorMessage = err.message || "Failed to communicate with n8n webhook";
       setError(errorMessage);
-      console.error("N8n agent error:", err);
+      console.error("N8n webhook error:", err);
+      
+      toast({
+        title: "Webhook Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
       throw err;
     } finally {
       setIsLoading(false);
