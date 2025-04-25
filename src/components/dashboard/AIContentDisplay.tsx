@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface AIContentDisplayProps {
   content: {
     output: string;
+    content?: string; // Make content optional to handle different response formats
   }[];
   onClose?: () => void;
 }
@@ -30,7 +31,8 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content, onClose })
   }
 
   console.log("Rendering AIContentDisplay with content:", content[0]);
-  const output = content[0].output || content[0].content || "";
+  // Fix the type error by checking for output first, then falling back to content property if it exists
+  const output = content[0].output || (content[0] as any).content || "";
   if (!output) {
     console.error("Content item has no output property:", content[0]);
     return null;
