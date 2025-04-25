@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -39,7 +38,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     generateSuggestions
   } = useContentSuggestions();
 
-  // Update local keywords when parent keywords change
   useEffect(() => {
     setLocalKeywords(keywords);
     console.log(`ContentSuggestions: Keywords updated, got ${keywords.length} keywords`);
@@ -79,16 +77,16 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   };
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      <Card>
+    <div className={`space-y-4 max-w-full w-full ${className}`}>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>AI Content Suggestions</CardTitle>
           <CardDescription>
             Use OpenAI to analyze keywords and suggest content topics for your website
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
+        <CardContent className="w-full">
+          <div className="space-y-6 w-full">
             {apiError && (
               <Alert variant="destructive" className="mb-4">
                 <AlertTriangle className="h-4 w-4" />
@@ -107,7 +105,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               </Alert>
             )}
 
-            <div className="p-4 border border-border rounded-md bg-card">
+            <div className="p-4 border border-border rounded-md bg-card w-full">
               <h3 className="text-base font-medium mb-3">Search for Keywords</h3>
               <div className="space-y-4">
                 <div className="flex flex-col space-y-2">
