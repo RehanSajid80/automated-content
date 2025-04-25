@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Check, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -33,7 +32,9 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
             content: content,
             content_type: activeTab,
             is_saved: true,
-            title: `Generated ${activeTab} content`,
+            title: activeTab === 'social' 
+              ? 'Social Media Posts' 
+              : `Generated ${activeTab} content`,
             topic_area: 'workspace-management',
             keywords: [] // Empty array for now, can be updated later
           }
@@ -47,7 +48,9 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
       window.dispatchEvent(new Event('content-updated'));
 
       toast.success("Content saved successfully!", {
-        description: `Your ${activeTab} content has been saved to the library`
+        description: activeTab === 'social' 
+          ? 'Your social media posts have been saved to the library' 
+          : `Your ${activeTab} content has been saved to the library`
       });
 
     } catch (error) {
@@ -70,8 +73,12 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="ghost" className="h-8 text-xs px-2">
-            Regenerate
+          <Button 
+            size="sm" 
+            className="h-8 text-xs px-2"
+            onClick={handleSave}
+          >
+            {activeTab === 'social' ? 'Save Social Posts' : 'Save'}
           </Button>
           <Button 
             size="sm" 
@@ -80,13 +87,6 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
             onClick={handleCopy}
           >
             Copy
-          </Button>
-          <Button 
-            size="sm" 
-            className="h-8 text-xs px-2"
-            onClick={handleSave}
-          >
-            Save <Save size={14} className="ml-1" />
           </Button>
         </div>
       </div>

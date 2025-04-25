@@ -20,6 +20,7 @@ export type Database = {
           keywords: string[]
           parent_topic_id: string | null
           reasoning: string | null
+          social_context: string | null
           title: string | null
           topic_area: string
           updated_at: string
@@ -34,6 +35,7 @@ export type Database = {
           keywords?: string[]
           parent_topic_id?: string | null
           reasoning?: string | null
+          social_context?: string | null
           title?: string | null
           topic_area: string
           updated_at?: string
@@ -48,6 +50,7 @@ export type Database = {
           keywords?: string[]
           parent_topic_id?: string | null
           reasoning?: string | null
+          social_context?: string | null
           title?: string | null
           topic_area?: string
           updated_at?: string
