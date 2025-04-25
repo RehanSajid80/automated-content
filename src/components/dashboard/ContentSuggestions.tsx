@@ -31,6 +31,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [localKeywords, setLocalKeywords] = useState<KeywordData[]>(keywords);
   const [isN8nLoading, setIsN8nLoading] = useState(false);
   const [n8nResponse, setN8nResponse] = useState<any[]>([]);
+  const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
   const { toast } = useToast();
   
   const {
@@ -50,14 +51,78 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     setLocalKeywords(keywords);
     console.log(`ContentSuggestions: Keywords updated, got ${keywords.length} keywords`);
     setSelectedKeywords([]);
+    setIsAISuggestionMode(false);
   }, [keywords]);
 
   const toggleKeywordSelection = (keyword: string) => {
+    if (isAISuggestionMode) {
+      return; // Prevent keyword selection in AI Suggestion mode
+    }
+    
     setSelectedKeywords(prev => 
       prev.includes(keyword) 
         ? prev.filter(k => k !== keyword)
         : [...prev, keyword]
     );
+  };
+
+  const handleAISuggestions = async () => {
+    if (!topicArea) {
+      toast({
+        title: "Topic Area Required",
+        description: "Please select a topic area before getting AI suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsN8nLoading(true);
+    setIsAISuggestionMode(true);
+    setSelectedKeywords([]); // Clear any previously selected keywords
+    setN8nResponse([]);
+    
+    try {
+      const targetUrl = localStorage.getItem("target-url") || "https://officespacesoftware.com";
+      
+      const response = await sendToN8n({
+        keywords: localKeywords, // Send ALL keywords
+        topicArea,
+        targetUrl,
+        requestType: "contentSuggestions"
+      });
+      
+      if (!response || !response.suggestions || !Array.isArray(response.suggestions)) {
+        throw new Error("Invalid response from n8n agent");
+      }
+      
+      setN8nResponse(response.suggestions);
+      
+      toast({
+        title: "AI Suggestions Received",
+        description: `Received ${response.suggestions.length} content suggestions from the AI agent`,
+      });
+      
+      if (response.suggestions.length > 0) {
+        const event = new CustomEvent('navigate-to-tab', { 
+          detail: { 
+            tab: 'content',
+            contentSuggestions: response.suggestions,
+            sourceKeywords: localKeywords.map(k => k.keyword)
+          } 
+        });
+        window.dispatchEvent(event);
+      }
+    } catch (error) {
+      console.error("Error getting AI suggestions:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to get AI suggestions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsN8nLoading(false);
+      setIsAISuggestionMode(false);
+    }
   };
 
   const autoSelectTrendingKeywords = () => {
@@ -81,88 +146,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         title: "Keywords Updated",
         description: `Added ${newKeywords.length} keywords for ${topicArea || "general"} analysis`,
       });
-    }
-  };
-
-  const handleN8nSuggestions = async () => {
-    if (!topicArea) {
-      toast({
-        title: "Topic Area Required",
-        description: "Please select a topic area before getting AI suggestions",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedKeywords.length === 0) {
-      toast({
-        title: "No Keywords Selected",
-        description: "Please select at least one keyword for suggestions",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsN8nLoading(true);
-    setN8nResponse([]);
-    
-    try {
-      const filteredKeywords = localKeywords.filter(kw => 
-        selectedKeywords.includes(kw.keyword)
-      );
-      
-      const webhookUrl = localStorage.getItem("n8n-webhook-url") || 
-                         localStorage.getItem("semrush-webhook-url");
-
-      if (!webhookUrl) {
-        toast({
-          title: "Webhook URL Missing",
-          description: "Please configure the n8n webhook URL in API Connections settings",
-          variant: "destructive",
-        });
-        setIsN8nLoading(false);
-        return;
-      }
-      
-      const targetUrl = localStorage.getItem("target-url") || "https://officespacesoftware.com";
-      
-      const response = await sendToN8n({
-        keywords: filteredKeywords,
-        topicArea,
-        targetUrl,
-        requestType: "contentSuggestions"
-      });
-      
-      if (!response || !response.suggestions || !Array.isArray(response.suggestions)) {
-        throw new Error("Invalid response from n8n agent");
-      }
-      
-      setN8nResponse(response.suggestions);
-      
-      toast({
-        title: "AI Suggestions Received",
-        description: `Received ${response.suggestions.length} content suggestions from the AI agent`,
-      });
-      
-      if (response.suggestions.length > 0) {
-        const event = new CustomEvent('navigate-to-tab', { 
-          detail: { 
-            tab: 'content',
-            contentSuggestions: response.suggestions,
-            sourceKeywords: selectedKeywords
-          } 
-        });
-        window.dispatchEvent(event);
-      }
-    } catch (error) {
-      console.error("Error getting AI suggestions:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get AI suggestions",
-        variant: "destructive",
-      });
-    } finally {
-      setIsN8nLoading(false);
     }
   };
 
@@ -203,7 +186,11 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                     Topic Area <span className="text-red-500">*</span>
                   </label>
                   <Select value={topicArea} onValueChange={setTopicArea}>
-                    <SelectTrigger id="topic-area" className={`w-full ${!topicArea ? 'border-red-300' : ''}`}>
+                    <SelectTrigger 
+                      id="topic-area" 
+                      className={`w-full ${!topicArea ? 'border-red-300' : ''}`}
+                      disabled={isAISuggestionMode}
+                    >
                       <SelectValue placeholder="Select a topic area" />
                     </SelectTrigger>
                     <SelectContent>
@@ -223,6 +210,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                 <SemrushIntegration 
                   onKeywordsReceived={updateKeywords} 
                   topicArea={topicArea}
+                  disabled={isAISuggestionMode}
                 />
                 
                 <KeywordSelector
@@ -230,12 +218,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   selectedKeywords={selectedKeywords}
                   onKeywordToggle={toggleKeywordSelection}
                   onAutoSelect={autoSelectTrendingKeywords}
+                  disabled={isAISuggestionMode}
                 />
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     onClick={() => generateSuggestions(localKeywords, selectedKeywords)}
-                    disabled={isLoading || selectedKeywords.length === 0}
+                    disabled={isLoading || selectedKeywords.length === 0 || isAISuggestionMode}
                     className="w-full relative overflow-hidden"
                   >
                     <span className={isLoading ? "invisible" : ""}>
@@ -249,8 +238,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   </Button>
                   
                   <Button
-                    onClick={handleN8nSuggestions}
-                    disabled={isN8nLoading || isN8nAgentLoading || selectedKeywords.length === 0 || !topicArea}
+                    onClick={handleAISuggestions}
+                    disabled={isN8nLoading || isN8nAgentLoading || isAISuggestionMode}
                     className="w-full sm:w-auto relative overflow-hidden"
                     variant="n8n"
                   >
@@ -258,7 +247,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                     <span className={isN8nLoading ? "invisible" : ""}>
                       AI Suggestions
                     </span>
-                    {(isN8nLoading || isN8nAgentLoading) && (
+                    {(isN8nLoading) && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       </div>
