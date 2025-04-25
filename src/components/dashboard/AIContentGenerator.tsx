@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AIContentGeneratorProps } from "./types/aiSuggestions";
 import { AISuggestionsList } from "./AISuggestionsList";
 import AIContentDisplay from "./AIContentDisplay";
@@ -23,7 +23,7 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
   const [editableContent, setEditableContent] = useState<{[key: string]: string}>({});
 
   // Initialize editable content when generatedContent changes
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("Generated content updated:", generatedContent);
     if (generatedContent.length > 0) {
       const output = generatedContent[0].output || "";
