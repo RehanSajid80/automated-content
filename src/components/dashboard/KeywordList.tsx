@@ -1,11 +1,11 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { TrendingUp, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { clearCache } from "@/utils/contentLifecycleUtils";
 
 interface KeywordListProps {
   keywords: KeywordData[];
@@ -25,6 +25,13 @@ const KeywordList: React.FC<KeywordListProps> = ({
 }) => {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  React.useEffect(() => {
+    if (keywords.length > 0) {
+      clearCache('keyword-data-cache');
+      console.log('Cleared keyword cache after receiving new keywords');
+    }
+  }, [keywords]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
