@@ -10,12 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AlertTriangle, SparklesIcon } from "lucide-react";
+import { AlertTriangle, SparklesIcon, BrainCircuit } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import SemrushIntegration from "./SemrushIntegration";
 import { KeywordSelector } from "./KeywordSelector";
 import { useContentSuggestions } from "@/hooks/useContentSuggestions";
+import { useState as useN8nState } from "@/hooks/useN8nAgent";
 
 interface ContentSuggestionsProps {
   keywords: KeywordData[];
@@ -29,6 +30,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [topicArea, setTopicArea] = useState<string>("");
   const [localKeywords, setLocalKeywords] = useState<KeywordData[]>(keywords);
+  const [isN8nLoading, setIsN8nLoading] = useState(false);
+  const [n8nResponse, setN8nResponse] = useState<any[]>([]);
   const { toast } = useToast();
   
   const {
@@ -38,6 +41,11 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     selectedModel,
     generateSuggestions
   } = useContentSuggestions();
+
+  const { 
+    sendToN8n, 
+    isLoading: isN8nAgentLoading 
+  } = useN8nState();
 
   useEffect(() => {
     setLocalKeywords(keywords);
@@ -74,6 +82,80 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         title: "Keywords Updated",
         description: `Added ${newKeywords.length} keywords for ${topicArea || "general"} analysis`,
       });
+    }
+  };
+
+  const handleN8nSuggestions = async () => {
+    if (selectedKeywords.length === 0) {
+      toast({
+        title: "No Keywords Selected",
+        description: "Please select at least one keyword for suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsN8nLoading(true);
+    setN8nResponse([]);
+    
+    try {
+      const filteredKeywords = localKeywords.filter(kw => 
+        selectedKeywords.includes(kw.keyword)
+      );
+      
+      const webhookUrl = localStorage.getItem("n8n-webhook-url") || 
+                         localStorage.getItem("semrush-webhook-url");
+
+      if (!webhookUrl) {
+        toast({
+          title: "Webhook URL Missing",
+          description: "Please configure the n8n webhook URL in API Connections settings",
+          variant: "destructive",
+        });
+        setIsN8nLoading(false);
+        return;
+      }
+      
+      const targetUrl = localStorage.getItem("target-url") || "https://officespacesoftware.com";
+      
+      const response = await sendToN8n({
+        keywords: filteredKeywords,
+        topicArea,
+        targetUrl,
+        requestType: "contentSuggestions"
+      });
+      
+      if (!response || !response.suggestions || !Array.isArray(response.suggestions)) {
+        throw new Error("Invalid response from n8n agent");
+      }
+      
+      setN8nResponse(response.suggestions);
+      
+      toast({
+        title: "AI Suggestions Received",
+        description: `Received ${response.suggestions.length} content suggestions from the AI agent`,
+      });
+      
+      // Trigger navigation to content tab with these suggestions
+      if (response.suggestions.length > 0) {
+        const event = new CustomEvent('navigate-to-tab', { 
+          detail: { 
+            tab: 'content',
+            contentSuggestions: response.suggestions,
+            sourceKeywords: selectedKeywords
+          } 
+        });
+        window.dispatchEvent(event);
+      }
+    } catch (error) {
+      console.error("Error getting AI suggestions:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to get AI suggestions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsN8nLoading(false);
     }
   };
 
@@ -143,20 +225,39 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   onAutoSelect={autoSelectTrendingKeywords}
                 />
 
-                <Button
-                  onClick={() => generateSuggestions(localKeywords, selectedKeywords)}
-                  disabled={isLoading || selectedKeywords.length === 0}
-                  className="w-full relative overflow-hidden"
-                >
-                  <span className={isLoading ? "invisible" : ""}>
-                    {`Generate Content Suggestions (${selectedKeywords.length} keywords)`}
-                  </span>
-                  {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={() => generateSuggestions(localKeywords, selectedKeywords)}
+                    disabled={isLoading || selectedKeywords.length === 0}
+                    className="w-full relative overflow-hidden"
+                  >
+                    <span className={isLoading ? "invisible" : ""}>
+                      {`Generate Content Suggestions (${selectedKeywords.length} keywords)`}
+                    </span>
+                    {isLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    onClick={handleN8nSuggestions}
+                    disabled={isN8nLoading || isN8nAgentLoading || selectedKeywords.length === 0}
+                    className="w-full sm:w-auto relative overflow-hidden"
+                    variant="n8n"
+                  >
+                    <BrainCircuit className={isN8nLoading ? "invisible" : "mr-2"} size={16} />
+                    <span className={isN8nLoading ? "invisible" : ""}>
+                      AI Suggestions
+                    </span>
+                    {(isN8nLoading || isN8nAgentLoading) && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

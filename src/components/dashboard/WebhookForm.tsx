@@ -33,10 +33,17 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
 
       if (data) {
         setWebhookUrl(data.url);
+        // Also store in localStorage for easy access by other components
+        localStorage.setItem("n8n-webhook-url", data.url);
       }
     };
 
-    fetchWebhook();
+    const savedUrl = localStorage.getItem("n8n-webhook-url");
+    if (savedUrl) {
+      setWebhookUrl(savedUrl);
+    } else {
+      fetchWebhook();
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,6 +80,9 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
           .from('webhook_configs')
           .insert([{ url: webhookUrl, type: 'keyword-sync' }]);
       }
+
+      // Store in localStorage for easy access
+      localStorage.setItem("n8n-webhook-url", webhookUrl);
 
       // Test the connection if onSync is provided
       if (onSync) {
