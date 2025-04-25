@@ -3,7 +3,7 @@
 export const fetchSemrushKeywords = async (domain: string, limit: number) => {
   const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY') || '';
   const semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&domain=${domain}&database=us&display_limit=${limit}`;
-  console.log(`Calling SEMrush API for domain: ${domain}`);
+  console.log(`Calling SEMrush API for domain: ${domain} with limit: ${limit}`);
   
   const response = await fetch(semrushUrl);
   
@@ -40,6 +40,7 @@ export const processKeywords = (responseText: string, domain: string, topicArea:
       });
     }
   }
-
+  
+  console.log(`Processed ${keywords.length} keywords for domain: ${domain} and topic: ${topicArea}`);
   return keywords;
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -27,6 +28,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 }) => {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [topicArea, setTopicArea] = useState<string>("");
+  const [localKeywords, setLocalKeywords] = useState<KeywordData[]>(keywords);
   const { toast } = useToast();
   
   const {
@@ -37,7 +39,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     generateSuggestions
   } = useContentSuggestions();
 
+  // Update local keywords when parent keywords change
   useEffect(() => {
+    setLocalKeywords(keywords);
     console.log(`ContentSuggestions: Keywords updated, got ${keywords.length} keywords`);
     setSelectedKeywords([]);
   }, [keywords]);
@@ -51,7 +55,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   };
 
   const autoSelectTrendingKeywords = () => {
-    const trendingKeywords = keywords
+    const trendingKeywords = localKeywords
       .filter(kw => kw.trend === "up")
       .map(kw => kw.keyword);
     
@@ -65,10 +69,11 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
   const updateKeywords = (newKeywords: KeywordData[]) => {
     if (newKeywords && newKeywords.length > 0) {
+      setLocalKeywords(newKeywords);
       setSelectedKeywords([]);
       toast({
         title: "Keywords Updated",
-        description: `Added ${newKeywords.length} keywords for analysis`,
+        description: `Added ${newKeywords.length} keywords for ${topicArea || "general"} analysis`,
       });
     }
   };
@@ -133,14 +138,14 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                 />
                 
                 <KeywordSelector
-                  keywords={keywords}
+                  keywords={localKeywords}
                   selectedKeywords={selectedKeywords}
                   onKeywordToggle={toggleKeywordSelection}
                   onAutoSelect={autoSelectTrendingKeywords}
                 />
 
                 <Button
-                  onClick={() => generateSuggestions(keywords, selectedKeywords)}
+                  onClick={() => generateSuggestions(localKeywords, selectedKeywords)}
                   disabled={isLoading || selectedKeywords.length === 0}
                   className="w-full relative overflow-hidden"
                 >

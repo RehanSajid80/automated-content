@@ -76,6 +76,15 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       return;
     }
 
+    if (!topicArea) {
+      toast({
+        title: "Warning",
+        description: "Please select a topic area for best results",
+        variant: "default",
+      });
+      // Continue anyway, but with a warning
+    }
+
     setIsLoading(true);
     setErrorMsg(null);
 
@@ -88,7 +97,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         body: { 
           keyword: cleanDomain, 
           limit: 100,
-          topicArea: topicArea || '' // Include topic area in the request
+          topicArea: topicArea || '' 
         }
       });
 
@@ -131,18 +140,16 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         trend: kw.trend || 'neutral'
       }));
       
-      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush`);
+      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for topic: ${topicArea}`);
       
       // Call the callback function with the new keywords
       onKeywordsReceived(formattedKeywords);
       
       toast({
         title: data.fromCache ? "Loaded from cache" : "Success",
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''} ${data.remaining} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords for ${topicArea || "general search"}. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''} ${data.remaining} API calls remaining today.`,
       });
       
-      // Log to verify data is being passed
-      console.log(`Passing ${formattedKeywords.length} keywords to parent component`, formattedKeywords);
     } catch (error) {
       console.error('Error fetching keywords:', error);
       updateSemrushMetrics(false);
