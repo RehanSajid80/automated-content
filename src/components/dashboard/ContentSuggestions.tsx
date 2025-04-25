@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
@@ -38,7 +37,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     generateSuggestions
   } = useContentSuggestions();
 
-  // Add effect to clear selected keywords when the keywords array changes (reference changes)
   useEffect(() => {
     console.log(`ContentSuggestions: Keywords updated, got ${keywords.length} keywords`);
     setSelectedKeywords([]);
@@ -67,7 +65,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
   const updateKeywords = (newKeywords: KeywordData[]) => {
     if (newKeywords && newKeywords.length > 0) {
-      // Clear selected keywords when new keywords are fetched
       setSelectedKeywords([]);
       toast({
         title: "Keywords Updated",
@@ -89,7 +86,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
           <div className="space-y-6">
             {apiError && (
               <Alert variant="destructive" className="mb-4">
-                <AlertTriangleIcon className="h-4 w-4" />
+                <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>OpenAI Error</AlertTitle>
                 <AlertDescription>{apiError}</AlertDescription>
               </Alert>
