@@ -1,0 +1,57 @@
+
+import React from "react";
+import { Save } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+
+interface GeneratedContentCardProps {
+  content: string;
+  onContentChange: (content: string) => void;
+  onRegenerateContent: () => void;
+  onSaveContent: () => void;
+  contentType: string;
+}
+
+export const GeneratedContentCard: React.FC<GeneratedContentCardProps> = ({
+  content,
+  onContentChange,
+  onRegenerateContent,
+  onSaveContent,
+  contentType
+}) => {
+  const handleCopyContent = () => {
+    navigator.clipboard.writeText(content);
+    toast("Content copied to clipboard", {
+      description: "You can now paste it wherever you need it."
+    });
+  };
+
+  return (
+    <Card className="mt-6 animate-fade-in">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Generated Content</CardTitle>
+        <CardDescription>Based on your specified keywords and parameters</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Textarea 
+          value={content}
+          onChange={(e) => onContentChange(e.target.value)}
+          className="min-h-[200px] font-mono text-sm"
+        />
+      </CardContent>
+      <CardFooter className="flex justify-end pt-3">
+        <Button variant="outline" size="sm" className="mr-2" onClick={onRegenerateContent}>
+          Regenerate
+        </Button>
+        <Button variant="outline" size="sm" className="mr-2" onClick={handleCopyContent}>
+          Copy
+        </Button>
+        <Button size="sm" onClick={onSaveContent}>
+          <Save size={14} className="mr-2" /> Save Content
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
