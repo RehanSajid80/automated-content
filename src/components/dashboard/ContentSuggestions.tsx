@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
 import {
   Card,
@@ -10,19 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AlertTriangle, SparklesIcon, BrainCircuit } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { TopicAreaSelector } from "./TopicAreaSelector";
+import { AIContentGenerator } from "./AIContentGenerator";
 import SemrushIntegration from "./SemrushIntegration";
 import { KeywordSelector } from "./KeywordSelector";
 import { useContentSuggestions } from "@/hooks/useContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
-import { AISuggestion } from "./types/aiSuggestions";
-import { AISuggestionsList } from "./AISuggestionsList";
-
-interface ContentSuggestionsProps {
-  keywords: KeywordData[];
-  className?: string;
-}
+import { AISuggestion, ContentSuggestionsProps } from "./types/aiSuggestions";
 
 const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   keywords,
@@ -30,37 +25,14 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 }) => {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [topicArea, setTopicArea] = useState<string>("");
-  const [localKeywords, setLocalKeywords] = useState<KeywordData[]>(keywords);
+  const [localKeywords, setLocalKeywords] = useState(keywords);
   const [isN8nLoading, setIsN8nLoading] = useState(false);
-  const [n8nResponse, setN8nResponse] = useState<any[]>([]);
-  const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
   const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
   const { toast } = useToast();
-  
-  const {
-    isLoading,
-    apiError,
-    usedModel,
-    selectedModel,
-    generateSuggestions
-  } = useContentSuggestions();
-
-  const { 
-    sendToN8n, 
-    isLoading: isN8nAgentLoading 
-  } = useN8nAgent();
-
-  useEffect(() => {
-    setLocalKeywords(keywords);
-    console.log(`ContentSuggestions: Keywords updated, got ${keywords.length} keywords`);
-    setSelectedKeywords([]);
-    setIsAISuggestionMode(false);
-  }, [keywords]);
+  const { isLoading, apiError, usedModel, selectedModel } = useContentSuggestions();
 
   const toggleKeywordSelection = (keyword: string) => {
-    if (isAISuggestionMode) {
-      return; // Prevent keyword selection in AI Suggestion mode
-    }
+    if (isAISuggestionMode) return;
     
     setSelectedKeywords(prev => 
       prev.includes(keyword) 
@@ -81,26 +53,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
     setIsN8nLoading(true);
     setIsAISuggestionMode(true);
-    setSelectedKeywords([]); // Clear any previously selected keywords
-    setN8nResponse([]);
+    setSelectedKeywords([]);
     
     try {
-      // For now, we'll use mock data instead of the actual API call
-      const mockSuggestions: AISuggestion[] = Array.from({ length: 5 }).map((_, index) => ({
-        id: `suggestion-${index + 1}`,
-        title: `${topicArea} Content Idea ${index + 1}`,
-        description: `AI-generated content idea based on your keywords and topic area: ${topicArea}`,
-        contentType: ['pillar', 'support', 'meta', 'social'][Math.floor(Math.random() * 4)] as any,
-        keywords: localKeywords.slice(0, 5).map(k => k.keyword),
-      }));
-      
-      setAiSuggestions(mockSuggestions);
-      
       toast({
         title: "AI Suggestions Ready",
         description: "Select one of the suggestions below to proceed",
       });
-      
     } catch (error) {
       console.error("Error getting AI suggestions:", error);
       toast({
@@ -117,24 +76,6 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     toast({
       title: "Suggestion Selected",
       description: `You selected: ${suggestion.title}`,
-    });
-    
-    // Here you would typically handle the selection, such as:
-    // - Navigate to content creation with the selected suggestion
-    // - Store the selection in state
-    // - Trigger content generation, etc.
-  };
-
-  const autoSelectTrendingKeywords = () => {
-    const trendingKeywords = localKeywords
-      .filter(kw => kw.trend === "up")
-      .map(kw => kw.keyword);
-    
-    setSelectedKeywords(trendingKeywords.slice(0, 5));
-    
-    toast({
-      title: "Trending Keywords Selected",
-      description: `Selected ${Math.min(trendingKeywords.length, 5)} trending keywords for analysis`,
     });
   };
 
@@ -181,31 +122,11 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
             <div className="p-4 border border-border rounded-md bg-card w-full">
               <h3 className="text-base font-medium mb-3">Search for Keywords</h3>
               <div className="space-y-4 w-full">
-                <div className="flex flex-col space-y-2">
-                  <label htmlFor="topic-area" className="text-sm font-medium">
-                    Topic Area <span className="text-red-500">*</span>
-                  </label>
-                  <Select value={topicArea} onValueChange={setTopicArea}>
-                    <SelectTrigger 
-                      id="topic-area" 
-                      className={`w-full ${!topicArea ? 'border-red-300' : ''}`}
-                      disabled={isAISuggestionMode}
-                    >
-                      <SelectValue placeholder="Select a topic area" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="workspace-management">Workspace Management</SelectItem>
-                      <SelectItem value="office-analytics">Office Analytics</SelectItem>
-                      <SelectItem value="desk-booking">Desk Booking</SelectItem>
-                      <SelectItem value="workplace-technology">Workplace Technology</SelectItem>
-                      <SelectItem value="facility-management">Facility Management</SelectItem>
-                      <SelectItem value="asset-management">Asset Management</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Select the topic area for keyword analysis
-                  </p>
-                </div>
+                <TopicAreaSelector 
+                  value={topicArea}
+                  onChange={setTopicArea}
+                  disabled={isAISuggestionMode}
+                />
                 
                 <SemrushIntegration 
                   onKeywordsReceived={updateKeywords} 
@@ -238,15 +159,13 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   )}
                 </Button>
 
-                {isAISuggestionMode && aiSuggestions.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="text-base font-medium mb-3">AI Content Suggestions</h3>
-                    <AISuggestionsList 
-                      suggestions={aiSuggestions}
-                      onSelect={handleSuggestionSelect}
-                      isLoading={isN8nLoading}
-                    />
-                  </div>
+                {isAISuggestionMode && (
+                  <AIContentGenerator 
+                    keywords={localKeywords}
+                    topicArea={topicArea}
+                    onSuggestionSelect={handleSuggestionSelect}
+                    isLoading={isN8nLoading}
+                  />
                 )}
               </div>
             </div>
@@ -258,3 +177,4 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 };
 
 export default ContentSuggestions;
+
