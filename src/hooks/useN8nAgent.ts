@@ -7,6 +7,7 @@ interface N8nAgentPayload {
   keywords: KeywordData[];
   topicArea: string;
   targetUrl: string;
+  url?: string; // Adding the optional url property
   requestType: 'contentSuggestions' | 'keywordAnalysis';
 }
 

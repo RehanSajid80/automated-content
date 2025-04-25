@@ -19,6 +19,7 @@ import { useContentSuggestions } from "@/hooks/useContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
 import { AISuggestion, ContentSuggestionsProps } from "./types/aiSuggestions";
+import { KeywordData } from "@/utils/excelUtils";
 
 const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   keywords,
