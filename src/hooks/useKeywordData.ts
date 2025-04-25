@@ -60,7 +60,8 @@ export const useKeywordData = (onKeywordDataUpdate?: (data: KeywordData[]) => vo
     clearCache(CACHE_KEY);
     localStorage.removeItem(STORAGE_KEY);
     
-    setKeywords(newKeywords);  // Directly set the new keywords
+    // Create a new array to ensure reference changes and triggers useEffects
+    setKeywords([...newKeywords]);  
     
     toast({
       title: "Keywords Updated",

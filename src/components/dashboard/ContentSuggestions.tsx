@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +38,12 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     generateSuggestions
   } = useContentSuggestions();
 
+  // Add effect to clear selected keywords when the keywords array changes (reference changes)
+  useEffect(() => {
+    console.log(`ContentSuggestions: Keywords updated, got ${keywords.length} keywords`);
+    setSelectedKeywords([]);
+  }, [keywords]);
+
   const toggleKeywordSelection = (keyword: string) => {
     setSelectedKeywords(prev => 
       prev.includes(keyword) 
@@ -61,6 +67,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
   const updateKeywords = (newKeywords: KeywordData[]) => {
     if (newKeywords && newKeywords.length > 0) {
+      // Clear selected keywords when new keywords are fetched
       setSelectedKeywords([]);
       toast({
         title: "Keywords Updated",

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { KeywordData } from "@/utils/excelUtils";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,14 @@ export const KeywordSelector: React.FC<KeywordSelectorProps> = ({
   onKeywordToggle,
   onAutoSelect,
 }) => {
+  const { toast } = useToast();
+
+  // Add an effect to clear selected keywords when the keywords array changes
+  useEffect(() => {
+    // If keywords change (new keywords fetched), log it
+    console.log(`KeywordSelector: Keywords updated, received ${keywords.length} keywords`);
+  }, [keywords]);
+
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
@@ -51,7 +59,7 @@ export const KeywordSelector: React.FC<KeywordSelectorProps> = ({
       ) : (
         <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
           {keywords.map((kw, idx) => (
-            <div key={idx} className="flex items-center space-x-2">
+            <div key={`${kw.keyword}-${idx}`} className="flex items-center space-x-2">
               <Checkbox 
                 id={`kw-${idx}`} 
                 checked={selectedKeywords.includes(kw.keyword)}
