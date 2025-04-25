@@ -9,6 +9,7 @@ interface N8nAgentPayload {
   targetUrl: string;
   url?: string;
   requestType: 'contentSuggestions' | 'keywordAnalysis';
+  contentType?: string; // Added this property to fix the TypeScript error
 }
 
 export const useN8nAgent = () => {
