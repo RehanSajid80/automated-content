@@ -1,3 +1,4 @@
+
 import { KeywordData } from "@/utils/excelUtils";
 import { API_KEYS, getApiKey } from "@/utils/apiKeyUtils";
 
@@ -18,7 +19,8 @@ interface ContentSuggestion {
 
 export async function getContentSuggestions(
   keywords: KeywordData[],
-  toast?: any
+  toast?: any,
+  model: string = 'gpt-4o'
 ): Promise<ContentSuggestion[]> {
   const apiKey = await getApiKey(API_KEYS.OPENAI);
   if (!apiKey) {
@@ -61,6 +63,8 @@ export async function getContentSuggestions(
   `;
 
   try {
+    console.log(`Making OpenAI API request with model: ${model}`);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -68,7 +72,7 @@ export async function getContentSuggestions(
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: model,
         messages: [
           {
             role: "system",
@@ -85,6 +89,9 @@ export async function getContentSuggestions(
     });
 
     if (!response.ok) {
+      console.error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`Error details: ${errorText}`);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
@@ -94,15 +101,22 @@ export async function getContentSuggestions(
     if (!content) {
       throw new Error("No content received from OpenAI");
     }
+    
+    console.log("Received OpenAI content of length:", content.length);
 
     try {
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
       const jsonString = jsonMatch ? jsonMatch[1] : content;
       const cleanJsonString = jsonString.replace(/^[\s\S]*?(\[[\s\S]*\])[\s\S]*$/, "$1").trim();
       
-      return JSON.parse(cleanJsonString) as ContentSuggestion[];
+      console.log("Processing JSON content...");
+      const parsedContent = JSON.parse(cleanJsonString) as ContentSuggestion[];
+      console.log(`Successfully parsed ${parsedContent.length} content suggestions`);
+      
+      return parsedContent;
     } catch (parseError) {
       console.error("Error parsing OpenAI response:", parseError);
+      console.error("Raw content:", content);
       throw new Error("Failed to parse content suggestions");
     }
   } catch (error) {

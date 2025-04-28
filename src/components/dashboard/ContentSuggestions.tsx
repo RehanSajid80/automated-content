@@ -22,7 +22,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const [isN8nLoading, setIsN8nLoading] = useState(false);
   const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
   const { toast } = useToast();
-  const { isLoading, apiError, usedModel, selectedModel } = useContentSuggestions();
+  const { isLoading, apiError, usedModel, selectedModel, generateSuggestions, suggestions } = useContentSuggestions();
   const { sendToN8n } = useN8nAgent();
   const { targetUrl } = useUrlSuggestions();
 
@@ -65,7 +65,40 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       });
       return;
     }
-
+    
+    if (selectedKeywords.length === 0) {
+      // If no specific keywords are selected, generate some dummy keywords for the topic
+      const dummyKeywords: KeywordData[] = [
+        {
+          keyword: topicArea,
+          volume: 1000,
+          difficulty: 50,
+          cpc: 1.0,
+          trend: "up"
+        }
+      ];
+      
+      // Add a few more keywords based on the topic area
+      const topicKeywords = createTopicKeywords(topicArea);
+      const allKeywords = [
+        ...dummyKeywords,
+        ...topicKeywords
+      ];
+      
+      setLocalKeywords(allKeywords);
+      setSelectedKeywords([topicArea]);
+      
+      // Generate suggestions using these keywords
+      await generateSuggestions(allKeywords, [topicArea]);
+    } else {
+      // Use selected keywords
+      const filteredKeywords = localKeywords.filter(kw => 
+        selectedKeywords.includes(kw.keyword)
+      );
+      
+      await generateSuggestions(filteredKeywords, selectedKeywords);
+    }
+    
     setIsN8nLoading(true);
     setIsAISuggestionMode(true);
     
@@ -112,6 +145,28 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       });
     }
   };
+  
+  // Helper function to create topic-specific keywords
+  const createTopicKeywords = (topic: string): KeywordData[] => {
+    const baseKeywords: {[key: string]: string[]} = {
+      "workspace-management": ["workspace optimization", "office layout", "workspace flexibility"],
+      "office-analytics": ["office usage metrics", "workspace analytics", "office data insights"],
+      "desk-booking": ["hot desk booking", "desk reservation system", "flexible seating"],
+      "workplace-technology": ["workplace tech stack", "office technology solutions", "smart office"],
+      "facility-management": ["facility maintenance", "building management", "space planning"],
+      "asset-management": ["asset tracking software", "inventory management", "equipment lifecycle"]
+    };
+    
+    const keywords = baseKeywords[topic] || [`${topic} solutions`, `${topic} software`, `${topic} best practices`];
+    
+    return keywords.map((keyword, index) => ({
+      keyword,
+      volume: 1000 - (index * 200),
+      difficulty: 40 + (index * 5),
+      cpc: 1.5 - (index * 0.2),
+      trend: index === 0 ? "up" : "stable"
+    }));
+  };
 
   return (
     <div className={`space-y-4 w-full ${className}`}>
@@ -143,7 +198,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
             <AISuggestionsButton 
               onClick={handleAISuggestions}
-              isLoading={isN8nLoading}
+              isLoading={isN8nLoading || isLoading}
               disabled={!topicArea}
             />
 
@@ -152,7 +207,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                 keywords={localKeywords}
                 topicArea={topicArea}
                 onSuggestionSelect={handleSuggestionSelect}
-                isLoading={isN8nLoading}
+                isLoading={isN8nLoading || isLoading}
               />
             )}
           </div>

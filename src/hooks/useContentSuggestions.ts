@@ -4,6 +4,7 @@ import { KeywordData } from "@/utils/excelUtils";
 import { getContentSuggestions } from "@/services/openai/contentSuggestions";
 import { useToast } from "@/hooks/use-toast";
 import { API_KEYS, getApiKey } from "@/utils/apiKeyUtils";
+import { OPENAI_MODELS } from "@/utils/openaiUtils";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -67,8 +68,8 @@ export const useContentSuggestions = () => {
       );
       
       console.log("Generating content for keywords:", filteredKeywords);
-      // Fix here: Remove the third argument (selectedModel)
-      const results = await getContentSuggestions(filteredKeywords);
+      // Pass the selectedModel to ensure it's used
+      const results = await getContentSuggestions(filteredKeywords, toast, OPENAI_MODELS[selectedModel]);
       setSuggestions(results);
       
       setUsedModel(selectedModel);
