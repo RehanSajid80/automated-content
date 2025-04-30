@@ -164,7 +164,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       volume: 1000 - (index * 200),
       difficulty: 40 + (index * 5),
       cpc: 1.5 - (index * 0.2),
-      trend: index === 0 ? "up" : "stable"
+      trend: index === 0 ? "up" : "neutral"  // Changed "stable" to "neutral" to match KeywordData type
     }));
   };
 
