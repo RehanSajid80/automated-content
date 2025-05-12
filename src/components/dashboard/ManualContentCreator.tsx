@@ -89,7 +89,7 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
         <GeneratedContentCard
           content={generatedContent}
           onContentChange={setGeneratedContent}
-          onRegenerateContent={() => handleFormSubmit}
+          onRegenerateContent={() => handleFormSubmit} // FIX: This was passing a function reference instead of calling it
           onSaveContent={handleSaveContent}
           contentType={currentContentType}
         />
