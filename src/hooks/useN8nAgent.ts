@@ -4,12 +4,16 @@ import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
 
 interface N8nAgentPayload {
-  keywords: KeywordData[];
-  topicArea: string;
-  targetUrl: string;
+  keywords?: KeywordData[];
+  topicArea?: string;
+  targetUrl?: string;
   url?: string;
-  requestType: 'contentSuggestions' | 'keywordAnalysis';
+  requestType?: 'contentSuggestions' | 'keywordAnalysis';
   contentType?: string;
+  chatHistory?: any[];
+  currentInstruction?: string;
+  currentImageUrl?: string;
+  customPayload?: any;
 }
 
 export const useN8nAgent = () => {
@@ -19,16 +23,17 @@ export const useN8nAgent = () => {
   const [generatedContent, setGeneratedContent] = useState<any[]>([]);
   const [rawResponse, setRawResponse] = useState<any>(null);
 
-  const sendToN8n = async (payload: N8nAgentPayload) => {
+  const sendToN8n = async (payload: N8nAgentPayload, customWebhookUrl?: string) => {
     setIsLoading(true);
     setError(null);
     setRawResponse(null);
     
     try {
+      // Use custom webhook URL if provided, otherwise use stored webhook URL
       const storedWebhookUrl = localStorage.getItem("n8n-webhook-url") || 
                                localStorage.getItem("semrush-webhook-url");
       
-      const webhookUrl = storedWebhookUrl || "https://officespacesoftware.app.n8n.cloud/webhook/sync-keywords";
+      const webhookUrl = customWebhookUrl || storedWebhookUrl || "https://officespacesoftware.app.n8n.cloud/webhook/sync-keywords";
       
       if (!webhookUrl) {
         throw new Error("No webhook URL configured. Please check API connections settings.");
@@ -37,11 +42,14 @@ export const useN8nAgent = () => {
       const defaultUrl = "https://www.officespacesoftware.com";
       const targetUrl = payload.targetUrl || defaultUrl;
       
-      const finalPayload = {
-        ...payload,
-        targetUrl,
-        url: targetUrl
-      };
+      // If customPayload is provided, use that directly
+      const finalPayload = payload.customPayload ? 
+        payload.customPayload : 
+        {
+          ...payload,
+          targetUrl,
+          url: targetUrl
+        };
       
       console.log("Sending data to n8n webhook:", finalPayload);
       console.log("Using webhook URL:", webhookUrl);
@@ -178,6 +186,7 @@ export const useN8nAgent = () => {
     suggestions,
     generatedContent,
     rawResponse,
-    sendToN8n
+    sendToN8n,
+    setGeneratedContent
   };
 };
