@@ -25,16 +25,34 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
   const handleSave = async () => {
     try {
+      // Determine appropriate title based on content type
+      let contentTitle = '';
+      
+      switch (activeTab) {
+        case 'social':
+          contentTitle = 'Social Media Posts';
+          break;
+        case 'pillar':
+          contentTitle = 'Pillar Content Article';
+          break;
+        case 'support':
+          contentTitle = 'Support Page Content';
+          break;
+        case 'meta':
+          contentTitle = 'SEO Meta Tags';
+          break;
+        default:
+          contentTitle = `Generated ${activeTab} content`;
+      }
+      
       const { data, error } = await supabase
         .from('content_library')
         .insert([
           {
             content: content,
-            content_type: activeTab,
+            content_type: activeTab, // Ensure we use the activeTab as the content_type
             is_saved: true,
-            title: activeTab === 'social' 
-              ? 'Social Media Posts' 
-              : `Generated ${activeTab} content`,
+            title: contentTitle,
             topic_area: 'workspace-management',
             keywords: [] // Empty array for now, can be updated later
           }
@@ -78,7 +96,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
             className="h-8 text-xs px-2"
             onClick={handleSave}
           >
-            {activeTab === 'social' ? 'Save Social Posts' : 'Save'}
+            {activeTab === 'social' ? 'Save Social Posts' : `Save ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`}
           </Button>
           <Button 
             size="sm" 

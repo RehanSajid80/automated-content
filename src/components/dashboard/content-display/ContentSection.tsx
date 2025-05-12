@@ -19,13 +19,33 @@ export const ContentSection: React.FC<ContentSectionProps> = ({
   const handleSaveContent = async () => {
     console.log(`Saving content for section ${section}`);
     try {
+      // Determine appropriate title based on content type
+      let contentTitle = '';
+      
+      switch (section) {
+        case 'social':
+          contentTitle = 'Social Media Posts';
+          break;
+        case 'pillar':
+          contentTitle = 'Pillar Content Article';
+          break;
+        case 'support':
+          contentTitle = 'Support Page Content';
+          break;
+        case 'meta':
+          contentTitle = 'SEO Meta Tags';
+          break;
+        default:
+          contentTitle = `Generated ${section} content`;
+      }
+      
       const { error } = await supabase
         .from('content_library')
         .insert([
           {
             content_type: section,
             content: content,
-            title: `Generated ${section} content`,
+            title: contentTitle,
             topic_area: 'asset-management',
             is_saved: true
           }
@@ -38,7 +58,9 @@ export const ContentSection: React.FC<ContentSectionProps> = ({
       }
 
       toast.success("Content saved successfully!", {
-        description: `Your ${section} content has been saved to the library`
+        description: section === 'social' 
+          ? 'Your social media posts have been saved to the library' 
+          : `Your ${section} content has been saved to the library`
       });
       
       window.dispatchEvent(new CustomEvent('content-updated'));
