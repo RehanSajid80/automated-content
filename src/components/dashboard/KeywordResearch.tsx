@@ -52,22 +52,22 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   }, []);
 
-  // Debounce filter updates to avoid typing issues
+  // Handle filter changes from FilterOptions component
   const handleFilterChange = useCallback((newFilters: FilterOptions) => {
     setFilterOptions(newFilters);
     
-    // Only update search term if it's different to avoid the loop
-    if (newFilters.searchTerm !== searchTerm) {
-      setSearchTerm(newFilters.searchTerm);
-    }
-  }, [searchTerm]);
+    // Don't update search term here to avoid loops
+    // The search term should only be updated from the search input
+  }, []);
 
-  // Handle search input changes with debouncing
+  // Handle search input changes directly
   const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newSearchTerm = e.target.value;
+    
+    // Update search term state
     setSearchTerm(newSearchTerm);
     
-    // Update filters but don't trigger another state update for searchTerm
+    // Update filter searchTerm to match
     setFilterOptions(prev => ({
       ...prev,
       searchTerm: newSearchTerm
