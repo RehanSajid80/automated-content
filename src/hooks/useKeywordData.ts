@@ -53,7 +53,37 @@ export const useKeywordData = (onKeywordDataUpdate?: (data: KeywordData[]) => vo
     }
   }, [keywords, onKeywordDataUpdate]);
 
-  const updateKeywords = (newKeywords: KeywordData[]) => {
+  const updateKeywords = (newKeywordsData: KeywordData[] | any) => {
+    // Handle the specific API response format that contains "keywords" array
+    let newKeywords: KeywordData[] = [];
+    
+    if (Array.isArray(newKeywordsData)) {
+      // If the input is already an array, use it directly
+      newKeywords = newKeywordsData;
+    } else if (newKeywordsData && Array.isArray(newKeywordsData.keywords)) {
+      // If the input has a keywords array property, use that
+      newKeywords = newKeywordsData.keywords;
+    } else if (newKeywordsData && typeof newKeywordsData === 'object') {
+      // If it's another object structure with potential keywords, try to extract them
+      const possibleKeywords = Object.values(newKeywordsData).find(
+        val => Array.isArray(val) && val.length > 0 && val[0]?.keyword
+      );
+      
+      if (Array.isArray(possibleKeywords)) {
+        newKeywords = possibleKeywords as KeywordData[];
+      }
+    }
+    
+    if (newKeywords.length === 0) {
+      console.error("Could not extract keywords from the provided data:", newKeywordsData);
+      toast({
+        title: "Error Processing Keywords",
+        description: "The keyword data format is not recognized.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log(`Updating keywords with ${newKeywords.length} new entries`);
     
     // Clear both cache and localStorage before updating

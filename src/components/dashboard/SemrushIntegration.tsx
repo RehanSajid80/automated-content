@@ -117,8 +117,11 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         throw new Error(data.error);
       }
 
+      // Process response - handle both formats where keywords might be directly in data or in data.keywords
+      let keywords = data.keywords || data;
+      
       // Check if we got any keywords back
-      if (!data.keywords || !Array.isArray(data.keywords) || data.keywords.length === 0) {
+      if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
         console.warn('No keywords found:', data);
         updateSemrushMetrics(false);
         setErrorMsg("No keywords found for this domain");
@@ -131,11 +134,11 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         return;
       }
 
-      console.log(`Received ${data.keywords.length} keywords from SEMrush API`);
+      console.log(`Received ${keywords.length} keywords from SEMrush API`);
       updateSemrushMetrics(true);
 
       // Process keywords and format them correctly for the application
-      const formattedKeywords: KeywordData[] = data.keywords.map(kw => ({
+      const formattedKeywords: KeywordData[] = keywords.map(kw => ({
         keyword: kw.keyword,
         volume: kw.volume || 0,
         difficulty: kw.difficulty || 50,
@@ -146,7 +149,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for topic: ${topicArea || "general"}`);
       
       // Call the callback function with the new keywords
-      onKeywordsReceived(formattedKeywords);
+      onKeywordsReceived(data);
       
       toast({
         title: data.fromCache ? "Loaded from cache" : "Success",
