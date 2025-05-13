@@ -1,5 +1,5 @@
 
-import { toast as sonnerToast, type Toast } from "sonner";
+import { toast as sonnerToast, type ToastProps as SonnerToastProps } from "sonner";
 
 const TOAST_TIMEOUT = 4000;
 
@@ -9,6 +9,7 @@ type ToastProps = {
   description?: string;
   duration?: number;
   variant?: "default" | "destructive" | "success" | "warning";
+  action?: React.ReactNode;
 };
 
 // Map shadcn variants to sonner variants
@@ -27,19 +28,19 @@ const mapVariant = (variant: ToastProps['variant'] = 'default') => {
 
 export function useToast() {
   return {
-    toast: ({ title, description, variant, duration = TOAST_TIMEOUT }: ToastProps) => {
+    toast: ({ title, description, variant, duration = TOAST_TIMEOUT, action }: ToastProps) => {
       // Map shadcn variant to sonner variant
       const sonnerVariant = mapVariant(variant);
 
       // Use sonner toast implementation
       if (sonnerVariant === 'error') {
-        return sonnerToast.error(title, { description, duration });
+        return sonnerToast.error(title, { description, duration, action });
       } else if (sonnerVariant === 'success') {
-        return sonnerToast.success(title, { description, duration });
+        return sonnerToast.success(title, { description, duration, action });
       } else if (sonnerVariant === 'warning') {
-        return sonnerToast.warning(title, { description, duration });
+        return sonnerToast.warning(title, { description, duration, action });
       } else {
-        return sonnerToast(title, { description, duration });
+        return sonnerToast(title, { description, duration, action });
       }
     }
   };
