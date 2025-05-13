@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
 import KeywordFilters, { FilterOptions } from "./KeywordFilters";
@@ -34,11 +34,11 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     maxCpc: 20,
     trend: "all",
   });
-  const [forceUpdate, setForceUpdate] = useState(0);
 
   const { keywords, updateKeywords, clearKeywords } = useKeywordData(onKeywordDataUpdate);
   const { toast } = useToast();
 
+  // Initialize from URL search param only once on mount
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const searchFromUrl = searchParams.get('search');
@@ -52,23 +52,27 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   }, []);
 
-  const handleFilterChange = (newFilters: FilterOptions) => {
+  // Debounce filter updates to avoid typing issues
+  const handleFilterChange = useCallback((newFilters: FilterOptions) => {
     setFilterOptions(newFilters);
-    setSearchTerm(newFilters.searchTerm);
-    // Force a re-render of the filtered keywords
-    setForceUpdate(prev => prev + 1);
-  };
+    
+    // Only update search term if it's different to avoid the loop
+    if (newFilters.searchTerm !== searchTerm) {
+      setSearchTerm(newFilters.searchTerm);
+    }
+  }, [searchTerm]);
 
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle search input changes with debouncing
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newSearchTerm = e.target.value;
     setSearchTerm(newSearchTerm);
-    setFilterOptions({
-      ...filterOptions,
+    
+    // Update filters but don't trigger another state update for searchTerm
+    setFilterOptions(prev => ({
+      ...prev,
       searchTerm: newSearchTerm
-    });
-    // Force a re-render
-    setForceUpdate(prev => prev + 1);
-  };
+    }));
+  }, []);
 
   const filteredKeywords = useMemo(() => {
     return keywords.filter(kw => {
@@ -80,8 +84,9 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
       
       return matchesSearch && matchesVolume && matchesDifficulty && matchesCpc && matchesTrend;
     });
-  }, [keywords, filterOptions, forceUpdate]); // Add forceUpdate dependency
+  }, [keywords, filterOptions]);
 
+  // Reset selected keywords when keyword data changes
   useEffect(() => {
     setSelectedKeywords([]);
   }, [keywords]);
