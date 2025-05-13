@@ -44,8 +44,10 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
     if (!isValidExtension) {
       const error = `Invalid file extension: .${fileExtension}. Please use .xlsx, .xls, or .csv files.`;
       console.error(error);
-      toast.error("Invalid File Format", {
+      toast({
+        title: "Invalid File Format",
         description: error,
+        variant: "destructive",
       });
       reject(new Error(error));
       return;
@@ -171,8 +173,10 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
         resolve(keywordData);
       } catch (error) {
         console.error('Error processing Excel file:', error);
-        toast.error("Import Error", {
+        toast({
+          title: "Import Error",
           description: error instanceof Error ? error.message : "Failed to process the Excel file. Please check the format.",
+          variant: "destructive",
         });
         reject(error);
       }
@@ -180,8 +184,10 @@ export const processExcelFile = (file: File): Promise<KeywordData[]> => {
     
     reader.onerror = (error) => {
       console.error('File reading error:', error);
-      toast.error("Import Error", {
+      toast({
+        title: "Import Error",
         description: "Failed to read the file.",
+        variant: "destructive",
       });
       reject(error);
     };

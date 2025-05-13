@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useN8nAgent } from "./useN8nAgent";
 import { useContentProcessor } from "./useContentProcessor";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 export const useGeneratedContent = () => {
   const { 
@@ -45,8 +45,10 @@ export const useGeneratedContent = () => {
         console.log("Content is available for display");
       } else {
         console.log("No content to display despite being processed");
-        toast.error("No Content Found", {
+        toast({
+          title: "No Content Found",
           description: "The response format might not be as expected.",
+          variant: "destructive"
         });
       }
     }
@@ -70,14 +72,16 @@ export const useGeneratedContent = () => {
 
   const handleRegenerateContent = async (sectionKey: string, topicArea?: string) => {
     if (!topicArea) {
-      toast.error("Topic Area Required", {
+      toast({
+        title: "Topic Area Required",
         description: "Please select a topic area before regenerating content"
       });
       return;
     }
     
     try {
-      toast.success("Regenerating Content", {
+      toast({
+        title: "Regenerating Content",
         description: `Regenerating ${sectionKey} content...`
       });
       
@@ -88,8 +92,10 @@ export const useGeneratedContent = () => {
       });
     } catch (error) {
       console.error("Error regenerating content:", error);
-      toast.error("Regeneration Failed", {
+      toast({
+        title: "Regeneration Failed",
         description: "Please try again.",
+        variant: "destructive"
       });
     }
   };

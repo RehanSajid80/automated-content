@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { TrendingUp, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,25 +25,13 @@ const KeywordList: React.FC<KeywordListProps> = ({
 }) => {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const prevKeywordsLength = useRef<number>(0);
-  const initialLoadDone = useRef<boolean>(false);
 
-  // This useEffect will only run when the keywords array length changes and after initial render
   useEffect(() => {
-    // Skip the first render to prevent clearing on initial load
-    if (!initialLoadDone.current) {
-      initialLoadDone.current = true;
-      prevKeywordsLength.current = keywords.length;
-      return;
-    }
-
-    // Only clear cache if keywords array actually changed in size and isn't just a re-render
-    if (keywords.length > 0 && keywords.length !== prevKeywordsLength.current) {
+    if (keywords.length > 0) {
       clearCache('keyword-data-cache');
-      console.log(`Cleared keyword cache after receiving new keywords. Count: ${keywords.length}`);
-      prevKeywordsLength.current = keywords.length;
+      console.log('Cleared keyword cache after receiving new keywords');
     }
-  }, [keywords.length]);
+  }, [keywords]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {

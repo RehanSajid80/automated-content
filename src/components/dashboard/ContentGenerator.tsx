@@ -9,7 +9,7 @@ import { useContentGeneration } from "@/hooks/useContentGeneration";
 import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
 import AIContentDisplay from "./AIContentDisplay";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { createContentPayload, CONTENT_WEBHOOK_URL } from "@/utils/payloadUtils";
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ 
@@ -58,7 +58,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     });
 
     try {
-      toast.success("Generating Content", {
+      toast({
+        title: "Generating Content",
         description: "This may take a moment"
       });
 
@@ -76,8 +77,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       }
     } catch (error) {
       console.error("Error calling n8n webhook:", error);
-      toast.error("Error Generating Content", {
+      toast({
+        title: "Error Generating Content",
         description: "Failed to generate content through the webhook. Trying standard method...",
+        variant: "destructive"
       });
       // Fall back to standard content generation
       generateContent(activeTab, keywords, targetUrl, socialContext);

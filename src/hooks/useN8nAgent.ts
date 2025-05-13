@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { useN8nConfig } from './useN8nConfig';
 import { useN8nResponseProcessor } from './useN8nResponseProcessor';
 
@@ -89,7 +89,8 @@ export const useN8nAgent = () => {
         if (result.content && result.content.length > 0) {
           setGeneratedContent(result.content);
           
-          toast.success("Content Generated", {
+          toast({
+            title: "Content Generated",
             description: "Successfully received content from webhook",
           });
         }
@@ -117,8 +118,10 @@ export const useN8nAgent = () => {
       setError(errorMessage);
       console.error("N8n webhook error:", err);
       
-      toast.error("Webhook Error", {
+      toast({
+        title: "Webhook Error",
         description: errorMessage,
+        variant: "destructive"
       });
       
       return { suggestions: [], content: [], error: errorMessage };

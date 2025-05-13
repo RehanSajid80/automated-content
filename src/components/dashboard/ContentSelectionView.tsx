@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckSquare2Icon, ArrowRightIcon, EyeIcon, Loader2 } from "lucide-react";
 import ContentRefreshManager from "./ContentViewRefreshManager";
@@ -27,6 +28,7 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Memoized function to load content items to prevent unnecessary re-renders
   const loadContentItems = useCallback(async () => {
@@ -40,8 +42,10 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
 
       if (error) {
         console.error('Error loading content items:', error);
-        toast.error("Error", {
-          description: "Failed to load content items"
+        toast({
+          title: "Error",
+          description: "Failed to load content items",
+          variant: "destructive",
         });
         return;
       }
@@ -50,13 +54,15 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
       setLastRefreshed(new Date().toISOString());
     } catch (error) {
       console.error('Error in loadContentItems:', error);
-      toast.error("Error", {
-          description: "An unexpected error occurred"
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [topicArea]);
+  }, [topicArea, toast]);
 
   // Handle content refresh with loading state
   const refreshContent = useCallback(async () => {
@@ -101,8 +107,10 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
 
   const createSelectedContent = async () => {
     if (selectedItems.length === 0) {
-      toast.error("No Items Selected", {
-        description: "Please select at least one content item to create"
+      toast({
+        title: "No Items Selected",
+        description: "Please select at least one content item to create",
+        variant: "default",
       });
       return;
     }
@@ -111,8 +119,9 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
       setIsCreating(true);
       
       // First, show a toast to indicate the process is starting
-      toast.success("Creating Content", {
-        description: `Starting to create ${selectedItems.length} content items...`
+      toast({
+        title: "Creating Content",
+        description: `Starting to create ${selectedItems.length} content items...`,
       });
 
       // Mark the items as selected in the database
@@ -146,22 +155,20 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
         .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
         .join(', ');
 
-      // Create a button element for viewing content
-      const viewContentButton = (
-        <Button 
-          size="sm" 
-          variant="secondary" 
-          onClick={viewCreatedContent}
-          className="ml-2"
-        >
-          View Content
-        </Button>
-      );
-
       // Show success toast with content details and action button
-      toast.success("Content Created Successfully", {
+      toast({
+        title: "Content Created Successfully",
         description: `Created ${summaryText} for "${topicArea}". Click 'View Content' to review.`,
-        action: viewContentButton
+        action: (
+          <Button 
+            size="sm" 
+            variant="secondary" 
+            onClick={viewCreatedContent}
+            className="ml-2"
+          >
+            View Content
+          </Button>
+        ),
       });
 
       // Refresh the content items
@@ -182,8 +189,10 @@ export const ContentSelectionView = ({ topicArea }: ContentSelectionViewProps) =
 
     } catch (error) {
       console.error('Error creating content:', error);
-      toast.error("Error saving content", {
-        description: "Failed to create content items. Please try again."
+      toast({
+        title: "Error",
+        description: "Failed to create content items. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsCreating(false);

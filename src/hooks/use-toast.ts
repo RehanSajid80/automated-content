@@ -1,53 +1,82 @@
 
-import { toast as sonnerToast, type ToastProps as SonnerToastProps } from "sonner";
+import { toast as sonnerToast } from "sonner";
+import { type ToasterProps } from "sonner";
 
-const TOAST_TIMEOUT = 4000;
-
-// Shadcn UI toast type definitions
 type ToastProps = {
   title?: string;
   description?: string;
-  duration?: number;
   variant?: "default" | "destructive" | "success" | "warning";
   action?: React.ReactNode;
+  duration?: number;
 };
 
-// Map shadcn variants to sonner variants
-const mapVariant = (variant: ToastProps['variant'] = 'default') => {
-  switch (variant) {
-    case 'destructive':
-      return 'error';
-    case 'success':
-      return 'success';
-    case 'warning':
-      return 'warning';
-    default:
-      return 'default';
-  }
-};
-
-export function useToast() {
-  return {
-    toast: ({ title, description, variant, duration = TOAST_TIMEOUT, action }: ToastProps) => {
-      // Map shadcn variant to sonner variant
-      const sonnerVariant = mapVariant(variant);
-
-      // Use sonner toast implementation
-      if (sonnerVariant === 'error') {
-        return sonnerToast.error(title, { description, duration, action });
-      } else if (sonnerVariant === 'success') {
-        return sonnerToast.success(title, { description, duration, action });
-      } else if (sonnerVariant === 'warning') {
-        return sonnerToast.warning(title, { description, duration, action });
-      } else {
-        return sonnerToast(title, { description, duration, action });
-      }
-    }
-  };
+// Interface for tracking active toasts
+export interface Toast extends ToastProps {
+  id: string | number;
 }
 
-// Re-export sonner toast for direct use
-export { sonnerToast as toast };
+// State to track all active toasts
+const toasts: Toast[] = [];
 
-// Types for component props
-export type { ToastProps };
+export function toast({
+  title,
+  description,
+  variant = "default",
+  action,
+  duration,
+}: ToastProps) {
+  const options: any = {
+    duration: duration || 5000,
+    className: variant === "destructive" 
+      ? "bg-destructive text-destructive-foreground"
+      : variant === "success"
+      ? "bg-green-500 text-white"
+      : variant === "warning"
+      ? "bg-amber-500 text-white"
+      : undefined
+  };
+  
+  // Add action to options if provided
+  // Note: Using type 'any' above to avoid TypeScript error
+  if (action) {
+    options.action = action;
+  }
+
+  let toastId;
+
+  if (variant === "destructive") {
+    toastId = sonnerToast.error(title, {
+      description,
+      ...options
+    });
+  } else if (variant === "success") {
+    toastId = sonnerToast.success(title, {
+      description,
+      ...options
+    });
+  } else {
+    toastId = sonnerToast(title, {
+      description,
+      ...options
+    });
+  }
+
+  // Track the toast in our internal state
+  toasts.push({
+    id: toastId,
+    title,
+    description,
+    variant,
+    action,
+    duration
+  });
+
+  return toastId;
+}
+
+export function useToast() {
+  return { 
+    toast,
+    toasts // Expose toasts array for Toaster component
+  };
+}
