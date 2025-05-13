@@ -25,7 +25,7 @@ export function Toaster() {
           // Convert success and warning to default for shadcn compatibility
           const mappedVariant = variant === "success" || variant === "warning" 
             ? "default" 
-            : variant;
+            : variant === "destructive" ? "destructive" : "default";
             
           return (
             <Toast key={id} variant={mappedVariant} {...props}>
