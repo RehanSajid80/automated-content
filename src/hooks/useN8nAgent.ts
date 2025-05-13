@@ -152,7 +152,7 @@ export const useN8nAgent = () => {
         
         return {
           suggestions: data?.suggestions || [],
-          content: generatedContent,
+          content: contentArray || [],
           rawResponse: responseText
         };
       } catch (fetchError: any) {
