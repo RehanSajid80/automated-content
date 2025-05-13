@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { KeywordData } from "@/utils/excelUtils";
+import { useToast } from "@/hooks/use-toast";
 
 interface KeywordFiltersProps {
   onFiltersChange: (filters: FilterOptions) => void;
@@ -32,6 +33,7 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
   onFiltersChange,
   className,
 }) => {
+  const { toast } = useToast();
   const [filters, setFilters] = useState<FilterOptions>({
     searchTerm: "",
     minVolume: 0,
@@ -43,54 +45,54 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
     trend: "all",
   });
 
+  // Apply filters whenever they change
+  useEffect(() => {
+    onFiltersChange(filters);
+  }, [filters, onFiltersChange]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const newFilters = { ...filters, [name]: value };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const handleTrendChange = (value: string) => {
-    const newFilters = {
-      ...filters,
+    setFilters(prev => ({
+      ...prev,
       trend: value as "all" | "up" | "neutral" | "down",
-    };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+    }));
   };
 
   const handleVolumeChange = (value: number[]) => {
-    const newFilters = {
-      ...filters,
+    setFilters(prev => ({
+      ...prev,
       minVolume: value[0],
       maxVolume: value[1],
-    };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+    }));
   };
 
   const handleDifficultyChange = (value: number[]) => {
-    const newFilters = {
-      ...filters,
+    setFilters(prev => ({
+      ...prev,
       minDifficulty: value[0],
       maxDifficulty: value[1],
-    };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+    }));
   };
 
   const handleCpcChange = (value: number[]) => {
-    const newFilters = {
-      ...filters,
+    setFilters(prev => ({
+      ...prev,
       minCpc: value[0],
       maxCpc: value[1],
-    };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+    }));
   };
 
   const applyFilters = () => {
-    onFiltersChange(filters);
+    // Force a re-application of filters
+    onFiltersChange({...filters});
+    toast({
+      title: "Filters Applied",
+      description: "Keyword search results updated",
+    });
   };
 
   const resetFilters = () => {
@@ -105,7 +107,6 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
       trend: "all" as const,
     };
     setFilters(defaultFilters);
-    onFiltersChange(defaultFilters);
   };
 
   return (

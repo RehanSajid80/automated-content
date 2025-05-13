@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     maxCpc: 20,
     trend: "all",
   });
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   const { keywords, updateKeywords, clearKeywords } = useKeywordData(onKeywordDataUpdate);
   const { toast } = useToast();
@@ -53,6 +55,8 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilterOptions(newFilters);
     setSearchTerm(newFilters.searchTerm);
+    // Force a re-render of the filtered keywords
+    setForceUpdate(prev => prev + 1);
   };
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +66,8 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
       ...filterOptions,
       searchTerm: newSearchTerm
     });
+    // Force a re-render
+    setForceUpdate(prev => prev + 1);
   };
 
   const filteredKeywords = useMemo(() => {
@@ -74,7 +80,7 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
       
       return matchesSearch && matchesVolume && matchesDifficulty && matchesCpc && matchesTrend;
     });
-  }, [keywords, filterOptions]);
+  }, [keywords, filterOptions, forceUpdate]); // Add forceUpdate dependency
 
   useEffect(() => {
     setSelectedKeywords([]);
