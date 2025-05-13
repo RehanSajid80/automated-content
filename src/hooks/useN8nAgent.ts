@@ -103,10 +103,11 @@ export const useN8nAgent = () => {
           setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [data.suggestions]);
         }
         
+        // Initialize contentArray early to avoid scope issues
+        let contentArray: any[] = [];
+        
         // Handle content with multiple possible formats
         if (data) {
-          let contentArray = [];
-          
           if (data.output) {
             console.log("Found output property in response");
             contentArray = [{ output: data.output }];
