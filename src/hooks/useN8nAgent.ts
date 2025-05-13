@@ -1,7 +1,9 @@
 
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
+import { useN8nConfig } from './useN8nConfig';
+import { useN8nResponseProcessor } from './useN8nResponseProcessor';
 
 interface N8nAgentPayload {
   keywords?: KeywordData[];
@@ -22,6 +24,9 @@ export const useN8nAgent = () => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [generatedContent, setGeneratedContent] = useState<any[]>([]);
   const [rawResponse, setRawResponse] = useState<any>(null);
+  
+  const { getWebhookUrl } = useN8nConfig();
+  const { processResponse } = useN8nResponseProcessor();
 
   const sendToN8n = async (payload: N8nAgentPayload, customWebhookUrl?: string) => {
     setIsLoading(true);
@@ -29,11 +34,7 @@ export const useN8nAgent = () => {
     setRawResponse(null);
     
     try {
-      // Use custom webhook URL if provided, otherwise use stored webhook URL
-      const storedWebhookUrl = localStorage.getItem("n8n-webhook-url") || 
-                               localStorage.getItem("semrush-webhook-url");
-      
-      const webhookUrl = customWebhookUrl || storedWebhookUrl || "https://officespacesoftware.app.n8n.cloud/webhook/sync-keywords";
+      const webhookUrl = customWebhookUrl || getWebhookUrl();
       
       if (!webhookUrl) {
         throw new Error("No webhook URL configured. Please check API connections settings.");
@@ -82,78 +83,25 @@ export const useN8nAgent = () => {
         console.log("Raw webhook response:", responseText.substring(0, 300) + "...");
         setRawResponse(responseText);
         
-        let data;
-        try {
-          data = JSON.parse(responseText);
-          console.log("Parsed webhook response data:", data);
-        } catch (parseError) {
-          console.log("Response is not valid JSON, treating as raw content");
-          // If the response is not JSON, create a structured object with the raw text
-          data = {
-            content: [{ output: responseText }]
-          };
-        }
+        const result = processResponse(responseText);
         
-        // Always store the original response for debugging
-        console.log("Final processed data:", data);
-        
-        // Handle suggestions if they exist
-        if (data && data.suggestions) {
-          console.log("Found suggestions in response:", data.suggestions);
-          setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [data.suggestions]);
-        }
-        
-        // Initialize contentArray early to avoid scope issues
-        let contentArray: any[] = [];
-        
-        // Handle content with multiple possible formats
-        if (data) {
-          if (data.output) {
-            console.log("Found output property in response");
-            contentArray = [{ output: data.output }];
-          } else if (data.content) {
-            console.log("Found content property in response");
-            contentArray = Array.isArray(data.content) ? data.content : [{ output: data.content }];
-          } else if (typeof data === "string") {
-            console.log("Response is a string, using as output");
-            contentArray = [{ output: data }];
-          } else if (data.results) {
-            console.log("Found results property in response");
-            contentArray = Array.isArray(data.results) ? data.results : [{ output: data.results }];
-          } else if (data.text) {
-            console.log("Found text property in response");
-            contentArray = [{ output: data.text }];
-          } else if (data.data) {
-            console.log("Found data property in response");
-            const content = typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
-            contentArray = [{ output: content }];
-          } else {
-            // As a last resort, stringify the whole response
-            console.log("No standard content structure found, using entire response");
-            contentArray = [{ output: JSON.stringify(data) }];
-          }
+        // Update state with processed results
+        if (result.content && result.content.length > 0) {
+          setGeneratedContent(result.content);
           
-          // Ensure every item has an output property
-          contentArray = contentArray.map(item => {
-            if (!item.output && item.content) {
-              return { ...item, output: item.content };
-            } else if (!item.output) {
-              return { ...item, output: JSON.stringify(item) };
-            }
-            return item;
-          });
-          
-          console.log("Setting generated content:", contentArray);
-          setGeneratedContent(contentArray);
-          
-          toast("Content Generated", {
+          toast({
+            title: "Content Generated",
             description: "Successfully received content from webhook",
           });
         }
         
+        if (result.suggestions && result.suggestions.length > 0) {
+          setSuggestions(result.suggestions);
+        }
+        
         return {
-          suggestions: data?.suggestions || [],
-          content: contentArray || [],
+          suggestions: result.suggestions || [],
+          content: result.content || [],
           rawResponse: responseText
         };
       } catch (fetchError: any) {
@@ -170,9 +118,10 @@ export const useN8nAgent = () => {
       setError(errorMessage);
       console.error("N8n webhook error:", err);
       
-      toast("Webhook Error", {
+      toast({
+        title: "Webhook Error",
         description: errorMessage,
-        style: { backgroundColor: 'red', color: 'white' }
+        variant: "destructive"
       });
       
       return { suggestions: [], content: [], error: errorMessage };
