@@ -1,6 +1,6 @@
 
 import { toast as sonnerToast } from "sonner";
-import { type ToastProps as SonnerToastProps } from "sonner";
+import { type ToasterProps } from "sonner";
 
 type ToastProps = {
   title?: string;
@@ -10,6 +10,14 @@ type ToastProps = {
   duration?: number;
 };
 
+// Interface for tracking active toasts
+export interface Toast extends ToastProps {
+  id: string | number;
+}
+
+// State to track all active toasts
+const toasts: Toast[] = [];
+
 export function toast({
   title,
   description,
@@ -17,7 +25,7 @@ export function toast({
   action,
   duration,
 }: ToastProps) {
-  const options: SonnerToastProps = {
+  const options: Partial<ToasterProps> = {
     duration: duration || 5000,
     className: variant === "destructive" 
       ? "bg-destructive text-destructive-foreground"
@@ -29,26 +37,41 @@ export function toast({
     action
   };
 
+  let toastId;
+
   if (variant === "destructive") {
-    return sonnerToast.error(title, {
+    toastId = sonnerToast.error(title, {
       description,
       ...options
     });
-  }
-  
-  if (variant === "success") {
-    return sonnerToast.success(title, {
+  } else if (variant === "success") {
+    toastId = sonnerToast.success(title, {
+      description,
+      ...options
+    });
+  } else {
+    toastId = sonnerToast(title, {
       description,
       ...options
     });
   }
 
-  return sonnerToast(title, {
+  // Track the toast in our internal state
+  toasts.push({
+    id: toastId,
+    title,
     description,
-    ...options
+    variant,
+    action,
+    duration
   });
+
+  return toastId;
 }
 
 export function useToast() {
-  return { toast };
+  return { 
+    toast,
+    toasts // Expose toasts array for Toaster component
+  };
 }
