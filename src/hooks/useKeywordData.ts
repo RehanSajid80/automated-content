@@ -54,14 +54,14 @@ export const useKeywordData = (onKeywordDataUpdate?: (data: KeywordData[]) => vo
   }, [keywords, onKeywordDataUpdate]);
 
   const updateKeywords = (newKeywordsData: KeywordData[] | any) => {
-    // Handle the specific API response format that contains "keywords" array
+    // Handle different types of input data
     let newKeywords: KeywordData[] = [];
     
     if (Array.isArray(newKeywordsData)) {
-      // If the input is already an array, use it directly
+      console.log("Input is an array of keywords, using directly");
       newKeywords = newKeywordsData;
     } else if (newKeywordsData && Array.isArray(newKeywordsData.keywords)) {
-      // If the input has a keywords array property, use that
+      console.log("Found keywords array in input object");
       newKeywords = newKeywordsData.keywords;
     } else if (newKeywordsData && typeof newKeywordsData === 'object') {
       // If it's another object structure with potential keywords, try to extract them
@@ -70,6 +70,7 @@ export const useKeywordData = (onKeywordDataUpdate?: (data: KeywordData[]) => vo
       );
       
       if (Array.isArray(possibleKeywords)) {
+        console.log("Found keywords in object properties");
         newKeywords = possibleKeywords as KeywordData[];
       }
     }
