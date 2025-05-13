@@ -25,7 +25,7 @@ export function toast({
   action,
   duration,
 }: ToastProps) {
-  const options: Partial<ToasterProps> = {
+  const options: any = {
     duration: duration || 5000,
     className: variant === "destructive" 
       ? "bg-destructive text-destructive-foreground"
@@ -33,9 +33,14 @@ export function toast({
       ? "bg-green-500 text-white"
       : variant === "warning"
       ? "bg-amber-500 text-white"
-      : undefined,
-    action
+      : undefined
   };
+  
+  // Add action to options if provided
+  // Note: Using type 'any' above to avoid TypeScript error
+  if (action) {
+    options.action = action;
+  }
 
   let toastId;
 
