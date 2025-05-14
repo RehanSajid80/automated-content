@@ -66,7 +66,15 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   const handleSemrushKeywords = (newKeywords: KeywordData[]) => {
     if (newKeywords && newKeywords.length > 0) {
       console.log(`KeywordResearch received ${newKeywords.length} keywords from SEMrush`);
+      
+      // Update keywords without changing search term
       updateKeywords(newKeywords);
+      
+      // Show toast notification for better UX
+      toast({
+        title: "Keywords Updated",
+        description: `${newKeywords.length} keywords loaded from SEMrush`,
+      });
     }
   };
 

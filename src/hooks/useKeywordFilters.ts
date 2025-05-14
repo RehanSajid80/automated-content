@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { FilterOptions } from "@/components/dashboard/KeywordFilters";
 import { KeywordData } from "@/utils/excelUtils";
 
@@ -18,9 +18,11 @@ export const useKeywordFilters = (keywords: KeywordData[]) => {
 
   // Handle filter changes from FilterOptions component
   const handleFilterChange = useCallback((newFilters: FilterOptions) => {
-    setFilterOptions(newFilters);
-    // Don't update search term here to avoid loops
-  }, []);
+    setFilterOptions(prev => ({
+      ...newFilters,
+      searchTerm: searchTerm // Always preserve the current search term
+    }));
+  }, [searchTerm]);
 
   // Handle search input changes directly
   const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,9 +38,10 @@ export const useKeywordFilters = (keywords: KeywordData[]) => {
     }));
   }, []);
 
-  // Filter keywords based on current filter options
+  // Filter keywords based on current filter options and search term
   const filteredKeywords = keywords.filter(kw => {
-    const matchesSearch = kw.keyword.toLowerCase().includes(filterOptions.searchTerm.toLowerCase());
+    // Always use the current search term from state
+    const matchesSearch = kw.keyword.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesVolume = kw.volume >= filterOptions.minVolume && kw.volume <= filterOptions.maxVolume;
     const matchesDifficulty = kw.difficulty >= filterOptions.minDifficulty && kw.difficulty <= filterOptions.maxDifficulty;
     const matchesCpc = kw.cpc >= filterOptions.minCpc && kw.cpc <= filterOptions.maxCpc;

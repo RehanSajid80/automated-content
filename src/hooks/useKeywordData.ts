@@ -36,7 +36,7 @@ export const useKeywordData = (onKeywordDataUpdate?: (data: KeywordData[]) => vo
     } else {
       setKeywords([]);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (keywords.length > 0) {

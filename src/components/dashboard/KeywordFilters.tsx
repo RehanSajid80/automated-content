@@ -10,12 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { KeywordData } from "@/utils/excelUtils";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 interface KeywordFiltersProps {
   onFiltersChange: (filters: FilterOptions) => void;
   className?: string;
+  initialFilters?: Partial<FilterOptions>;
 }
 
 export interface FilterOptions {
@@ -32,17 +32,17 @@ export interface FilterOptions {
 const KeywordFilters: React.FC<KeywordFiltersProps> = ({
   onFiltersChange,
   className,
+  initialFilters,
 }) => {
-  const { toast } = useToast();
   const [filters, setFilters] = useState<FilterOptions>({
-    searchTerm: "",
-    minVolume: 0,
-    maxVolume: 10000,
-    minDifficulty: 0,
-    maxDifficulty: 100,
-    minCpc: 0,
-    maxCpc: 20,
-    trend: "all",
+    searchTerm: initialFilters?.searchTerm || "",
+    minVolume: initialFilters?.minVolume || 0,
+    maxVolume: initialFilters?.maxVolume || 10000,
+    minDifficulty: initialFilters?.minDifficulty || 0,
+    maxDifficulty: initialFilters?.maxDifficulty || 100,
+    minCpc: initialFilters?.minCpc || 0,
+    maxCpc: initialFilters?.maxCpc || 20,
+    trend: initialFilters?.trend || "all",
   });
 
   // Apply filters whenever they change
@@ -50,10 +50,15 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
     onFiltersChange(filters);
   }, [filters, onFiltersChange]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-  };
+  // Update filters when initialFilters changes
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters(prev => ({
+        ...prev,
+        ...initialFilters
+      }));
+    }
+  }, [initialFilters]);
 
   const handleTrendChange = (value: string) => {
     setFilters(prev => ({
@@ -96,8 +101,9 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
   };
 
   const resetFilters = () => {
+    // Don't reset the search term, just other filters
     const defaultFilters = {
-      searchTerm: "",
+      searchTerm: filters.searchTerm, // Preserve search term
       minVolume: 0,
       maxVolume: 10000,
       minDifficulty: 0,
@@ -114,20 +120,7 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
       <h3 className="text-lg font-semibold mb-2">Filter Keywords</h3>
       
       <div>
-        <label className="text-sm font-medium mb-1 block">Keyword Search</label>
-        <Input
-          name="searchTerm"
-          value={filters.searchTerm}
-          onChange={handleInputChange}
-          placeholder="Search keywords..."
-          className="w-full"
-        />
-      </div>
-      
-      <div>
-        <label className="text-sm font-medium mb-1 block">
-          Volume Range: {filters.minVolume} - {filters.maxVolume}
-        </label>
+        <label className="text-sm font-medium mb-1 block">Volume Range: {filters.minVolume} - {filters.maxVolume}</label>
         <Slider
           defaultValue={[filters.minVolume, filters.maxVolume]}
           max={10000}
@@ -138,9 +131,7 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
       </div>
       
       <div>
-        <label className="text-sm font-medium mb-1 block">
-          Difficulty Range: {filters.minDifficulty} - {filters.maxDifficulty}
-        </label>
+        <label className="text-sm font-medium mb-1 block">Difficulty Range: {filters.minDifficulty} - {filters.maxDifficulty}</label>
         <Slider
           defaultValue={[filters.minDifficulty, filters.maxDifficulty]}
           max={100}
@@ -151,9 +142,7 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
       </div>
       
       <div>
-        <label className="text-sm font-medium mb-1 block">
-          CPC Range: ${filters.minCpc.toFixed(2)} - ${filters.maxCpc.toFixed(2)}
-        </label>
+        <label className="text-sm font-medium mb-1 block">CPC Range: ${filters.minCpc.toFixed(2)} - ${filters.maxCpc.toFixed(2)}</label>
         <Slider
           defaultValue={[filters.minCpc, filters.maxCpc]}
           max={20}

@@ -148,7 +148,8 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       
       console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for topic: ${topicArea || "general"}`);
       
-      // Pass both the formatted keywords and the original response data
+      // Clear search and filter before passing formatted keywords
+      // We only want to pass the data without manipulating state directly
       onKeywordsReceived(formattedKeywords);
       
       toast({
