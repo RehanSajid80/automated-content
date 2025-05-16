@@ -134,6 +134,42 @@ export type Database = {
         }
         Relationships: []
       }
+      social_posts: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_saved: boolean | null
+          keywords: string[] | null
+          platform: string | null
+          title: string | null
+          topic_area: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_saved?: boolean | null
+          keywords?: string[] | null
+          platform?: string | null
+          title?: string | null
+          topic_area?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_saved?: boolean | null
+          keywords?: string[] | null
+          platform?: string | null
+          title?: string | null
+          topic_area?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       webhook_configs: {
         Row: {
           created_at: string | null

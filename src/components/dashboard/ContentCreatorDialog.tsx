@@ -16,6 +16,7 @@ import {
 import { FileText, Building2, Tag, Share2, Check, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContentCreatorDialogProps {
   onClose: () => void;
@@ -82,12 +83,60 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
     }, 1500);
   };
   
-  const handleSave = () => {
-    toast({
-      title: "Content Saved",
-      description: "Your content has been saved to your library.",
-    });
-    onClose();
+  const handleSave = async () => {
+    try {
+      if (contentType === 'social') {
+        // Save to the dedicated social_posts table
+        const { data, error } = await supabase
+          .from('social_posts')
+          .insert([
+            {
+              content: generatedContent,
+              platform: 'linkedin', // Default platform
+              title: form.getValues().keywords || "Social Media Posts",
+              topic_area: 'workspace-management',
+              keywords: form.getValues().keywords ? form.getValues().keywords.split(',').map(k => k.trim()) : []
+            }
+          ])
+          .select();
+
+        if (error) throw error;
+      } else {
+        // Save other content types to content_library
+        const { data, error } = await supabase
+          .from('content_library')
+          .insert([
+            {
+              content: generatedContent,
+              content_type: contentType,
+              title: form.getValues().keywords || `Generated ${contentType} content`,
+              topic_area: 'workspace-management',
+              is_saved: true,
+              keywords: form.getValues().keywords ? form.getValues().keywords.split(',').map(k => k.trim()) : []
+            }
+          ])
+          .select();
+
+        if (error) throw error;
+      }
+      
+      // Dispatch event to refresh content lists
+      window.dispatchEvent(new Event('content-updated'));
+      
+      toast({
+        title: "Content Saved",
+        description: "Your content has been saved to your library.",
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error saving content:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save content. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

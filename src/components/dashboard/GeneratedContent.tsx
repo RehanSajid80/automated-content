@@ -25,24 +25,44 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
   const handleSave = async () => {
     try {
-      const { data, error } = await supabase
-        .from('content_library')
-        .insert([
-          {
-            content: content,
-            content_type: activeTab,
-            is_saved: true,
-            title: activeTab === 'social' 
-              ? 'Social Media Posts' 
-              : `Generated ${activeTab} content`,
-            topic_area: 'workspace-management',
-            keywords: [] // Empty array for now, can be updated later
-          }
-        ])
-        .select()
-        .single();
+      if (activeTab === 'social') {
+        // Save to the dedicated social_posts table
+        const { data, error } = await supabase
+          .from('social_posts')
+          .insert([
+            {
+              content: content,
+              platform: 'linkedin', // Default platform, can be enhanced with a dropdown
+              title: 'Social Media Posts',
+              topic_area: 'workspace-management',
+              keywords: [] // Empty array for now, can be updated later
+            }
+          ])
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Save other content types to the content_library table
+        const { data, error } = await supabase
+          .from('content_library')
+          .insert([
+            {
+              content: content,
+              content_type: activeTab,
+              is_saved: true,
+              title: activeTab === 'social' 
+                ? 'Social Media Posts' 
+                : `Generated ${activeTab} content`,
+              topic_area: 'workspace-management',
+              keywords: [] // Empty array for now, can be updated later
+            }
+          ])
+          .select()
+          .single();
+
+        if (error) throw error;
+      }
 
       // Dispatch event to refresh content lists and stats
       window.dispatchEvent(new Event('content-updated'));

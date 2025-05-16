@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { FileText, Tag, Share2, Search, Filter, RefreshCw, X, Copy, Eye } from "lucide-react";
 import ContentRefreshManager from "./ContentViewRefreshManager";
 import { cn } from "@/lib/utils";
+import SocialPostsTab from "./SocialPostsTab";
 
 interface ContentLibraryProps {
   className?: string;
@@ -78,6 +78,7 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [libraryView, setLibraryView] = useState("general");
   const { toast } = useToast();
 
   const fetchContentItems = async () => {
@@ -217,133 +218,146 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
         />
       </div>
       
-      <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search content..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-          {searchTerm && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
-              onClick={() => setSearchTerm("")}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-        
-        <Button variant="outline" className="shrink-0">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
-      </div>
-      
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4 overflow-auto">
-          {contentTypes.map(type => (
-            <TabsTrigger key={type.id} value={type.id}>
-              {type.label}
-            </TabsTrigger>
-          ))}
+      <Tabs defaultValue="general" value={libraryView} onValueChange={setLibraryView}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="general">General Content</TabsTrigger>
+          <TabsTrigger value="social">Social Posts</TabsTrigger>
         </TabsList>
         
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+        <TabsContent value="general">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search content..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                  onClick={() => setSearchTerm("")}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            
+            <Button variant="outline" className="shrink-0">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
           </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="text-center py-20 border rounded-lg border-dashed">
-            <FileText className="mx-auto h-12 w-12 mb-4 text-muted-foreground/50" />
-            <h3 className="text-lg font-medium">No content found</h3>
-            <p className="text-muted-foreground mt-2">
-              {searchTerm ? "Try adjusting your search terms" : "Create some content to see it here"}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredItems.map((item) => (
-              <Card 
-                key={item.id} 
-                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => viewContent(item.id, item.topic_area || '')}
-              >
-                <div className="p-4">
-                  <div className="flex items-start mb-4">
-                    <div className={cn(
-                      "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3",
-                      getTypeClass(item.content_type)
-                    )}>
-                      {getIcon(item.content_type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm line-clamp-2">{item.title || "Untitled Content"}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {getTypeLabel(item.content_type)} • {formatDate(item.created_at)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {item.topic_area && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      <span className="font-medium">Topic:</span> {item.topic_area}
-                    </p>
-                  )}
-                  
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {item.keywords && item.keywords.length > 0 ? (
-                      item.keywords.slice(0, 3).map((keyword, i) => (
-                        <span 
-                          key={i}
-                          className="inline-flex text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground"
+          
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4 overflow-auto">
+              {contentTypes.map(type => (
+                <TabsTrigger key={type.id} value={type.id}>
+                  {type.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="text-center py-20 border rounded-lg border-dashed">
+                <FileText className="mx-auto h-12 w-12 mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-medium">No content found</h3>
+                <p className="text-muted-foreground mt-2">
+                  {searchTerm ? "Try adjusting your search terms" : "Create some content to see it here"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredItems.map((item) => (
+                  <Card 
+                    key={item.id} 
+                    className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => viewContent(item.id, item.topic_area || '')}
+                  >
+                    <div className="p-4">
+                      <div className="flex items-start mb-4">
+                        <div className={cn(
+                          "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3",
+                          getTypeClass(item.content_type)
+                        )}>
+                          {getIcon(item.content_type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm line-clamp-2">{item.title || "Untitled Content"}</h4>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {getTypeLabel(item.content_type)} • {formatDate(item.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {item.topic_area && (
+                        <p className="text-xs text-muted-foreground mb-2">
+                          <span className="font-medium">Topic:</span> {item.topic_area}
+                        </p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {item.keywords && item.keywords.length > 0 ? (
+                          item.keywords.slice(0, 3).map((keyword, i) => (
+                            <span 
+                              key={i}
+                              className="inline-flex text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground"
+                            >
+                              {keyword}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">No keywords</span>
+                        )}
+                        {item.keywords && item.keywords.length > 3 && (
+                          <span className="text-xs text-muted-foreground">+{item.keywords.length - 3} more</span>
+                        )}
+                      </div>
+                      
+                      <div className="flex justify-end space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            viewContent(item.id, item.topic_area || '');
+                          }}
                         >
-                          {keyword}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">No keywords</span>
-                    )}
-                    {item.keywords && item.keywords.length > 3 && (
-                      <span className="text-xs text-muted-foreground">+{item.keywords.length - 3} more</span>
-                    )}
-                  </div>
-                  
-                  <div className="flex justify-end space-x-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="h-8 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        viewContent(item.id, item.topic_area || '');
-                      }}
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="h-8 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyContent(item.id);
-                      }}
-                    >
-                      <Copy className="h-3 w-3 mr-1" />
-                      Copy
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyContent(item.id);
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="social">
+          <SocialPostsTab />
+        </TabsContent>
       </Tabs>
     </div>
   );
