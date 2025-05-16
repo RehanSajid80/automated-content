@@ -18,8 +18,8 @@ const NotFound = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="text-center max-w-md mx-auto px-4 animate-fade-in">
         <img 
-          src="https://cdn-ilblgal.nitrocdn.com/LtOfWpqsvRVXueIPEGVTBaxpvBAGgdOw/assets/images/optimized/rev-8c34eb7/www.officespacesoftware.com/wp-content/uploads/oss-logo-top-nav-v1.png" 
-          alt="Office Space Software Logo" 
+          src="/lovable-uploads/6ce6457f-d6fd-47cc-80e4-909e169bac18.png" 
+          alt="Office Space Logo" 
           className="h-12 mx-auto mb-6"
         />
         <h1 className="text-8xl font-bold text-primary mb-4">404</h1>
