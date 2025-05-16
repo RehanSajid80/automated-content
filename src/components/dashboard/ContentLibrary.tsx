@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ContentRefreshManager from "./ContentViewRefreshManager";
@@ -42,6 +42,37 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
       } 
     }));
   };
+
+  // Listen for events to set the library view and content type
+  useEffect(() => {
+    const handleSetLibraryView = (event: CustomEvent) => {
+      const { view, contentType } = event.detail;
+      
+      if (view === 'library') {
+        // If we should show social posts
+        if (contentType === 'social') {
+          setLibraryView('social');
+        } else {
+          setLibraryView('general');
+          // Set the active tab for general content
+          if (contentType && contentType !== 'all') {
+            setActiveTab(contentType);
+          } else {
+            setActiveTab('all');
+          }
+        }
+        
+        // Refresh content to make sure we have the latest data
+        refreshContent();
+      }
+    };
+    
+    window.addEventListener('set-content-library-view', handleSetLibraryView as EventListener);
+    
+    return () => {
+      window.removeEventListener('set-content-library-view', handleSetLibraryView as EventListener);
+    };
+  }, [setActiveTab, refreshContent]);
 
   return (
     <div className={cn("space-y-6", className)}>

@@ -45,8 +45,17 @@ const RecentContent: React.FC<RecentContentProps> = ({ className }) => {
   };
 
   const viewLibrary = () => {
-    const event = new CustomEvent('tab-change', { detail: { tab: 'content' } });
-    window.dispatchEvent(event);
+    // Dispatch event to change to content tab
+    const tabChangeEvent = new CustomEvent('tab-change', { detail: { tab: 'content' } });
+    window.dispatchEvent(tabChangeEvent);
+    
+    // Set library view to show all content
+    setTimeout(() => {
+      const libraryViewEvent = new CustomEvent('set-content-library-view', { 
+        detail: { view: 'library', contentType: 'all' } 
+      });
+      window.dispatchEvent(libraryViewEvent);
+    }, 100);
   };
 
   const viewContent = (contentId: string, topicArea: string) => {

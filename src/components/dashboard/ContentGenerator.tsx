@@ -62,6 +62,22 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     }
   };
 
+  // Helper function to get proper button text based on content type
+  const getSaveButtonText = (contentType: string) => {
+    switch(contentType) {
+      case 'social':
+        return 'Save Social Post';
+      case 'pillar':
+        return 'Save Pillar Content';
+      case 'support':
+        return 'Save Support Content';
+      case 'meta':
+        return 'Save Meta Tags';
+      default:
+        return `Save ${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Content`;
+    }
+  };
+
   const handleSaveContent = async () => {
     try {
       // If this is social content, save to the social_posts table
@@ -113,6 +129,24 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     }
   };
 
+  // Function to navigate to the content library with the correct tab selected
+  const viewLibrary = () => {
+    // Dispatch an event to change to the content tab
+    const tabChangeEvent = new CustomEvent('tab-change', { detail: { tab: 'content' } });
+    window.dispatchEvent(tabChangeEvent);
+    
+    // After changing to content tab, set library view with the correct content type selected
+    setTimeout(() => {
+      const libraryViewEvent = new CustomEvent('set-content-library-view', { 
+        detail: { 
+          view: 'library',
+          contentType: activeTab === 'social' ? 'social' : 'all'
+        } 
+      });
+      window.dispatchEvent(libraryViewEvent);
+    }, 100);
+  };
+
   return (
     <div className={cn("", className)}>
       <Tabs defaultValue="pillar" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -158,8 +192,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                       <Copy className="w-4 h-4 mr-2" /> Copy
                     </Button>
                     <Button size="sm" onClick={handleSaveContent}>
-                      <Save className="w-4 h-4 mr-2" />
-                      {activeTab === 'social' ? 'Save Social Post' : `Save ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Content`}
+                      <Save className="w-4 h-4 mr-2" /> {getSaveButtonText(activeTab)}
                     </Button>
                   </div>
                 </div>
@@ -171,6 +204,15 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
           </TabsContent>
         ))}
       </Tabs>
+      <div className="flex justify-end mt-4">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={viewLibrary}
+        >
+          View Library
+        </Button>
+      </div>
     </div>
   );
 };

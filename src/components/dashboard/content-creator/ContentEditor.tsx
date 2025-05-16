@@ -18,6 +18,22 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
   onRegenerateContent,
   onSaveContent,
 }) => {
+  // Helper function to get proper button text based on content type
+  const getSaveButtonText = (sectionKey: string) => {
+    switch(sectionKey) {
+      case 'social':
+        return 'Save Social Post';
+      case 'pillar':
+        return 'Save Pillar Content';
+      case 'support':
+        return 'Save Support Content';
+      case 'meta':
+        return 'Save Meta Tags';
+      default:
+        return `Save ${sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1)} Content`;
+    }
+  };
+  
   return (
     <div className="space-y-6">
       {Object.entries(editableContent).map(([sectionKey, content]) => (
@@ -43,7 +59,7 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
                   onClick={() => onSaveContent(sectionKey)}
                 >
                   <Save className="h-3 w-3 mr-1" />
-                  {sectionKey === 'social' ? 'Save Social Post' : `Save ${sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1)} Content`}
+                  {getSaveButtonText(sectionKey)}
                 </Button>
               </div>
             </CardTitle>
