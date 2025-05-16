@@ -10,12 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
+import { KeywordData } from "@/utils/excelUtils";
 
 interface KeywordFiltersProps {
   onFiltersChange: (filters: FilterOptions) => void;
   className?: string;
-  initialFilters?: Partial<FilterOptions>;
 }
 
 export interface FilterOptions {
@@ -32,78 +31,71 @@ export interface FilterOptions {
 const KeywordFilters: React.FC<KeywordFiltersProps> = ({
   onFiltersChange,
   className,
-  initialFilters,
 }) => {
   const [filters, setFilters] = useState<FilterOptions>({
-    searchTerm: initialFilters?.searchTerm || "",
-    minVolume: initialFilters?.minVolume || 0,
-    maxVolume: initialFilters?.maxVolume || 10000,
-    minDifficulty: initialFilters?.minDifficulty || 0,
-    maxDifficulty: initialFilters?.maxDifficulty || 100,
-    minCpc: initialFilters?.minCpc || 0,
-    maxCpc: initialFilters?.maxCpc || 20,
-    trend: initialFilters?.trend || "all",
+    searchTerm: "",
+    minVolume: 0,
+    maxVolume: 10000,
+    minDifficulty: 0,
+    maxDifficulty: 100,
+    minCpc: 0,
+    maxCpc: 20,
+    trend: "all",
   });
 
-  // Apply filters whenever they change
-  useEffect(() => {
-    onFiltersChange(filters);
-  }, [filters, onFiltersChange]);
-
-  // Update filters when initialFilters changes
-  useEffect(() => {
-    if (initialFilters) {
-      setFilters(prev => ({
-        ...prev,
-        ...initialFilters
-      }));
-    }
-  }, [initialFilters]);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newFilters = { ...filters, [name]: value };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
+  };
 
   const handleTrendChange = (value: string) => {
-    setFilters(prev => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       trend: value as "all" | "up" | "neutral" | "down",
-    }));
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleVolumeChange = (value: number[]) => {
-    setFilters(prev => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       minVolume: value[0],
       maxVolume: value[1],
-    }));
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleDifficultyChange = (value: number[]) => {
-    setFilters(prev => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       minDifficulty: value[0],
       maxDifficulty: value[1],
-    }));
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleCpcChange = (value: number[]) => {
-    setFilters(prev => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       minCpc: value[0],
       maxCpc: value[1],
-    }));
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const applyFilters = () => {
-    // Force a re-application of filters
-    onFiltersChange({...filters});
-    toast({
-      title: "Filters Applied",
-      description: "Keyword search results updated",
-    });
+    onFiltersChange(filters);
   };
 
   const resetFilters = () => {
-    // Don't reset the search term, just other filters
     const defaultFilters = {
-      searchTerm: filters.searchTerm, // Preserve search term
+      searchTerm: "",
       minVolume: 0,
       maxVolume: 10000,
       minDifficulty: 0,
@@ -113,6 +105,7 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
       trend: "all" as const,
     };
     setFilters(defaultFilters);
+    onFiltersChange(defaultFilters);
   };
 
   return (
@@ -120,7 +113,20 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
       <h3 className="text-lg font-semibold mb-2">Filter Keywords</h3>
       
       <div>
-        <label className="text-sm font-medium mb-1 block">Volume Range: {filters.minVolume} - {filters.maxVolume}</label>
+        <label className="text-sm font-medium mb-1 block">Keyword Search</label>
+        <Input
+          name="searchTerm"
+          value={filters.searchTerm}
+          onChange={handleInputChange}
+          placeholder="Search keywords..."
+          className="w-full"
+        />
+      </div>
+      
+      <div>
+        <label className="text-sm font-medium mb-1 block">
+          Volume Range: {filters.minVolume} - {filters.maxVolume}
+        </label>
         <Slider
           defaultValue={[filters.minVolume, filters.maxVolume]}
           max={10000}
@@ -131,7 +137,9 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
       </div>
       
       <div>
-        <label className="text-sm font-medium mb-1 block">Difficulty Range: {filters.minDifficulty} - {filters.maxDifficulty}</label>
+        <label className="text-sm font-medium mb-1 block">
+          Difficulty Range: {filters.minDifficulty} - {filters.maxDifficulty}
+        </label>
         <Slider
           defaultValue={[filters.minDifficulty, filters.maxDifficulty]}
           max={100}
@@ -142,7 +150,9 @@ const KeywordFilters: React.FC<KeywordFiltersProps> = ({
       </div>
       
       <div>
-        <label className="text-sm font-medium mb-1 block">CPC Range: ${filters.minCpc.toFixed(2)} - ${filters.maxCpc.toFixed(2)}</label>
+        <label className="text-sm font-medium mb-1 block">
+          CPC Range: ${filters.minCpc.toFixed(2)} - ${filters.maxCpc.toFixed(2)}
+        </label>
         <Slider
           defaultValue={[filters.minCpc, filters.maxCpc]}
           max={20}

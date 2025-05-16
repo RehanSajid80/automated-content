@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingState } from "./LoadingState";
-import { Globe, ExternalLink, Loader2 } from "lucide-react";
+import { Globe, ExternalLink } from "lucide-react";
 
 interface ContentGeneratorFormProps {
   activeTab: string;
@@ -36,7 +36,7 @@ export const ContentGeneratorForm: React.FC<ContentGeneratorFormProps> = ({
   generatingProgress,
 }) => {
   if (isGenerating) {
-    return <LoadingState message={generatingProgress || "Generating content..."} />;
+    return <LoadingState message={generatingProgress} />;
   }
 
   return (
@@ -93,14 +93,7 @@ export const ContentGeneratorForm: React.FC<ContentGeneratorFormProps> = ({
         disabled={!keywords.trim() || isGenerating}
         className="w-full"
       >
-        {isGenerating ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {generatingProgress || "Generating..."}
-          </>
-        ) : (
-          <>Generate {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Content</>
-        )}
+        Generate {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Content
       </Button>
     </div>
   );

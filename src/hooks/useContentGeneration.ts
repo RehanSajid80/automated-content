@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { generateContentByType } from "@/services/openai/contentGeneration";
 import { toast } from "sonner";
