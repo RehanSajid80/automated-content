@@ -98,7 +98,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
             className="h-8 text-xs px-2"
             onClick={handleSave}
           >
-            {activeTab === 'social' ? 'Save Social Posts' : 'Save'}
+            {activeTab === 'social' ? 'Save Social Post' : `Save ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Content`}
           </Button>
           <Button 
             size="sm" 

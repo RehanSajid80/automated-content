@@ -76,7 +76,7 @@ export const ContentActions: React.FC<ContentActionsProps> = ({
         ) : (
           <>
             <Save className="w-4 h-4 mr-2" />
-            Save {section === 'social' ? 'Social Post' : section.charAt(0).toUpperCase() + section.slice(1) + ' Content'}
+            {section === 'social' ? 'Save Social Post' : `Save ${section.charAt(0).toUpperCase() + section.slice(1)} Content`}
           </>
         )}
       </Button>

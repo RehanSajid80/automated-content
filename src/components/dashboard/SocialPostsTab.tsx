@@ -103,7 +103,7 @@ const SocialPostsTab = () => {
         post.id === editingPost.id ? { ...post, content: editedContent } : post
       ));
       
-      toast.success("Post updated successfully");
+      toast.success("Social post updated successfully");
       setEditingPost(null);
       
       // Refresh other content components

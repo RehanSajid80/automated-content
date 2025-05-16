@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -259,7 +258,7 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
                   Copy
                 </Button>
                 <Button size="sm" onClick={handleSave}>
-                  Save <Check size={14} className="ml-1.5" />
+                  Save {contentType === 'social' ? 'Social Post' : `${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Content`} <Check size={14} className="ml-1.5" />
                 </Button>
               </div>
             </div>

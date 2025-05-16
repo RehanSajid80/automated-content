@@ -87,7 +87,7 @@ export const GeneratedContentCard: React.FC<GeneratedContentCardProps> = ({
         </Button>
         <Button size="sm" onClick={contentType === 'social' ? handleSaveContent : onSaveContent}>
           <Save size={14} className="mr-2" /> 
-          {contentType === 'social' ? 'Save Post' : 'Save Content'}
+          {contentType === 'social' ? 'Save Social Post' : `Save ${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Content`}
         </Button>
       </CardFooter>
     </Card>
