@@ -7,6 +7,7 @@ interface ContentTypeTabsProps {
   onTabChange: (tab: string) => void;
   contentTypes: Record<string, string>;
   groupedContent: Record<string, any[]>;
+  children: React.ReactNode; // Add the children prop to the interface
 }
 
 export const ContentTypeTabs: React.FC<ContentTypeTabsProps> = ({
