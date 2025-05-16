@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Sparkles, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
       <div className="container flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <img 
-            src="https://cdn-ilblgal.nitrocdn.com/LtOfWpqsvRVXueIPEGVTBaxpvBAGgdOw/assets/images/optimized/rev-8c34eb7/www.officespacesoftware.com/wp-content/uploads/oss-logo-top-nav-v1.png" 
+            src="/lovable-uploads/a610d7f5-b1ca-4f04-9892-9a2437d129a8.png" 
             alt="Office Space Software Logo" 
             className="h-8"
           />
