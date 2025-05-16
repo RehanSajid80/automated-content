@@ -38,5 +38,6 @@ export const createContentPayload = (data: Partial<ContentPayload>): ContentPayl
   };
 };
 
+// This URL is now managed by useN8nConfig.ts hook
+// The constant below is maintained for backward compatibility
 export const CONTENT_WEBHOOK_URL = "https://analyzelens.app.n8n.cloud/webhook/d9b7f2f7-1140-48a6-85dc-aee39fc6e5b4";
-

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ContentForm, ContentFormData } from "./content-creator/ContentForm";
 import { GeneratedContentCard } from "./content-creator/GeneratedContentCard";
@@ -8,7 +8,8 @@ import { authorPersonas } from "@/data/authorPersonas";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
-import { createContentPayload, CONTENT_WEBHOOK_URL } from "@/utils/payloadUtils";
+import { createContentPayload } from "@/utils/payloadUtils";
+import { useN8nConfig } from "@/hooks/useN8nConfig";
 
 interface ManualContentCreatorProps {
   className?: string;
@@ -19,9 +20,20 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
   const [generatedContent, setGeneratedContent] = useState("");
   const [currentContentType, setCurrentContentType] = useState("pillar");
   const [lastFormData, setLastFormData] = useState<ContentFormData | null>(null);
+  const [contentWebhookUrl, setContentWebhookUrl] = useState("");
   
   // Add N8N agent for webhook calls
   const { sendToN8n, isLoading: isN8nLoading } = useN8nAgent();
+  
+  // Use the N8N config hook to get the content webhook URL
+  const { getContentWebhookUrl } = useN8nConfig();
+  
+  // Effect to get content webhook URL on component mount
+  useEffect(() => {
+    const webhookUrl = getContentWebhookUrl();
+    console.log("Manual Creator: Content webhook URL from config:", webhookUrl);
+    setContentWebhookUrl(webhookUrl);
+  }, []);
   
   const handleFormSubmit = async (data: ContentFormData) => {
     setIsGenerating(true);
@@ -30,6 +42,10 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
     setLastFormData(data);
     
     try {
+      // Get the most current webhook URL
+      const currentWebhookUrl = getContentWebhookUrl();
+      console.log("Using content webhook URL for generation:", currentWebhookUrl);
+      
       // Create standard content payload
       const payload = createContentPayload({
         content_type: data.contentType,
@@ -44,13 +60,13 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
       const selectedAuthor = authorPersonas.find(a => a.id === data.author);
       const selectedType = contentTypes.find(t => t.id === data.contentType);
       
-      toast.info("Generating content via n8n webhook...", {
-        description: `Creating ${selectedType?.name || data.contentType} content...`
+      toast.info("Generating content via n8n AI agent...", {
+        description: `Creating ${selectedType?.name || data.contentType} content using webhook connection`
       });
   
       const result = await sendToN8n({
         customPayload: payload
-      }, CONTENT_WEBHOOK_URL);
+      }, currentWebhookUrl);
       
       // Check if we got a response with content
       if (result && result.content && result.content.length > 0) {
@@ -65,7 +81,7 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
       }
     } catch (error) {
       console.error("Error generating content:", error);
-      toast.error("Failed to generate content through API", {
+      toast.error("Failed to generate content through n8n webhook", {
         description: "Using fallback content generator..."
       });
       

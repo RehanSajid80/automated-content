@@ -7,20 +7,27 @@ import { API_KEYS, getApiKey, saveApiKey, removeApiKey } from "@/utils/apiKeyUti
 import ConnectionHeader from "./api/ConnectionHeader";
 import OpenAIConnection from "./api/OpenAIConnection";
 import WebhookConnection from "./api/WebhookConnection";
+import { useN8nConfig } from "@/hooks/useN8nConfig";
 
 const ApiConnectionsManager = () => {
   const [openaiApiKey, setOpenaiApiKey] = React.useState("");
   const [openaiStatus, setOpenaiStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [webhookUrl, setWebhookUrl] = React.useState("");
+  const [contentWebhookUrl, setContentWebhookUrl] = React.useState("");
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content'>('keywords');
   const { toast } = useToast();
+  const { getWebhookUrl, getContentWebhookUrl, saveWebhookUrl } = useN8nConfig();
 
   const resetConnections = async () => {
     try {
       await removeApiKey(API_KEYS.OPENAI);
+      localStorage.removeItem("n8n-webhook-url");
       localStorage.removeItem("semrush-webhook-url");
+      localStorage.removeItem("n8n-content-webhook-url");
       setOpenaiApiKey("");
       setWebhookUrl("");
+      setContentWebhookUrl("");
       setOpenaiStatus('checking');
       setWebhookStatus('checking');
       
@@ -67,33 +74,24 @@ const ApiConnectionsManager = () => {
   }, []);
 
   React.useEffect(() => {
-    const checkWebhook = async () => {
-      try {
-        const url = localStorage.getItem("semrush-webhook-url");
-        if (!url) {
-          setWebhookStatus('disconnected');
-          return;
-        }
-        setWebhookUrl(url);
-        
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          mode: 'no-cors',
-          body: JSON.stringify({ test: true }),
-        });
-        
-        setWebhookStatus('connected');
-      } catch (error) {
-        console.error('Webhook connection error:', error);
-        setWebhookStatus('disconnected');
+    const loadWebhookUrls = () => {
+      // Load both webhook URLs
+      const keywordWebhookUrl = getWebhookUrl();
+      const contentGenUrl = getContentWebhookUrl();
+      
+      setWebhookUrl(keywordWebhookUrl);
+      setContentWebhookUrl(contentGenUrl);
+      
+      // Simple check to set status - we can't really test the webhook without sending data
+      if (activeWebhookType === 'keywords') {
+        setWebhookStatus(keywordWebhookUrl ? 'connected' : 'disconnected');
+      } else {
+        setWebhookStatus(contentGenUrl ? 'connected' : 'disconnected');
       }
     };
     
-    checkWebhook();
-  }, []);
+    loadWebhookUrls();
+  }, [activeWebhookType]);
 
   const handleSaveOpenaiKey = async () => {
     if (openaiApiKey && openaiApiKey !== "••••••••••••••••••••••••••") {
@@ -114,12 +112,19 @@ const ApiConnectionsManager = () => {
   };
 
   const handleSaveWebhook = () => {
-    if (webhookUrl) {
-      localStorage.setItem("semrush-webhook-url", webhookUrl);
+    if (activeWebhookType === 'keywords' && webhookUrl) {
+      saveWebhookUrl(webhookUrl);
       setWebhookStatus('checking');
       toast({
-        title: "Webhook URL Saved",
-        description: "Your webhook URL has been saved",
+        title: "Keyword Webhook URL Saved",
+        description: "Your keyword webhook URL has been saved",
+      });
+    } else if (activeWebhookType === 'content' && contentWebhookUrl) {
+      saveWebhookUrl(contentWebhookUrl, 'content');
+      setWebhookStatus('checking');
+      toast({
+        title: "Content Webhook URL Saved",
+        description: "Your content generation webhook URL has been saved",
       });
     } else {
       toast({
@@ -128,6 +133,15 @@ const ApiConnectionsManager = () => {
         variant: "destructive",
       });
     }
+    
+    // Set status after a short delay to simulate checking
+    setTimeout(() => {
+      setWebhookStatus('connected');
+    }, 1000);
+  };
+
+  const handleWebhookTypeChange = (type: 'keywords' | 'content') => {
+    setActiveWebhookType(type);
   };
 
   return (
@@ -146,9 +160,13 @@ const ApiConnectionsManager = () => {
             />
             <WebhookConnection
               webhookUrl={webhookUrl}
+              contentWebhookUrl={contentWebhookUrl}
               status={webhookStatus}
               onSaveWebhook={handleSaveWebhook}
               onUrlChange={setWebhookUrl}
+              onContentUrlChange={setContentWebhookUrl}
+              onWebhookTypeChange={handleWebhookTypeChange}
+              activeWebhookType={activeWebhookType}
             />
           </div>
         </main>

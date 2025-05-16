@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,8 @@ import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
 import AIContentDisplay from "./AIContentDisplay";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { toast } from "@/components/ui/use-toast";
-import { createContentPayload, CONTENT_WEBHOOK_URL } from "@/utils/payloadUtils";
+import { createContentPayload } from "@/utils/payloadUtils";
+import { useN8nConfig } from "@/hooks/useN8nConfig";
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ 
   className, 
@@ -35,10 +36,22 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     setGeneratedContent
   } = useContentGeneration();
 
+  // Use the N8N config hook to get the content webhook URL
+  const { getContentWebhookUrl } = useN8nConfig();
+  
   // Add N8N agent for custom webhook calls
   const { sendToN8n, isLoading: isN8nLoading, generatedContent: n8nContent, setGeneratedContent: setN8nContent } = useN8nAgent();
 
-  React.useEffect(() => {
+  // Effect to get content webhook URL on component mount
+  const [contentWebhookUrl, setContentWebhookUrl] = useState("");
+  
+  useEffect(() => {
+    const webhookUrl = getContentWebhookUrl();
+    console.log("Content webhook URL from config:", webhookUrl);
+    setContentWebhookUrl(webhookUrl);
+  }, []);
+
+  useEffect(() => {
     if (initialKeywords && initialKeywords.length > 0) {
       setKeywords(initialKeywords.join(", "));
       setActiveTab("pillar");
@@ -48,6 +61,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   }, [initialKeywords]);
 
   const handleGenerate = async () => {
+    // Get the most current webhook URL
+    const currentWebhookUrl = getContentWebhookUrl();
+    
     // Create standard content payload
     const payload = createContentPayload({
       content_type: activeTab,
@@ -60,12 +76,14 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     try {
       toast({
         title: "Generating Content",
-        description: "This may take a moment"
+        description: "Using n8n AI agent webhook connection"
       });
 
+      console.log("Using content webhook URL:", currentWebhookUrl);
+      
       const result = await sendToN8n({
         customPayload: payload
-      }, CONTENT_WEBHOOK_URL);
+      }, currentWebhookUrl);
       
       // Check if we got a response with content
       if (result && result.content && result.content.length > 0) {
@@ -124,7 +142,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
               onSuggestUrl={handleSuggestUrlClick}
               isGenerating={isGenerating || isN8nLoading}
               isCheckingUrl={isCheckingExistence}
-              generatingProgress={isN8nLoading ? "Generating content via webhook..." : generatingProgress}
+              generatingProgress={isN8nLoading ? `Generating content via n8n AI agent... (${contentWebhookUrl ? "Webhook configured" : "Using default webhook"})` : generatingProgress}
             />
             
             {generatedContent && activeTab === type.id && (

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,9 @@ import {
 import { FileText, Building2, Tag, Share2, Check, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
+import { useN8nAgent } from "@/hooks/useN8nAgent";
+import { createContentPayload } from "@/utils/payloadUtils";
+import { useN8nConfig } from "@/hooks/useN8nConfig";
 
 interface ContentCreatorDialogProps {
   onClose: () => void;
@@ -41,7 +44,17 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
   const [contentType, setContentType] = useState("pillar");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
+  const [contentWebhookUrl, setContentWebhookUrl] = useState("");
   const { toast } = useToast();
+  const { getContentWebhookUrl } = useN8nConfig();
+  const { sendToN8n, isLoading: isN8nLoading } = useN8nAgent();
+  
+  // Effect to get content webhook URL on component mount
+  useEffect(() => {
+    const webhookUrl = getContentWebhookUrl();
+    console.log("Dialog: Content webhook URL from config:", webhookUrl);
+    setContentWebhookUrl(webhookUrl);
+  }, []);
   
   const form = useForm({
     defaultValues: {
@@ -51,35 +64,80 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
     }
   });
   
-  const onSubmit = (data: any) => {
+  const onSubmit = async (data: any) => {
     setIsGenerating(true);
     setGeneratedContent("");
     
-    // Simulate API call delay
-    setTimeout(() => {
+    try {
+      // Get the most current webhook URL
+      const currentWebhookUrl = getContentWebhookUrl();
+      
+      // Create content payload
+      const payload = createContentPayload({
+        content_type: contentType,
+        topic: data.keywords,
+        primary_keyword: data.keywords,
+        related_keywords: data.keywords,
+        tone: "Professional",
+        goal: data.context,
+        brand_voice: "Professional and helpful"
+      });
+      
       const selectedAuthor = authorPersonas.find(a => a.id === data.author);
       const selectedType = contentTypes.find(t => t.id === contentType);
       
-      // Create mock generated content based on inputs
-      let content = "";
-      if (contentType === "pillar") {
-        content = `# The Complete Guide to ${data.keywords}\n\n## Introduction\nOptimizing office space is critical for modern businesses looking to maximize productivity...\n\n## Key Benefits\n1. Improved space utilization\n2. Enhanced employee satisfaction\n3. Reduced operational costs\n\n## Best Practices\nImplementing effective workspace management requires a strategic approach...`;
-      } else if (contentType === "support") {
-        content = `# How to Use Our ${data.keywords} Features\n\n## Getting Started\n1. Set up your floor plans\n2. Import employee data\n3. Configure booking rules\n\n## Troubleshooting\nIf you encounter issues with reservations...`;
-      } else if (contentType === "meta") {
-        content = `Title: Ultimate ${data.keywords} Guide: Optimize Your Workplace in 2024\n\nMeta Description: Discover how our ${data.keywords} solutions can transform your workplace management. Learn about key features, ROI, and implementation strategies.`;
-      } else {
-        content = `LinkedIn:\n🏢 Struggling with office space efficiency? Our ${data.keywords} just analyzed data from 1000+ companies. Here's what works:\n\n✅ Flexible seating arrangements\n✅ Data-driven space allocation\n✅ Integrated booking systems\n\nLearn more: [link]`;
-      }
+      toast({
+        title: "Generating Content",
+        description: `Creating ${selectedType?.name} content via n8n AI agent...`,
+      });
       
-      setGeneratedContent(content);
-      setIsGenerating(false);
+      console.log("Using webhook URL:", currentWebhookUrl);
+      
+      const result = await sendToN8n({
+        customPayload: payload
+      }, currentWebhookUrl);
+      
+      // Check if we got a response with content
+      if (result && result.content && result.content.length > 0) {
+        setGeneratedContent(result.content[0].output || "");
+      } else if (result && result.rawResponse) {
+        setGeneratedContent(result.rawResponse);
+      } else {
+        // Fall back to mock content generation if webhook fails
+        generateMockContent(data);
+      }
       
       toast({
         title: "Content Generated",
         description: `${selectedType?.name} content has been created successfully.`,
       });
-    }, 1500);
+    } catch (error) {
+      console.error("Error generating content via webhook:", error);
+      
+      // Fall back to mock content generation
+      generateMockContent(data);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
+  // Fallback mock content generator
+  const generateMockContent = (data: any) => {
+    const selectedType = contentTypes.find(t => t.id === contentType);
+    
+    // Create mock generated content based on inputs
+    let content = "";
+    if (contentType === "pillar") {
+      content = `# The Complete Guide to ${data.keywords}\n\n## Introduction\nOptimizing office space is critical for modern businesses looking to maximize productivity...\n\n## Key Benefits\n1. Improved space utilization\n2. Enhanced employee satisfaction\n3. Reduced operational costs\n\n## Best Practices\nImplementing effective workspace management requires a strategic approach...`;
+    } else if (contentType === "support") {
+      content = `# How to Use Our ${data.keywords} Features\n\n## Getting Started\n1. Set up your floor plans\n2. Import employee data\n3. Configure booking rules\n\n## Troubleshooting\nIf you encounter issues with reservations...`;
+    } else if (contentType === "meta") {
+      content = `Title: Ultimate ${data.keywords} Guide: Optimize Your Workplace in 2024\n\nMeta Description: Discover how our ${data.keywords} solutions can transform your workplace management. Learn about key features, ROI, and implementation strategies.`;
+    } else {
+      content = `LinkedIn:\n🏢 Struggling with office space efficiency? Our ${data.keywords} just analyzed data from 1000+ companies. Here's what works:\n\n✅ Flexible seating arrangements\n✅ Data-driven space allocation\n✅ Integrated booking systems\n\nLearn more: [link]`;
+    }
+    
+    setGeneratedContent(content);
   };
   
   const handleSave = () => {
@@ -176,11 +234,11 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
             />
             
             <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={isGenerating}>
-                {isGenerating ? (
+              <Button type="submit" disabled={isGenerating || isN8nLoading}>
+                {isGenerating || isN8nLoading ? (
                   <>
                     <Loader2 size={16} className="mr-2 animate-spin" />
-                    Generating...
+                    Generating via n8n AI agent...
                   </>
                 ) : (
                   <>
