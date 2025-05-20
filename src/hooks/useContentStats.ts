@@ -37,10 +37,10 @@ export const useContentStats = () => {
         .eq('content_type', 'meta')
         .eq('is_saved', true);
 
-      // Get social posts count from the social_posts table instead
       const { count: socialCount } = await supabase
-        .from('social_posts')
+        .from('content_library')
         .select('id', { count: 'exact' })
+        .eq('content_type', 'social')
         .eq('is_saved', true);
 
       setContentStats({

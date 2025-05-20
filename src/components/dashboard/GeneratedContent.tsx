@@ -25,44 +25,42 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
   const handleSave = async () => {
     try {
-      if (activeTab === 'social') {
-        // Save to the dedicated social_posts table
-        const { data, error } = await supabase
-          .from('social_posts')
-          .insert([
-            {
-              content: content,
-              platform: 'linkedin', // Default platform, can be enhanced with a dropdown
-              title: 'Social Media Posts',
-              topic_area: 'workspace-management',
-              keywords: [] // Empty array for now, can be updated later
-            }
-          ])
-          .select()
-          .single();
-
-        if (error) throw error;
-      } else {
-        // Save other content types to the content_library table
-        const { data, error } = await supabase
-          .from('content_library')
-          .insert([
-            {
-              content: content,
-              content_type: activeTab,
-              is_saved: true,
-              title: activeTab === 'social' 
-                ? 'Social Media Posts' 
-                : `Generated ${activeTab} content`,
-              topic_area: 'workspace-management',
-              keywords: [] // Empty array for now, can be updated later
-            }
-          ])
-          .select()
-          .single();
-
-        if (error) throw error;
+      // Determine appropriate title based on content type
+      let contentTitle = '';
+      
+      switch (activeTab) {
+        case 'social':
+          contentTitle = 'Social Media Posts';
+          break;
+        case 'pillar':
+          contentTitle = 'Pillar Content Article';
+          break;
+        case 'support':
+          contentTitle = 'Support Page Content';
+          break;
+        case 'meta':
+          contentTitle = 'SEO Meta Tags';
+          break;
+        default:
+          contentTitle = `Generated ${activeTab} content`;
       }
+      
+      const { data, error } = await supabase
+        .from('content_library')
+        .insert([
+          {
+            content: content,
+            content_type: activeTab, // Ensure we use the activeTab as the content_type
+            is_saved: true,
+            title: contentTitle,
+            topic_area: 'workspace-management',
+            keywords: [] // Empty array for now, can be updated later
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
 
       // Dispatch event to refresh content lists and stats
       window.dispatchEvent(new Event('content-updated'));
@@ -98,7 +96,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
             className="h-8 text-xs px-2"
             onClick={handleSave}
           >
-            {activeTab === 'social' ? 'Save Social Post' : `Save ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Content`}
+            {activeTab === 'social' ? 'Save Social Posts' : `Save ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`}
           </Button>
           <Button 
             size="sm" 

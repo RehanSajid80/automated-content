@@ -18,8 +18,8 @@ const NotFound = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="text-center max-w-md mx-auto px-4 animate-fade-in">
         <img 
-          src="/lovable-uploads/6ce6457f-d6fd-47cc-80e4-909e169bac18.png" 
-          alt="Office Space Logo" 
+          src="/lovable-uploads/a610d7f5-b1ca-4f04-9892-9a2437d129a8.png" 
+          alt="Office Space Software Logo" 
           className="h-12 mx-auto mb-6"
         />
         <h1 className="text-8xl font-bold text-primary mb-4">404</h1>

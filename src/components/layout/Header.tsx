@@ -39,8 +39,8 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
       <div className="container flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <img 
-            src="/lovable-uploads/6ce6457f-d6fd-47cc-80e4-909e169bac18.png" 
-            alt="Office Space Logo" 
+            src="/lovable-uploads/a610d7f5-b1ca-4f04-9892-9a2437d129a8.png" 
+            alt="Office Space Software Logo" 
             className="h-8"
           />
           <div className="font-medium text-lg tracking-tight hidden md:block">Automated Content Creation</div>

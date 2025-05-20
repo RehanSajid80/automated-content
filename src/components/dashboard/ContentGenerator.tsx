@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -8,10 +8,10 @@ import { ContentGeneratorForm } from "./content-creator/ContentGeneratorForm";
 import { useContentGeneration } from "@/hooks/useContentGeneration";
 import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
 import AIContentDisplay from "./AIContentDisplay";
-import { Button } from "@/components/ui/button";
-import { Copy, Save } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useN8nAgent } from "@/hooks/useN8nAgent";
+import { toast } from "@/components/ui/use-toast";
+import { createContentPayload } from "@/utils/payloadUtils";
+import { useN8nConfig } from "@/hooks/useN8nConfig";
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ 
   className, 
@@ -36,115 +36,77 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     setGeneratedContent
   } = useContentGeneration();
 
-  React.useEffect(() => {
+  // Use the N8N config hook to get the content webhook URL
+  const { getContentWebhookUrl } = useN8nConfig();
+  
+  // Add N8N agent for custom webhook calls
+  const { sendToN8n, isLoading: isN8nLoading, generatedContent: n8nContent, setGeneratedContent: setN8nContent } = useN8nAgent();
+
+  // Effect to get content webhook URL on component mount
+  const [contentWebhookUrl, setContentWebhookUrl] = useState("");
+  
+  useEffect(() => {
+    const webhookUrl = getContentWebhookUrl();
+    console.log("Content webhook URL from config:", webhookUrl);
+    setContentWebhookUrl(webhookUrl);
+  }, []);
+
+  useEffect(() => {
     if (initialKeywords && initialKeywords.length > 0) {
       setKeywords(initialKeywords.join(", "));
       setActiveTab("pillar");
       setGeneratedContent("");
+      setN8nContent([]);
     }
   }, [initialKeywords]);
 
-  const handleGenerate = () => {
-    generateContent(activeTab, keywords, targetUrl, socialContext);
+  const handleGenerate = async () => {
+    // Get the most current webhook URL
+    const currentWebhookUrl = getContentWebhookUrl();
+    
+    // Create standard content payload
+    const payload = createContentPayload({
+      content_type: activeTab,
+      topic: keywords,
+      primary_keyword: keywords,
+      related_keywords: keywords,
+      tone: "Friendly and informative",
+    });
+
+    try {
+      toast({
+        title: "Generating Content",
+        description: "Using n8n AI agent webhook connection"
+      });
+
+      console.log("Using content webhook URL:", currentWebhookUrl);
+      
+      const result = await sendToN8n({
+        customPayload: payload
+      }, currentWebhookUrl);
+      
+      // Check if we got a response with content
+      if (result && result.content && result.content.length > 0) {
+        // Update the generated content
+        setGeneratedContent(result.content[0].output || "");
+      } else if (result && result.rawResponse) {
+        // Try to use raw response if no formatted content
+        setGeneratedContent(result.rawResponse);
+      }
+    } catch (error) {
+      console.error("Error calling n8n webhook:", error);
+      toast({
+        title: "Error Generating Content",
+        description: "Failed to generate content through the webhook. Trying standard method...",
+        variant: "destructive"
+      });
+      // Fall back to standard content generation
+      generateContent(activeTab, keywords, targetUrl, socialContext);
+    }
   };
 
   const handleSuggestUrlClick = () => {
     handleSuggestUrl(keywords);
-  };
-
-  const handleCopyContent = () => {
-    try {
-      navigator.clipboard.writeText(generatedContent);
-      toast.success("Content copied to clipboard");
-    } catch (err) {
-      console.error("Failed to copy content:", err);
-      toast.error("Failed to copy content");
-    }
-  };
-
-  // Helper function to get proper button text based on content type
-  const getSaveButtonText = (contentType: string) => {
-    switch(contentType) {
-      case 'social':
-        return 'Save Social Post';
-      case 'pillar':
-        return 'Save Pillar Content';
-      case 'support':
-        return 'Save Support Content';
-      case 'meta':
-        return 'Save Meta Tags';
-      default:
-        return `Save ${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Content`;
-    }
-  };
-
-  const handleSaveContent = async () => {
-    try {
-      // If this is social content, save to the social_posts table
-      if (activeTab === 'social') {
-        const { data, error } = await supabase
-          .from('social_posts')
-          .insert([
-            {
-              content: generatedContent,
-              platform: 'linkedin', // Default platform
-              title: 'Social Media Post',
-              topic_area: 'workspace-management',
-              keywords: keywords ? keywords.split(',').map(k => k.trim()) : []
-            }
-          ]);
-          
-        if (error) throw error;
-        
-        toast.success("Social post saved successfully");
-        // Refresh other content components
-        window.dispatchEvent(new Event("content-updated"));
-      } else {
-        // Save other content types to content_library
-        const { data, error } = await supabase
-          .from('content_library')
-          .insert([
-            {
-              content: generatedContent,
-              content_type: activeTab,
-              title: `Generated ${activeTab} content`,
-              topic_area: 'workspace-management',
-              is_saved: true,
-              keywords: keywords ? keywords.split(',').map(k => k.trim()) : []
-            }
-          ]);
-
-        if (error) throw error;
-        
-        toast.success(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content saved successfully`);
-        // Refresh other content components
-        window.dispatchEvent(new Event("content-updated"));
-      }
-      
-      // Clear the generated content after saving
-      setGeneratedContent("");
-    } catch (err) {
-      console.error("Error saving content:", err);
-      toast.error("Failed to save content");
-    }
-  };
-
-  // Function to navigate to the content library with the correct tab selected
-  const viewLibrary = () => {
-    // Dispatch an event to change to the content tab
-    const tabChangeEvent = new CustomEvent('tab-change', { detail: { tab: 'content' } });
-    window.dispatchEvent(tabChangeEvent);
-    
-    // After changing to content tab, set library view with the correct content type selected
-    setTimeout(() => {
-      const libraryViewEvent = new CustomEvent('set-content-library-view', { 
-        detail: { 
-          view: 'library',
-          contentType: activeTab === 'social' ? 'social' : 'all'
-        } 
-      });
-      window.dispatchEvent(libraryViewEvent);
-    }, 100);
   };
 
   return (
@@ -178,41 +140,20 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
               onSocialContextChange={setSocialContext}
               onGenerate={handleGenerate}
               onSuggestUrl={handleSuggestUrlClick}
-              isGenerating={isGenerating}
+              isGenerating={isGenerating || isN8nLoading}
               isCheckingUrl={isCheckingExistence}
-              generatingProgress={generatingProgress}
+              generatingProgress={isN8nLoading ? `Generating content via n8n AI agent... (${contentWebhookUrl ? "Webhook configured" : "Using default webhook"})` : generatingProgress}
             />
             
             {generatedContent && activeTab === type.id && (
-              <div className="mt-6 pt-6 border-t">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-medium">Generated Content</h3>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" onClick={handleCopyContent}>
-                      <Copy className="w-4 h-4 mr-2" /> Copy
-                    </Button>
-                    <Button size="sm" onClick={handleSaveContent}>
-                      <Save className="w-4 h-4 mr-2" /> {getSaveButtonText(activeTab)}
-                    </Button>
-                  </div>
-                </div>
-                <div className="whitespace-pre-wrap bg-muted/50 p-4 rounded-md border font-mono text-sm">
-                  {generatedContent}
-                </div>
-              </div>
+              <AIContentDisplay
+                content={[{ output: generatedContent }]}
+                onClose={() => setGeneratedContent("")}
+              />
             )}
           </TabsContent>
         ))}
       </Tabs>
-      <div className="flex justify-end mt-4">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={viewLibrary}
-        >
-          View Library
-        </Button>
-      </div>
     </div>
   );
 };

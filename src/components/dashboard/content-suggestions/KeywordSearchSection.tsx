@@ -1,9 +1,10 @@
 
 import React from "react";
 import { TopicAreaSelector } from "../TopicAreaSelector";
-import SemrushIntegration from "../SemrushIntegration";  // Changed to default import
+import SemrushIntegration from "../SemrushIntegration";
 import { KeywordSelector } from "../KeywordSelector";
 import { KeywordData } from "@/utils/excelUtils";
+import { useToast } from "@/hooks/use-toast";
 
 interface KeywordSearchSectionProps {
   topicArea: string;
@@ -26,6 +27,21 @@ export const KeywordSearchSection: React.FC<KeywordSearchSectionProps> = ({
   autoSelectTrendingKeywords,
   isAISuggestionMode,
 }) => {
+  const { toast } = useToast();
+
+  const handleKeywordsReceived = (keywords: KeywordData[]) => {
+    if (keywords && keywords.length > 0) {
+      console.log(`KeywordSearchSection received ${keywords.length} keywords`);
+      updateKeywords(keywords);
+      toast({
+        title: "Keywords Updated",
+        description: `Added ${keywords.length} keywords for analysis`,
+      });
+    } else {
+      console.warn("Received empty keywords array");
+    }
+  };
+
   return (
     <div className="p-4 border border-border rounded-md bg-card w-full">
       <h3 className="text-base font-medium mb-3">Search for Keywords</h3>
@@ -37,7 +53,7 @@ export const KeywordSearchSection: React.FC<KeywordSearchSectionProps> = ({
         />
         
         <SemrushIntegration 
-          onKeywordsReceived={updateKeywords} 
+          onKeywordsReceived={handleKeywordsReceived} 
           topicArea={topicArea}
           disabled={isAISuggestionMode}
         />
@@ -53,4 +69,3 @@ export const KeywordSearchSection: React.FC<KeywordSearchSectionProps> = ({
     </div>
   );
 };
-

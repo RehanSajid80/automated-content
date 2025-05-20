@@ -1,171 +1,45 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { AIContentGenerator } from "./AIContentGenerator";
 import { useContentSuggestions } from "@/hooks/useContentSuggestions";
-import { useN8nAgent } from "@/hooks/useN8nAgent";
-import { useUrlSuggestions } from "@/hooks/useUrlSuggestions";
 import { ContentSuggestionsProps, AISuggestion } from "./types/aiSuggestions";
-import { KeywordData } from "@/utils/excelUtils";
 import { ContentSuggestionsHeader } from "./content-suggestions/ContentSuggestionsHeader";
-import { KeywordSearchSection } from "./content-suggestions/KeywordSearchSection";
-import { AISuggestionsButton } from "./content-suggestions/AISuggestionsButton";
+import { useContentSuggestionState } from "@/hooks/useContentSuggestionState";
+import { TopicSuggestionForm } from "./content-suggestions/TopicSuggestionForm";
 
 const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   keywords,
   className,
 }) => {
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-  const [topicArea, setTopicArea] = useState<string>("");
-  const [localKeywords, setLocalKeywords] = useState(keywords);
-  const [isN8nLoading, setIsN8nLoading] = useState(false);
-  const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
   const { toast } = useToast();
-  const { isLoading, apiError, usedModel, selectedModel, generateSuggestions, suggestions } = useContentSuggestions();
-  const { sendToN8n } = useN8nAgent();
-  const { targetUrl } = useUrlSuggestions();
 
-  const toggleKeywordSelection = (keyword: string) => {
-    if (isAISuggestionMode) return;
-    setSelectedKeywords(prev => 
-      prev.includes(keyword) 
-        ? prev.filter(k => k !== keyword)
-        : [...prev, keyword]
-    );
-  };
-  
-  const autoSelectTrendingKeywords = () => {
-    if (isAISuggestionMode) return;
-    
-    const trendingKeywords = localKeywords
-      .filter(kw => kw.trend === "up")
-      .map(kw => kw.keyword);
-    
-    setSelectedKeywords(trendingKeywords);
-    
-    if (trendingKeywords.length > 0) {
-      toast({
-        title: "Trending Keywords Selected",
-        description: `Selected ${trendingKeywords.length} trending keywords automatically`,
-      });
-    } else {
-      toast({
-        title: "No Trending Keywords Found",
-        description: "No trending keywords were found in your dataset",
-      });
-    }
-  };
+  const { 
+    selectedKeywords,
+    topicArea,
+    setTopicArea,
+    localKeywords,
+    isN8nLoading,
+    isAISuggestionMode,
+    toggleKeywordSelection,
+    autoSelectTrendingKeywords,
+    updateKeywords,
+    handleAISuggestions
+  } = useContentSuggestionState(keywords);
 
-  const handleAISuggestions = async () => {
-    if (!topicArea) {
-      toast({
-        title: "Topic Area Required",
-        description: "Please select a topic area before getting AI suggestions",
-      });
-      return;
-    }
-    
-    if (selectedKeywords.length === 0) {
-      // If no specific keywords are selected, generate some dummy keywords for the topic
-      const dummyKeywords: KeywordData[] = [
-        {
-          keyword: topicArea,
-          volume: 1000,
-          difficulty: 50,
-          cpc: 1.0,
-          trend: "up"
-        }
-      ];
-      
-      // Add a few more keywords based on the topic area
-      const topicKeywords = createTopicKeywords(topicArea);
-      const allKeywords = [
-        ...dummyKeywords,
-        ...topicKeywords
-      ];
-      
-      setLocalKeywords(allKeywords);
-      setSelectedKeywords([topicArea]);
-      
-      // Generate suggestions using these keywords
-      await generateSuggestions(allKeywords, [topicArea]);
-    } else {
-      // Use selected keywords
-      const filteredKeywords = localKeywords.filter(kw => 
-        selectedKeywords.includes(kw.keyword)
-      );
-      
-      await generateSuggestions(filteredKeywords, selectedKeywords);
-    }
-    
-    setIsN8nLoading(true);
-    setIsAISuggestionMode(true);
-    
-    try {
-      await sendToN8n({
-        keywords: selectedKeywords.length > 0 
-          ? localKeywords.filter(kw => selectedKeywords.includes(kw.keyword)) 
-          : localKeywords,
-        topicArea,
-        targetUrl: targetUrl || "https://www.officespacesoftware.com",
-        url: targetUrl || "https://www.officespacesoftware.com",
-        requestType: 'contentSuggestions'
-      });
-      
-      toast({
-        title: "AI Suggestions Ready",
-        description: "Select one of the suggestions below to proceed",
-      });
-    } catch (error) {
-      console.error("Error getting AI suggestions:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get AI suggestions",
-      });
-    } finally {
-      setIsN8nLoading(false);
-    }
-  };
+  const { 
+    isLoading, 
+    apiError, 
+    usedModel, 
+    selectedModel 
+  } = useContentSuggestions();
 
   const handleSuggestionSelect = (suggestion: AISuggestion) => {
     toast({
       title: "Suggestion Selected",
       description: `You selected: ${suggestion.title}`,
     });
-  };
-
-  const updateKeywords = (newKeywords: KeywordData[]) => {
-    if (newKeywords && newKeywords.length > 0) {
-      setLocalKeywords(newKeywords);
-      setSelectedKeywords([]);
-      toast({
-        title: "Keywords Updated",
-        description: `Added ${newKeywords.length} keywords for ${topicArea || "general"} analysis`,
-      });
-    }
-  };
-  
-  // Helper function to create topic-specific keywords
-  const createTopicKeywords = (topic: string): KeywordData[] => {
-    const baseKeywords: {[key: string]: string[]} = {
-      "workspace-management": ["workspace optimization", "office layout", "workspace flexibility"],
-      "office-analytics": ["office usage metrics", "workspace analytics", "office data insights"],
-      "desk-booking": ["hot desk booking", "desk reservation system", "flexible seating"],
-      "workplace-technology": ["workplace tech stack", "office technology solutions", "smart office"],
-      "facility-management": ["facility maintenance", "building management", "space planning"],
-      "asset-management": ["asset tracking software", "inventory management", "equipment lifecycle"]
-    };
-    
-    const keywords = baseKeywords[topic] || [`${topic} solutions`, `${topic} software`, `${topic} best practices`];
-    
-    return keywords.map((keyword, index) => ({
-      keyword,
-      volume: 1000 - (index * 200),
-      difficulty: 40 + (index * 5),
-      cpc: 1.5 - (index * 0.2),
-      trend: index === 0 ? "up" : "neutral"  // Changed "stable" to "neutral" to match KeywordData type
-    }));
   };
 
   return (
@@ -185,7 +59,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               selectedModel={selectedModel}
             />
             
-            <KeywordSearchSection 
+            <TopicSuggestionForm
               topicArea={topicArea}
               setTopicArea={setTopicArea}
               updateKeywords={updateKeywords}
@@ -194,12 +68,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               toggleKeywordSelection={toggleKeywordSelection}
               autoSelectTrendingKeywords={autoSelectTrendingKeywords}
               isAISuggestionMode={isAISuggestionMode}
-            />
-
-            <AISuggestionsButton 
-              onClick={handleAISuggestions}
+              handleAISuggestions={handleAISuggestions}
               isLoading={isN8nLoading || isLoading}
-              disabled={!topicArea}
             />
 
             {isAISuggestionMode && (
