@@ -12,7 +12,7 @@ const ContentGrid: React.FC<ContentGridProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-20">
+      <div className="flex justify-center items-center py-20 w-full">
         <RefreshCw className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -20,7 +20,7 @@ const ContentGrid: React.FC<ContentGridProps> = ({
   
   if (items.length === 0) {
     return (
-      <div className="text-center py-20 border rounded-lg border-dashed">
+      <div className="text-center py-20 border rounded-lg border-dashed w-full">
         <FileText className="mx-auto h-12 w-12 mb-4 text-muted-foreground/50" />
         <h3 className="text-lg font-medium">No content found</h3>
         <p className="text-muted-foreground mt-2">
@@ -31,7 +31,7 @@ const ContentGrid: React.FC<ContentGridProps> = ({
   }
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
       {items.map((item) => (
         <ContentCard 
           key={item.id} 

@@ -143,8 +143,8 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
   };
 
   return (
-    <div className={cn("space-y-6", className)}>
-      <div className="flex items-center justify-between">
+    <div className={cn("space-y-6 w-full", className)}>
+      <div className="flex items-center justify-between w-full">
         <h2 className="text-xl font-semibold">Content Library</h2>
         <ContentRefreshManager 
           isRefreshing={isRefreshing}
@@ -155,14 +155,14 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
       
       <ContentFilter searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <ContentTabs 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
           contentTypes={contentTypes} 
         />
         
-        <TabsContent value={activeTab}>
+        <TabsContent value={activeTab} className="w-full mt-2">
           <ContentGrid 
             items={filteredItems}
             isLoading={isLoading}

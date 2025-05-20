@@ -29,14 +29,14 @@ const ContentLibraryPage = () => {
 
   return (
     <DashboardLayout activeTab={activeTab} onTabChange={handleTabChange}>
-      <div className="container py-8 px-4 md:px-6 lg:px-8">
+      <div className="container py-8 px-4 md:px-6 lg:px-8 max-w-full">
         <DashboardHeader 
           title="Content Library"
           description="Browse and manage all your created content in one place"
         />
         
-        <div className="rounded-xl border border-border bg-card p-6">
-          <ContentLibrary key={`library-${refreshTrigger}`} className="max-w-none" />
+        <div className="rounded-xl border border-border bg-card p-6 w-full">
+          <ContentLibrary key={`library-${refreshTrigger}`} className="w-full max-w-none" />
         </div>
       </div>
     </DashboardLayout>
