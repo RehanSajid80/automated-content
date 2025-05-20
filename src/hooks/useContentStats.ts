@@ -49,6 +49,8 @@ export const useContentStats = () => {
         metaCount: metaCount || 0,
         socialCount: socialCount || 0
       });
+      
+      console.log('Content stats fetched:', { pillarCount, supportCount, metaCount, socialCount });
     } catch (error) {
       console.error('Error fetching content stats:', error);
     }
@@ -58,9 +60,11 @@ export const useContentStats = () => {
     fetchContentStats();
     
     const handleContentUpdated = () => {
+      console.log('Content updated event detected, refreshing stats...');
       fetchContentStats();
     };
     
+    // Listen for the content-updated event from various components
     window.addEventListener('content-updated', handleContentUpdated);
     
     return () => {

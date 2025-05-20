@@ -62,6 +62,8 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
       if (error) throw error;
 
+      console.log('Content saved successfully, dispatching content-updated event');
+      
       // Dispatch event to refresh content lists and stats
       window.dispatchEvent(new Event('content-updated'));
 
