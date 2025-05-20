@@ -20,7 +20,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Header activeTab={activeTab} onTabChange={onTabChange} />
       <Sidebar />
       
-      <main className="pt-[72px] md:pl-[240px] min-h-screen">
+      <main className="pt-[72px] md:pl-[240px] min-h-screen w-full">
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
           {children}
         </Tabs>
