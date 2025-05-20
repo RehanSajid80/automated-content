@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { createContentPayload } from "@/utils/payloadUtils";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContentCreatorDialogProps {
   onClose: () => void;
@@ -45,6 +45,7 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
   const [contentWebhookUrl, setContentWebhookUrl] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { getContentWebhookUrl } = useN8nConfig();
   const { sendToN8n, isLoading: isN8nLoading } = useN8nAgent();
@@ -140,12 +141,59 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
     setGeneratedContent(content);
   };
   
-  const handleSave = () => {
-    toast({
-      title: "Content Saved",
-      description: "Your content has been saved to your library.",
-    });
-    onClose();
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      
+      if (!generatedContent || generatedContent.trim().length === 0) {
+        toast({
+          title: "No Content to Save",
+          description: "Please generate content first",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log(`ContentCreatorDialog: Saving content with type: ${contentType}`);
+      
+      const selectedType = contentTypes.find(t => t.id === contentType);
+      
+      const { data, error } = await supabase
+        .from('content_library')
+        .insert([
+          {
+            content: generatedContent,
+            content_type: contentType, // Use the current tab as content type
+            is_saved: true,
+            title: `${selectedType?.name || contentType} content`,
+            topic_area: 'workspace-management',
+            keywords: []
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Dispatch event to notify other components about content update
+      window.dispatchEvent(new CustomEvent('content-updated'));
+      
+      toast({
+        title: "Content Saved",
+        description: `Your ${selectedType?.name || contentType} has been saved to your library.`,
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error saving content:", error);
+      toast({
+        title: "Error Saving Content",
+        description: "Please try again or contact support",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

@@ -45,11 +45,13 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
         return;
       }
       
+      console.log(`AIContentGenerator: Saving content with type: ${sectionKey}`);
+      
       const { data, error } = await supabase
         .from('content_library')
         .insert([
           {
-            content_type: sectionKey,
+            content_type: sectionKey, // Ensure we use the correct section key as the content_type
             content: contentToSave,
             title: `Generated ${sectionKey} content`,
             topic_area: topicArea || 'general',

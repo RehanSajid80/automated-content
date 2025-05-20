@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getTypeLabel } from "../utils/content-type-utils";
 
 interface ContentActionsProps {
   content: string;
@@ -39,6 +40,9 @@ export const ContentActions: React.FC<ContentActionsProps> = ({
     }
   };
 
+  // Get proper display label for the content type
+  const contentTypeLabel = getTypeLabel(section);
+
   return (
     <div className="flex space-x-2 mt-4">
       <Button variant="outline" onClick={handleCopyContent}>
@@ -53,7 +57,7 @@ export const ContentActions: React.FC<ContentActionsProps> = ({
         ) : (
           <>
             <Save className="w-4 h-4 mr-2" />
-            Save {section.charAt(0).toUpperCase() + section.slice(1)} Content
+            Save {contentTypeLabel}
           </>
         )}
       </Button>

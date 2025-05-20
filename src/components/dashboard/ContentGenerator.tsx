@@ -12,6 +12,8 @@ import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { toast } from "@/components/ui/use-toast";
 import { createContentPayload } from "@/utils/payloadUtils";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
+import { supabase } from "@/integrations/supabase/client";
+import GeneratedContent from "./GeneratedContent";
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ 
   className, 
@@ -80,6 +82,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       });
 
       console.log("Using content webhook URL:", currentWebhookUrl);
+      console.log(`Generating content for type: ${activeTab}`);
       
       const result = await sendToN8n({
         customPayload: payload
@@ -109,14 +112,58 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     handleSuggestUrl(keywords);
   };
 
-  // Add content save handler to ensure it dispatches the update event
-  const handleContentSave = (content: string, contentType: string) => {
+  // Handle content change
+  const handleContentChange = (newContent: string) => {
+    setGeneratedContent(newContent);
+  };
+
+  // Handle content save
+  const handleSaveContent = async () => {
     try {
-      console.log(`ContentGenerator: Saving ${contentType} content`);
-      // Make sure the event is dispatched after content is saved
-      window.dispatchEvent(new Event('content-updated'));
+      if (!generatedContent || generatedContent.trim().length === 0) {
+        toast({
+          title: "No Content to Save",
+          description: "Please generate content first",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log(`ContentGenerator: Saving content with type: ${activeTab}`);
+      
+      const { data, error } = await supabase
+        .from('content_library')
+        .insert([
+          {
+            content: generatedContent,
+            content_type: activeTab, // Use the current active tab as content type
+            is_saved: true,
+            title: `Generated ${activeTab} content`,
+            topic_area: 'workspace-management',
+            keywords: keywords.split(',').map(k => k.trim())
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      console.log('ContentGenerator: Content saved successfully');
+      
+      // Dispatch event to notify other components about content update
+      window.dispatchEvent(new CustomEvent('content-updated'));
+      
+      toast({
+        title: "Content Saved",
+        description: `Your ${activeTab} content has been saved to the library`,
+      });
     } catch (error) {
       console.error('Error in content save handler:', error);
+      toast({
+        title: "Error Saving Content",
+        description: "Please try again or contact support",
+        variant: "destructive"
+      });
     }
   };
 
@@ -157,9 +204,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
             />
             
             {generatedContent && activeTab === type.id && (
-              <AIContentDisplay
-                content={[{ output: generatedContent }]}
-                onClose={() => setGeneratedContent("")}
+              <GeneratedContent
+                content={generatedContent}
+                onContentChange={handleContentChange}
+                activeTab={activeTab}
               />
             )}
           </TabsContent>

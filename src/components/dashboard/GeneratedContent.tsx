@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getTypeLabel } from "./utils/content-type-utils";
 
 interface GeneratedContentProps {
   content: string;
@@ -25,6 +26,13 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
   const handleSave = async () => {
     try {
+      if (!content || content.trim().length === 0) {
+        toast.error("No content to save", {
+          description: "Please generate content first"
+        });
+        return;
+      }
+      
       // Determine appropriate title based on content type
       let contentTitle = '';
       
@@ -45,12 +53,14 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
           contentTitle = `Generated ${activeTab} content`;
       }
       
+      console.log(`Saving content with type: ${activeTab}`);
+      
       const { data, error } = await supabase
         .from('content_library')
         .insert([
           {
             content: content,
-            content_type: activeTab, // Ensure we use the activeTab as the content_type
+            content_type: activeTab, // Make sure we use the activeTab as the content_type
             is_saved: true,
             title: contentTitle,
             topic_area: 'workspace-management',
@@ -65,7 +75,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
       console.log('Content saved successfully, dispatching content-updated event');
       
       // Dispatch event to refresh content lists and stats
-      window.dispatchEvent(new Event('content-updated'));
+      window.dispatchEvent(new CustomEvent('content-updated'));
 
       toast.success("Content saved successfully!", {
         description: activeTab === 'social' 
@@ -80,6 +90,9 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
       });
     }
   };
+
+  // Get proper display label for the content type
+  const contentTypeLabel = getTypeLabel(activeTab);
 
   return (
     <div className="rounded-lg border border-border p-4 mt-4 animate-fade-in">
@@ -98,7 +111,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
             className="h-8 text-xs px-2"
             onClick={handleSave}
           >
-            {activeTab === 'social' ? 'Save Social Posts' : `Save ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`}
+            Save {contentTypeLabel}
           </Button>
           <Button 
             size="sm" 

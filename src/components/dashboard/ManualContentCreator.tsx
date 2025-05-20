@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ContentForm, ContentFormData } from "./content-creator/ContentForm";
@@ -113,12 +114,21 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
 
   const handleSaveContent = async () => {
     try {
+      if (!generatedContent || generatedContent.trim().length === 0) {
+        toast.error("No content to save", {
+          description: "Please generate content first"
+        });
+        return;
+      }
+      
+      console.log(`ManualContentCreator: Saving content with type: ${currentContentType}`);
+      
       const { data, error } = await supabase
         .from('content_library')
         .insert([
           {
             content: generatedContent,
-            content_type: currentContentType,
+            content_type: currentContentType, // Use the selected content type
             is_saved: true,
             title: `Generated ${currentContentType} content`,
             topic_area: 'workspace-management',
@@ -131,7 +141,8 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
       if (error) throw error;
 
       console.log('ManualContentCreator: Content saved successfully, dispatching content-updated event');
-      window.dispatchEvent(new Event('content-updated'));
+      // Use CustomEvent to ensure compatibility across browsers
+      window.dispatchEvent(new CustomEvent('content-updated'));
       
       toast.success("Content saved successfully!", {
         description: `Your ${currentContentType} content has been saved to the library`
