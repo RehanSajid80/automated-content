@@ -16,7 +16,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children
 }) => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-full">
       <Header activeTab={activeTab} onTabChange={onTabChange} />
       <Sidebar />
       
