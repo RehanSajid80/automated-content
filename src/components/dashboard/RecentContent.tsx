@@ -9,7 +9,7 @@ import { Library } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const RecentContent = () => {
-  const { recentContent, isLoading, error, refreshContent } = useRecentContent();
+  const { recentContent, isLoading, fetchRecentContent } = useRecentContent();
   const navigate = useNavigate();
 
   const handleCopyContent = async (contentId: string) => {
@@ -43,6 +43,10 @@ const RecentContent = () => {
     navigate("/library");
   };
 
+  const refreshContent = () => {
+    fetchRecentContent();
+  };
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 animate-pulse">
@@ -56,13 +60,23 @@ const RecentContent = () => {
     );
   }
 
-  if (error) {
+  // Add error handling for when fetchRecentContent fails
+  if (!recentContent || recentContent.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-6">
         <h3 className="text-lg font-semibold mb-4">Recent Content</h3>
         <div className="p-6 text-center">
-          <p className="text-red-500">Error loading recent content</p>
-          <Button onClick={refreshContent} className="mt-2">Retry</Button>
+          {!recentContent ? (
+            <>
+              <p className="text-red-500">Error loading recent content</p>
+              <Button onClick={refreshContent} className="mt-2">Retry</Button>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground">No content has been created yet</p>
+              <Button className="mt-4">Create Content</Button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -78,31 +92,24 @@ const RecentContent = () => {
         </Button>
       </div>
       
-      {recentContent.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No content has been created yet</p>
-          <Button className="mt-4">Create Content</Button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {recentContent.slice(0, 5).map((content) => (
-            <ContentListItem 
-              key={content.id}
-              content={content}
-              onCopy={handleCopyContent}
-              onClick={handleContentClick}
-            />
-          ))}
-          
-          {recentContent.length > 5 && (
-            <div className="text-center pt-3">
-              <Button variant="link" onClick={handleViewLibrary}>
-                View all content
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="space-y-3">
+        {recentContent.slice(0, 5).map((content) => (
+          <ContentListItem 
+            key={content.id}
+            content={content}
+            onCopy={handleCopyContent}
+            onClick={handleContentClick}
+          />
+        ))}
+        
+        {recentContent.length > 5 && (
+          <div className="text-center pt-3">
+            <Button variant="link" onClick={handleViewLibrary}>
+              View all content
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
