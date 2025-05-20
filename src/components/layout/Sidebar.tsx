@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Sheet,
@@ -17,7 +18,8 @@ import {
   FileText,
   Share2,
   TrendingUp,
-  BrainCircuit
+  BrainCircuit,
+  Library
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,11 @@ const Sidebar = () => {
           title: "Content",
           icon: <FileText className="h-5 w-5" />,
           href: "/?tab=content"
+        },
+        {
+          title: "Content Library",
+          icon: <Library className="h-5 w-5" />,
+          href: "/library"
         },
         {
           title: "Keywords",

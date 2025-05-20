@@ -1,23 +1,18 @@
 
 import React from "react";
-import { FileText, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import { ContentListItem } from "./components/ContentListItem";
 import { useRecentContent } from "./hooks/useRecentContent";
+import { ContentListItem } from "./components/ContentListItem";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Library } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-interface RecentContentProps {
-  className?: string;
-}
+const RecentContent = () => {
+  const { recentContent, isLoading, error, refreshContent } = useRecentContent();
+  const navigate = useNavigate();
 
-const RecentContent: React.FC<RecentContentProps> = ({ className }) => {
-  const { recentContent, isLoading } = useRecentContent();
-  const { toast } = useToast();
-
-  const copyContent = async (contentId: string) => {
+  const handleCopyContent = async (contentId: string) => {
     try {
       const { data, error } = await supabase
         .from('content_library')
@@ -29,66 +24,83 @@ const RecentContent: React.FC<RecentContentProps> = ({ className }) => {
 
       if (data?.content) {
         await navigator.clipboard.writeText(data.content);
-        toast({
-          title: "Copied to clipboard",
-          description: "Content copied successfully",
-        });
+        toast.success("Content copied to clipboard");
       }
     } catch (error) {
       console.error("Error copying content:", error);
-      toast({
-        title: "Error",
-        description: "Failed to copy content",
-        variant: "destructive",
-      });
+      toast.error("Failed to copy content");
     }
   };
 
-  const viewLibrary = () => {
-    const event = new CustomEvent('tab-change', { detail: { tab: 'content' } });
-    window.dispatchEvent(event);
-  };
-
-  const viewContent = (contentId: string, topicArea: string) => {
+  const handleContentClick = (id: string, type: string) => {
+    // Navigate to content details view with the selected content ID
     window.dispatchEvent(new CustomEvent('navigate-to-content-details', { 
-      detail: { contentIds: [contentId], topicArea: topicArea || 'generated-content' } 
+      detail: { contentIds: [id], topicArea: 'recent-content' } 
     }));
   };
 
+  const handleViewLibrary = () => {
+    navigate("/library");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-6 animate-pulse">
+        <div className="h-8 w-40 bg-muted rounded mb-6"></div>
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-24 bg-muted rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-6">
+        <h3 className="text-lg font-semibold mb-4">Recent Content</h3>
+        <div className="p-6 text-center">
+          <p className="text-red-500">Error loading recent content</p>
+          <Button onClick={refreshContent} className="mt-2">Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-500", className)}>
-      <div className="flex items-center justify-between mb-6">
+    <div className="rounded-xl border border-border bg-card p-6">
+      <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Recent Content</h3>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-xs"
-          onClick={viewLibrary}
-        >
-          View Library <ArrowRight size={14} className="ml-1" />
+        <Button variant="outline" onClick={handleViewLibrary}>
+          <Library className="w-4 h-4 mr-2" />
+          View Library
         </Button>
       </div>
       
-      {isLoading ? (
-        <div className="flex justify-center items-center h-32">
-          <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      ) : recentContent.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <FileText className="mx-auto h-8 w-8 mb-2 opacity-50" />
-          <p>No content created yet</p>
-          <p className="text-sm mt-1">Use the content generator to create your first piece of content</p>
+      {recentContent.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No content has been created yet</p>
+          <Button className="mt-4">Create Content</Button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {recentContent.map((content) => (
-            <ContentListItem
+        <div className="space-y-3">
+          {recentContent.slice(0, 5).map((content) => (
+            <ContentListItem 
               key={content.id}
               content={content}
-              onCopy={copyContent}
-              onClick={viewContent}
+              onCopy={handleCopyContent}
+              onClick={handleContentClick}
             />
           ))}
+          
+          {recentContent.length > 5 && (
+            <div className="text-center pt-3">
+              <Button variant="link" onClick={handleViewLibrary}>
+                View all content
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

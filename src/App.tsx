@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Index from "./pages/Index";
+import ContentLibraryPage from "./pages/ContentLibraryPage";
 import NotFound from "./pages/NotFound";
 import ApiConnectionsManager from "./components/settings/ApiConnectionsManager";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -49,6 +50,7 @@ const App = () => (
           <RouteChangeHandler />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/library" element={<ContentLibraryPage />} />
             <Route path="/api-connections" element={<ApiConnectionsManager />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
