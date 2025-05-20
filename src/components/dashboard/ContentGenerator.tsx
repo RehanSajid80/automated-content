@@ -109,6 +109,17 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     handleSuggestUrl(keywords);
   };
 
+  // Add content save handler to ensure it dispatches the update event
+  const handleContentSave = (content: string, contentType: string) => {
+    try {
+      console.log(`ContentGenerator: Saving ${contentType} content`);
+      // Make sure the event is dispatched after content is saved
+      window.dispatchEvent(new Event('content-updated'));
+    } catch (error) {
+      console.error('Error in content save handler:', error);
+    }
+  };
+
   return (
     <div className={cn("", className)}>
       <Tabs defaultValue="pillar" value={activeTab} onValueChange={setActiveTab} className="w-full">

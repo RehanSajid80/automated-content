@@ -19,29 +19,50 @@ export const useContentStats = () => {
 
   const fetchContentStats = async () => {
     try {
-      const { count: pillarCount } = await supabase
+      console.log('Fetching content stats for all content types...');
+      
+      // First, query for pillar content
+      const { count: pillarCount, error: pillarError } = await supabase
         .from('content_library')
         .select('id', { count: 'exact' })
         .eq('content_type', 'pillar')
         .eq('is_saved', true);
 
-      const { count: supportCount } = await supabase
+      if (pillarError) throw pillarError;
+      
+      // Query for support content
+      const { count: supportCount, error: supportError } = await supabase
         .from('content_library')
         .select('id', { count: 'exact' })
         .eq('content_type', 'support')
         .eq('is_saved', true);
-
-      const { count: metaCount } = await supabase
+        
+      if (supportError) throw supportError;
+      
+      // Query for meta content
+      const { count: metaCount, error: metaError } = await supabase
         .from('content_library')
         .select('id', { count: 'exact' })
         .eq('content_type', 'meta')
         .eq('is_saved', true);
-
-      const { count: socialCount } = await supabase
+        
+      if (metaError) throw metaError;
+      
+      // Query for social content
+      const { count: socialCount, error: socialError } = await supabase
         .from('content_library')
         .select('id', { count: 'exact' })
         .eq('content_type', 'social')
         .eq('is_saved', true);
+        
+      if (socialError) throw socialError;
+
+      console.log('Content stats fetched:', { 
+        pillarCount: pillarCount || 0, 
+        supportCount: supportCount || 0, 
+        metaCount: metaCount || 0, 
+        socialCount: socialCount || 0 
+      });
 
       setContentStats({
         pillarCount: pillarCount || 0,
@@ -49,8 +70,6 @@ export const useContentStats = () => {
         metaCount: metaCount || 0,
         socialCount: socialCount || 0
       });
-      
-      console.log('Content stats fetched:', { pillarCount, supportCount, metaCount, socialCount });
     } catch (error) {
       console.error('Error fetching content stats:', error);
     }

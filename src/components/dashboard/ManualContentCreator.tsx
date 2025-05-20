@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ContentForm, ContentFormData } from "./content-creator/ContentForm";
@@ -131,7 +130,9 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
 
       if (error) throw error;
 
+      console.log('ManualContentCreator: Content saved successfully, dispatching content-updated event');
       window.dispatchEvent(new Event('content-updated'));
+      
       toast.success("Content saved successfully!", {
         description: `Your ${currentContentType} content has been saved to the library`
       });

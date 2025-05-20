@@ -60,12 +60,14 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
 
       if (error) throw error;
 
-      toast.success("Content saved", {
-        description: `Your ${sectionKey} content has been saved to the library`
-      });
+      console.log('AIContentGenerator: Content saved successfully, dispatching content-updated event');
       
       // Dispatch event to notify other components about content update
       window.dispatchEvent(new CustomEvent('content-updated'));
+
+      toast.success("Content saved", {
+        description: `Your ${sectionKey} content has been saved to the library`
+      });
 
     } catch (error) {
       console.error('Error saving content:', error);
