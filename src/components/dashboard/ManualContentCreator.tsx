@@ -18,12 +18,13 @@ interface ManualContentCreatorProps {
 const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
+  const [contentTitle, setContentTitle] = useState("");
   const [currentContentType, setCurrentContentType] = useState("pillar");
   const [lastFormData, setLastFormData] = useState<ContentFormData | null>(null);
   const [contentWebhookUrl, setContentWebhookUrl] = useState("");
   
   // Add N8N agent for webhook calls
-  const { sendToN8n, isLoading: isN8nLoading } = useN8nAgent();
+  const { sendToN8n, isLoading: isN8nLoading, contentTitle: apiContentTitle } = useN8nAgent();
   
   // Use the N8N config hook to get the content webhook URL
   const { getContentWebhookUrl } = useN8nConfig();
@@ -34,6 +35,13 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
     console.log("Manual Creator: Content webhook URL from config:", webhookUrl);
     setContentWebhookUrl(webhookUrl);
   }, []);
+
+  // Effect to update title when API returns one
+  useEffect(() => {
+    if (apiContentTitle) {
+      setContentTitle(apiContentTitle);
+    }
+  }, [apiContentTitle]);
   
   const handleFormSubmit = async (data: ContentFormData) => {
     setIsGenerating(true);
@@ -72,6 +80,16 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
       if (result && result.content && result.content.length > 0) {
         // Update the generated content
         setGeneratedContent(result.content[0].output || "");
+        
+        // Update the title if available
+        if (result.title) {
+          setContentTitle(result.title);
+        } else if (result.content[0].title) {
+          setContentTitle(result.content[0].title);
+        } else {
+          // Generate a default title
+          setContentTitle(`${selectedType?.name || data.contentType} on ${data.keywords}`);
+        }
       } else if (result && result.rawResponse) {
         // Try to use raw response if no formatted content
         setGeneratedContent(result.rawResponse);
@@ -123,6 +141,9 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
       
       console.log(`ManualContentCreator: Saving content with type: ${currentContentType}`);
       
+      // Use the title if available, otherwise create a default one
+      const title = contentTitle || `Generated ${currentContentType} content`;
+      
       const { data, error } = await supabase
         .from('content_library')
         .insert([
@@ -130,7 +151,7 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
             content: generatedContent,
             content_type: currentContentType, // Use the selected content type
             is_saved: true,
-            title: `Generated ${currentContentType} content`,
+            title: title,
             topic_area: 'workspace-management',
             keywords: []
           }
@@ -166,6 +187,11 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
     }
   };
 
+  // Handle title change
+  const handleTitleChange = (newTitle: string) => {
+    setContentTitle(newTitle);
+  };
+
   return (
     <div className={cn("rounded-xl border border-border bg-card p-6 animate-slide-up animation-delay-500", className)}>
       <h3 className="text-lg font-semibold mb-6">Manual Content Creator</h3>
@@ -182,6 +208,8 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
           onRegenerateContent={handleRegenerateContent}
           onSaveContent={handleSaveContent}
           contentType={currentContentType}
+          title={contentTitle}
+          onTitleChange={handleTitleChange}
         />
       )}
     </div>

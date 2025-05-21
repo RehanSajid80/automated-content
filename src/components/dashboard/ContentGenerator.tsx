@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +21,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   const [activeTab, setActiveTab] = useState("pillar");
   const [keywords, setKeywords] = useState("");
   const [socialContext, setSocialContext] = useState("");
+  const [contentTitle, setContentTitle] = useState("");
   
   const {
     targetUrl,
@@ -42,7 +42,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   const { getContentWebhookUrl } = useN8nConfig();
   
   // Add N8N agent for custom webhook calls
-  const { sendToN8n, isLoading: isN8nLoading, generatedContent: n8nContent, setGeneratedContent: setN8nContent } = useN8nAgent();
+  const { 
+    sendToN8n, 
+    isLoading: isN8nLoading, 
+    generatedContent: n8nContent, 
+    contentTitle,
+    setGeneratedContent: setN8nContent 
+  } = useN8nAgent();
 
   // Effect to get content webhook URL on component mount
   const [contentWebhookUrl, setContentWebhookUrl] = useState("");
@@ -92,6 +98,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       if (result && result.content && result.content.length > 0) {
         // Update the generated content
         setGeneratedContent(result.content[0].output || "");
+        
+        // Update the content title if available
+        if (result.title) {
+          setContentTitle(result.title);
+        } else if (result.content[0].title) {
+          setContentTitle(result.content[0].title);
+        }
       } else if (result && result.rawResponse) {
         // Try to use raw response if no formatted content
         setGeneratedContent(result.rawResponse);
@@ -131,6 +144,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       
       console.log(`ContentGenerator: Saving content with type: ${activeTab}`);
       
+      // Use the generated title or create a default one
+      const title = contentTitle || `Generated ${activeTab} content`;
+      
       const { data, error } = await supabase
         .from('content_library')
         .insert([
@@ -138,7 +154,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
             content: generatedContent,
             content_type: activeTab, // Use the current active tab as content type
             is_saved: true,
-            title: `Generated ${activeTab} content`,
+            title: title,
             topic_area: 'workspace-management',
             keywords: keywords.split(',').map(k => k.trim())
           }

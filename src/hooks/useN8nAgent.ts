@@ -23,6 +23,7 @@ export const useN8nAgent = () => {
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [generatedContent, setGeneratedContent] = useState<any[]>([]);
+  const [contentTitle, setContentTitle] = useState<string>('');
   const [rawResponse, setRawResponse] = useState<any>(null);
   
   const { getWebhookUrl } = useN8nConfig();
@@ -99,9 +100,14 @@ export const useN8nAgent = () => {
           setSuggestions(result.suggestions);
         }
         
+        if (result.title) {
+          setContentTitle(result.title);
+        }
+        
         return {
           suggestions: result.suggestions || [],
           content: result.content || [],
+          title: result.title || '',
           rawResponse: responseText
         };
       } catch (fetchError: any) {
@@ -124,7 +130,7 @@ export const useN8nAgent = () => {
         variant: "destructive"
       });
       
-      return { suggestions: [], content: [], error: errorMessage };
+      return { suggestions: [], content: [], title: '', error: errorMessage };
     } finally {
       setIsLoading(false);
     }
@@ -135,8 +141,10 @@ export const useN8nAgent = () => {
     error,
     suggestions,
     generatedContent,
+    contentTitle,
     rawResponse,
     sendToN8n,
-    setGeneratedContent
+    setGeneratedContent,
+    setContentTitle
   };
 };

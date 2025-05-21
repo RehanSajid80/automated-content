@@ -47,13 +47,37 @@ export const AIContentGenerator: React.FC<AIContentGeneratorProps> = ({
       
       console.log(`AIContentGenerator: Saving content with type: ${sectionKey}`);
       
+      // Get title from the first few words of content or generate a default title
+      let title = `Generated ${sectionKey} content`;
+      
+      // Try to extract a meaningful title from the content
+      if (sectionKey === 'pillar') {
+        // For pillar content, try to find the first heading
+        const headingMatch = contentToSave.match(/^#\s+(.+)$/m);
+        if (headingMatch && headingMatch[1]) {
+          title = headingMatch[1];
+        } else {
+          // Fallback to first line
+          const firstLine = contentToSave.split('\n')[0]?.trim();
+          if (firstLine && firstLine.length > 5) {
+            title = firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+          }
+        }
+      } else if (sectionKey === 'social') {
+        // For social posts, use the first sentence
+        const firstSentence = contentToSave.split('.')[0]?.trim();
+        if (firstSentence && firstSentence.length > 5) {
+          title = firstSentence.length > 50 ? firstSentence.substring(0, 50) + '...' : firstSentence;
+        }
+      }
+      
       const { data, error } = await supabase
         .from('content_library')
         .insert([
           {
             content_type: sectionKey, // Ensure we use the correct section key as the content_type
             content: contentToSave,
-            title: `Generated ${sectionKey} content`,
+            title: title,
             topic_area: topicArea || 'general',
             is_saved: true
           }

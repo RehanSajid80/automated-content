@@ -25,6 +25,7 @@ export const useN8nResponseProcessor = () => {
     // Initialize result containers
     let suggestions: any[] = [];
     let contentArray: any[] = [];
+    let title = "";
     
     // Handle suggestions if they exist
     if (data && data.suggestions) {
@@ -32,41 +33,51 @@ export const useN8nResponseProcessor = () => {
       suggestions = Array.isArray(data.suggestions) ? data.suggestions : [data.suggestions];
     }
     
+    // Extract title if it exists
+    if (data && data.title) {
+      console.log("Found title in response:", data.title);
+      title = data.title;
+    }
+    
     // Handle content with multiple possible formats
     if (data) {
       if (data.output) {
         console.log("Found output property in response");
-        contentArray = [{ output: data.output }];
+        contentArray = [{ output: data.output, title: data.title || "" }];
       } else if (data.content) {
         console.log("Found content property in response");
-        contentArray = Array.isArray(data.content) ? data.content : [{ output: data.content }];
+        contentArray = Array.isArray(data.content) 
+          ? data.content.map(item => ({ ...item, title: item.title || data.title || "" }))
+          : [{ output: data.content, title: data.title || "" }];
       } else if (typeof data === "string") {
         console.log("Response is a string, using as output");
-        contentArray = [{ output: data }];
+        contentArray = [{ output: data, title: "" }];
       } else if (data.results) {
         console.log("Found results property in response");
-        contentArray = Array.isArray(data.results) ? data.results : [{ output: data.results }];
+        contentArray = Array.isArray(data.results) 
+          ? data.results.map(item => ({ ...item, title: item.title || data.title || "" }))
+          : [{ output: data.results, title: data.title || "" }];
       } else if (data.text) {
         console.log("Found text property in response");
-        contentArray = [{ output: data.text }];
+        contentArray = [{ output: data.text, title: data.title || "" }];
       } else if (data.data) {
         console.log("Found data property in response");
         const content = typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
-        contentArray = [{ output: content }];
+        contentArray = [{ output: content, title: data.title || "" }];
       } else {
         // As a last resort, stringify the whole response
         console.log("No standard content structure found, using entire response");
-        contentArray = [{ output: JSON.stringify(data) }];
+        contentArray = [{ output: JSON.stringify(data), title: "" }];
       }
       
       // Ensure every item has an output property
       contentArray = contentArray.map(item => {
         if (!item.output && item.content) {
-          return { ...item, output: item.content };
+          return { ...item, output: item.content, title: item.title || "" };
         } else if (!item.output) {
-          return { ...item, output: JSON.stringify(item) };
+          return { ...item, output: JSON.stringify(item), title: item.title || "" };
         }
-        return item;
+        return { ...item, title: item.title || "" };
       });
       
       console.log("Finished processing content:", contentArray);
@@ -74,7 +85,8 @@ export const useN8nResponseProcessor = () => {
     
     return {
       suggestions,
-      content: contentArray
+      content: contentArray,
+      title
     };
   };
   

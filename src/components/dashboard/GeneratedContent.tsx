@@ -5,17 +5,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getTypeLabel } from "./utils/content-type-utils";
+import { Input } from "@/components/ui/input";
 
 interface GeneratedContentProps {
   content: string;
   onContentChange: (content: string) => void;
   activeTab: string;
+  title?: string;
+  onTitleChange?: (title: string) => void;
 }
 
 const GeneratedContent: React.FC<GeneratedContentProps> = ({
   content,
   onContentChange,
-  activeTab
+  activeTab,
+  title,
+  onTitleChange
 }) => {
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -33,27 +38,29 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
         return;
       }
       
-      // Determine appropriate title based on content type
-      let contentTitle = '';
+      // Determine appropriate title based on content type if not provided
+      let contentTitle = title || '';
       
-      switch (activeTab) {
-        case 'social':
-          contentTitle = 'Social Media Posts';
-          break;
-        case 'pillar':
-          contentTitle = 'Pillar Content Article';
-          break;
-        case 'support':
-          contentTitle = 'Support Page Content';
-          break;
-        case 'meta':
-          contentTitle = 'SEO Meta Tags';
-          break;
-        default:
-          contentTitle = `Generated ${activeTab} content`;
+      if (!contentTitle) {
+        switch (activeTab) {
+          case 'social':
+            contentTitle = 'Social Media Posts';
+            break;
+          case 'pillar':
+            contentTitle = 'Pillar Content Article';
+            break;
+          case 'support':
+            contentTitle = 'Support Page Content';
+            break;
+          case 'meta':
+            contentTitle = 'SEO Meta Tags';
+            break;
+          default:
+            contentTitle = `Generated ${activeTab} content`;
+        }
       }
       
-      console.log(`Saving content with type: ${activeTab}`);
+      console.log(`Saving content with type: ${activeTab} and title: ${contentTitle}`);
       
       const { data, error } = await supabase
         .from('content_library')
@@ -123,6 +130,21 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
           </Button>
         </div>
       </div>
+      
+      {onTitleChange && (
+        <div className="mb-4">
+          <Input
+            value={title || ''}
+            onChange={(e) => onTitleChange(e.target.value)}
+            className="w-full"
+            placeholder="Enter content title"
+          />
+          <div className="text-xs text-muted-foreground mt-1">
+            A title will help you identify this content in your library
+          </div>
+        </div>
+      )}
+      
       <Textarea 
         value={content}
         onChange={(e) => onContentChange(e.target.value)}
