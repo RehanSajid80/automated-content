@@ -16,7 +16,10 @@ const ContentActions: React.FC<ContentActionsProps> = ({ onView, onCopy, isLoadi
         variant="ghost" 
         size="sm"
         className="h-8 text-xs"
-        onClick={onView}
+        onClick={(e) => {
+          e.stopPropagation();
+          onView(e);
+        }}
         disabled={isLoading}
       >
         {isLoading ? (
@@ -30,7 +33,10 @@ const ContentActions: React.FC<ContentActionsProps> = ({ onView, onCopy, isLoadi
         variant="ghost" 
         size="sm"
         className="h-8 text-xs"
-        onClick={onCopy}
+        onClick={(e) => {
+          e.stopPropagation();
+          onCopy(e);
+        }}
       >
         <Copy className="h-3 w-3 mr-1" />
         Copy

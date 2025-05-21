@@ -25,7 +25,6 @@ const ContentCard: React.FC<ContentCardProps> = ({ item, onCopy, onClick }) => {
   const handleViewClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsLoading(true);
-    setViewDialogOpen(true);
     
     try {
       const { data, error } = await supabase
@@ -37,6 +36,7 @@ const ContentCard: React.FC<ContentCardProps> = ({ item, onCopy, onClick }) => {
       if (error) throw error;
       
       setContentText(data?.content || "No content found");
+      setViewDialogOpen(true);
     } catch (error) {
       console.error("Error fetching content:", error);
       toast({
