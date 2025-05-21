@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ContentCreatorDialog from "@/components/dashboard/ContentCreatorDialog";
+import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
   className?: string;
@@ -22,9 +23,17 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onTabChange }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const navigate = useNavigate();
   
   const handleTabClick = (tab: string) => (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // Special case for Content Library tab - navigate to the library page
+    if (tab === "library") {
+      navigate("/library");
+      return;
+    }
+    
     if (onTabChange) {
       onTabChange(tab);
     }
@@ -167,7 +176,7 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
                   href="#library" 
                   onClick={(e) => {
                     e.preventDefault();
-                    if (onTabChange) onTabChange("library");
+                    navigate("/library");
                   }}
                   className={cn(
                     "px-3 py-2 rounded-md",
