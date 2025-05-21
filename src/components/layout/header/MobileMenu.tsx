@@ -63,16 +63,6 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             Keywords
           </a>
           <a 
-            href="#library" 
-            onClick={handleNavigation("library")}
-            className={cn(
-              "px-3 py-2 rounded-md",
-              activeTab === "library" ? "bg-secondary" : ""
-            )}
-          >
-            Content Library
-          </a>
-          <a 
             href="#content" 
             onClick={handleNavigation("content")}
             className={cn(
@@ -91,6 +81,16 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             )}
           >
             Analytics
+          </a>
+          <a 
+            href="#library" 
+            onClick={handleNavigation("library")}
+            className={cn(
+              "px-3 py-2 rounded-md",
+              activeTab === "library" ? "bg-secondary" : ""
+            )}
+          >
+            Content Library
           </a>
           <div className="mt-4 pt-4 border-t">
             <Button 

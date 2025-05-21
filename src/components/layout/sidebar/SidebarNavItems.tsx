@@ -44,11 +44,6 @@ export const navigationItems: NavigationSection[] = [
         href: "/?tab=content"
       },
       {
-        title: "Content Library",
-        icon: <Library className="h-5 w-5" />,
-        href: "/library"
-      },
-      {
         title: "Keywords",
         icon: <Tag className="h-5 w-5" />,
         href: "/?tab=keywords"
@@ -57,6 +52,11 @@ export const navigationItems: NavigationSection[] = [
         title: "Analytics",
         icon: <TrendingUp className="h-5 w-5" />,
         href: "/?tab=analytics"
+      },
+      {
+        title: "Content Library",
+        icon: <Library className="h-5 w-5" />,
+        href: "/library"
       },
       {
         title: "AI Suggestions",

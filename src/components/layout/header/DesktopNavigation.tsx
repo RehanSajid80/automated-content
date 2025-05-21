@@ -27,13 +27,6 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ activeTab, onTabC
         Keywords
       </NavigationItem>
       <NavigationItem
-        href="#library" 
-        onClick={handleTabClick("library")}
-        isActive={activeTab === "library"}
-      >
-        Content Library
-      </NavigationItem>
-      <NavigationItem
         href="#content" 
         onClick={handleTabClick("content")}
         isActive={activeTab === "content"}
@@ -46,6 +39,13 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ activeTab, onTabC
         isActive={activeTab === "analytics"}
       >
         Analytics
+      </NavigationItem>
+      <NavigationItem
+        href="#library" 
+        onClick={handleTabClick("library")}
+        isActive={activeTab === "library"}
+      >
+        Content Library
       </NavigationItem>
     </nav>
   );
