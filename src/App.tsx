@@ -17,7 +17,6 @@ const queryClient = new QueryClient();
 // RouteChangeHandler component to listen for URL changes
 const RouteChangeHandler = () => {
   const location = useLocation();
-  const navigate = useNavigate();
 
   React.useEffect(() => {
     // On route change, check for tab param and dispatch event

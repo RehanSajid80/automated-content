@@ -4,11 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import ContentLibrary from "@/components/dashboard/ContentLibrary";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useNavigate } from "react-router-dom";
 
 const ContentLibraryPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState("library");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Listen for content update events
@@ -24,7 +26,12 @@ const ContentLibraryPage = () => {
   }, []);
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
+    if (tab !== "library") {
+      // Navigate to the main page with the selected tab
+      navigate(`/?tab=${tab}`);
+    } else {
+      setActiveTab(tab);
+    }
   };
 
   return (

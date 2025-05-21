@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Sparkles, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ContentCreatorDialog from "@/components/dashboard/ContentCreatorDialog";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface HeaderProps {
   className?: string;
@@ -24,6 +24,22 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onTabChange }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Sync the current tab with URL location
+  useEffect(() => {
+    // Return if we're on a different page than home
+    if (location.pathname !== "/" && onTabChange) {
+      return;
+    }
+    
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get("tab");
+    
+    if (tabParam && onTabChange) {
+      onTabChange(tabParam);
+    }
+  }, [location, onTabChange]);
   
   const handleTabClick = (tab: string) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -34,7 +50,9 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
       return;
     }
     
+    // For other tabs, navigate to the home page with the tab parameter
     if (onTabChange) {
+      navigate(`/?tab=${tab}`);
       onTabChange(tab);
     }
   };
@@ -150,6 +168,7 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
                   href="#dashboard" 
                   onClick={(e) => {
                     e.preventDefault();
+                    navigate("/?tab=dashboard");
                     if (onTabChange) onTabChange("dashboard");
                   }}
                   className={cn(
@@ -163,6 +182,7 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
                   href="#keywords" 
                   onClick={(e) => {
                     e.preventDefault();
+                    navigate("/?tab=keywords");
                     if (onTabChange) onTabChange("keywords");
                   }}
                   className={cn(
@@ -189,6 +209,7 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
                   href="#content" 
                   onClick={(e) => {
                     e.preventDefault();
+                    navigate("/?tab=content");
                     if (onTabChange) onTabChange("content");
                   }}
                   className={cn(
@@ -202,6 +223,7 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
                   href="#analytics" 
                   onClick={(e) => {
                     e.preventDefault();
+                    navigate("/?tab=analytics");
                     if (onTabChange) onTabChange("analytics");
                   }}
                   className={cn(
