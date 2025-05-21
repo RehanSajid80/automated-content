@@ -1,14 +1,15 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Eye, Copy } from "lucide-react";
+import { Eye, Copy, Loader2 } from "lucide-react";
 
 interface ContentActionsProps {
   onView: (e: React.MouseEvent) => void;
   onCopy: (e: React.MouseEvent) => void;
+  isLoading?: boolean;
 }
 
-const ContentActions: React.FC<ContentActionsProps> = ({ onView, onCopy }) => {
+const ContentActions: React.FC<ContentActionsProps> = ({ onView, onCopy, isLoading = false }) => {
   return (
     <div className="flex justify-end space-x-1">
       <Button 
@@ -16,8 +17,13 @@ const ContentActions: React.FC<ContentActionsProps> = ({ onView, onCopy }) => {
         size="sm"
         className="h-8 text-xs"
         onClick={onView}
+        disabled={isLoading}
       >
-        <Eye className="h-3 w-3 mr-1" />
+        {isLoading ? (
+          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+        ) : (
+          <Eye className="h-3 w-3 mr-1" />
+        )}
         View
       </Button>
       <Button 
