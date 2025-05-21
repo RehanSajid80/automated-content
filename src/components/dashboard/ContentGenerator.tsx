@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +22,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   const [activeTab, setActiveTab] = useState("pillar");
   const [keywords, setKeywords] = useState("");
   const [socialContext, setSocialContext] = useState("");
-  const [contentTitle, setContentTitle] = useState("");
+  const [localContentTitle, setLocalContentTitle] = useState("");
   
   const {
     targetUrl,
@@ -47,7 +48,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     isLoading: isN8nLoading, 
     generatedContent: n8nContent, 
     contentTitle,
-    setGeneratedContent: setN8nContent 
+    setGeneratedContent: setN8nContent,
+    setContentTitle
   } = useN8nAgent();
 
   // Effect to get content webhook URL on component mount
@@ -102,8 +104,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
         // Update the content title if available
         if (result.title) {
           setContentTitle(result.title);
+          setLocalContentTitle(result.title);
         } else if (result.content[0].title) {
           setContentTitle(result.content[0].title);
+          setLocalContentTitle(result.content[0].title);
         }
       } else if (result && result.rawResponse) {
         // Try to use raw response if no formatted content
@@ -145,7 +149,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       console.log(`ContentGenerator: Saving content with type: ${activeTab}`);
       
       // Use the generated title or create a default one
-      const title = contentTitle || `Generated ${activeTab} content`;
+      const titleToUse = contentTitle || localContentTitle || `Generated ${activeTab} content`;
       
       const { data, error } = await supabase
         .from('content_library')
@@ -154,7 +158,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
             content: generatedContent,
             content_type: activeTab, // Use the current active tab as content type
             is_saved: true,
-            title: title,
+            title: titleToUse,
             topic_area: 'workspace-management',
             keywords: keywords.split(',').map(k => k.trim())
           }
