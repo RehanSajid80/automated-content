@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Sparkles, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,18 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
             )}
           >
             Keywords
+          </a>
+          <a 
+            href="#library" 
+            onClick={handleTabClick("library")}
+            className={cn(
+              "text-sm font-medium transition-colors px-3 py-2 rounded-md",
+              activeTab === "library" 
+                ? "bg-secondary/80 text-foreground" 
+                : "text-foreground/80 hover:text-primary hover:bg-secondary/50"
+            )}
+          >
+            Content Library
           </a>
           <a 
             href="#content" 
@@ -149,6 +162,19 @@ const Header: React.FC<HeaderProps> = ({ className, activeTab = "dashboard", onT
                   )}
                 >
                   Keywords
+                </a>
+                <a 
+                  href="#library" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onTabChange) onTabChange("library");
+                  }}
+                  className={cn(
+                    "px-3 py-2 rounded-md",
+                    activeTab === "library" ? "bg-secondary" : ""
+                  )}
+                >
+                  Content Library
                 </a>
                 <a 
                   href="#content" 

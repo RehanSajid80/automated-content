@@ -9,6 +9,16 @@ import ContentFilter from "./library/ContentFilter";
 import ContentTabs from "./library/ContentTabs";
 import ContentGrid from "./library/ContentGrid";
 import { ContentItem, ContentLibraryProps } from "./types/content-library";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const ITEMS_PER_PAGE = 9; // 3x3 grid
 
 const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
@@ -18,6 +28,7 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
 
   const contentTypes = [
@@ -103,6 +114,7 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
     }
     
     setFilteredItems(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [activeTab, searchTerm, contentItems]);
 
   const copyContent = async (contentId: string) => {
@@ -141,6 +153,43 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
       } 
     }));
   };
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    
+    // Always show first page
+    if (totalPages > 0) {
+      pages.push(1);
+    }
+    
+    // Add current page and surrounding pages
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      if (pages[pages.length - 1] !== i - 1) {
+        // Add ellipsis if there's a gap
+        pages.push(-1);
+      }
+      pages.push(i);
+    }
+    
+    // Add last page if needed
+    if (totalPages > 1) {
+      if (pages[pages.length - 1] !== totalPages - 1) {
+        // Add ellipsis if there's a gap
+        pages.push(-1);
+      }
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
 
   return (
     <div className={cn("space-y-6 w-full", className)}>
@@ -164,11 +213,57 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
         
         <TabsContent value={activeTab} className="w-full mt-2">
           <ContentGrid 
-            items={filteredItems}
+            items={paginatedItems}
             isLoading={isLoading}
             copyContent={copyContent}
             viewContent={viewContent}
           />
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination className="mt-8">
+              <PaginationContent>
+                {currentPage > 1 && (
+                  <PaginationItem>
+                    <PaginationPrevious href="#" onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(curr => Math.max(1, curr - 1));
+                    }} />
+                  </PaginationItem>
+                )}
+                
+                {getPageNumbers().map((page, i) => (
+                  page === -1 ? (
+                    <PaginationItem key={`ellipsis-${i}`}>
+                      <span className="flex h-9 w-9 items-center justify-center">...</span>
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={`page-${page}`}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(page);
+                        }}
+                        isActive={page === currentPage}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                ))}
+                
+                {currentPage < totalPages && (
+                  <PaginationItem>
+                    <PaginationNext href="#" onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(curr => Math.min(totalPages, curr + 1));
+                    }} />
+                  </PaginationItem>
+                )}
+              </PaginationContent>
+            </Pagination>
+          )}
         </TabsContent>
       </Tabs>
     </div>

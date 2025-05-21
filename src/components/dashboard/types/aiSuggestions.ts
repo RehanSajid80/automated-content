@@ -25,4 +25,5 @@ export interface AIContentGeneratorProps {
   topicArea: string;
   onSuggestionSelect: (suggestion: AISuggestion) => void;
   isLoading: boolean;
+  suggestions?: any[]; // Add this line to support paginated suggestions
 }
