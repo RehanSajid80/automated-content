@@ -15,6 +15,7 @@ interface ContentPayload {
   brand_voice: string;
   unique_points: string;
   internal_links: string;
+  output_format?: any; // Adding this property to fix the type error
 }
 
 export const createContentPayload = (data: Partial<ContentPayload>): ContentPayload => {
@@ -34,7 +35,8 @@ export const createContentPayload = (data: Partial<ContentPayload>): ContentPayl
     tone: data.tone || "",
     brand_voice: data.brand_voice || "",
     unique_points: data.unique_points || "",
-    internal_links: data.internal_links || ""
+    internal_links: data.internal_links || "",
+    output_format: data.output_format || undefined
   };
 };
 
