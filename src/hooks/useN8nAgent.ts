@@ -30,21 +30,46 @@ export const useN8nAgent = () => {
   const { getWebhookUrl, getContentWebhookUrl } = useN8nConfig();
   const { processResponse } = useN8nResponseProcessor();
 
-  const sendToN8n = async (payload: N8nAgentPayload, useContentWebhook = false, customWebhookUrl?: string) => {
+  /**
+   * Sends data to the n8n webhook
+   * @param payload The payload to send
+   * @param webhookOption Can be: 
+   *   - boolean (true to use content webhook, false to use keyword webhook)
+   *   - string (direct webhook URL to use)
+   * @param customWebhookUrl Optional direct webhook URL (deprecated, use webhookOption instead)
+   */
+  const sendToN8n = async (
+    payload: N8nAgentPayload, 
+    webhookOption?: boolean | string,
+    customWebhookUrl?: string
+  ) => {
     setIsLoading(true);
     setError(null);
     setRawResponse(null);
     
     try {
       // Determine which webhook URL to use
-      const webhookUrl = customWebhookUrl || 
-                         (useContentWebhook ? getContentWebhookUrl() : getWebhookUrl());
+      let webhookUrl: string;
+      
+      if (typeof webhookOption === 'string') {
+        // Direct webhook URL provided
+        webhookUrl = webhookOption;
+      } else if (typeof webhookOption === 'boolean') {
+        // Boolean flag (true = content webhook, false = keyword webhook)
+        webhookUrl = webhookOption ? getContentWebhookUrl() : getWebhookUrl();
+      } else if (customWebhookUrl) {
+        // Legacy support for customWebhookUrl parameter
+        webhookUrl = customWebhookUrl;
+      } else {
+        // Default to keyword webhook
+        webhookUrl = getWebhookUrl();
+      }
       
       if (!webhookUrl) {
         throw new Error("No webhook URL configured. Please check API connections settings.");
       }
 
-      console.log(`Using ${useContentWebhook ? 'content' : 'keyword'} webhook URL:`, webhookUrl);
+      console.log(`Using webhook URL:`, webhookUrl);
       
       const defaultUrl = "https://www.officespacesoftware.com";
       const targetUrl = payload.targetUrl || defaultUrl;

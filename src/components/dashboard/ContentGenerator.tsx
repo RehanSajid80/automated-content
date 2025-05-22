@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { FileText, Tag, Share2, Building2, Mail } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -129,8 +128,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       
       const result = await sendToN8n({
         customPayload: payload
-      }, currentWebhookUrl);
-      
+      }, true); // Changed from currentWebhookUrl to true to use content webhook
+
       // Check if we got a response with content
       if (result && result.content && result.content.length > 0) {
         // Update the generated content based on active tab

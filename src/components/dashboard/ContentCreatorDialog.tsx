@@ -96,7 +96,7 @@ const ContentCreatorDialog: React.FC<ContentCreatorDialogProps> = ({ onClose }) 
       
       const result = await sendToN8n({
         customPayload: payload
-      }, currentWebhookUrl);
+      }, true); // Changed from currentWebhookUrl to true to use content webhook
       
       // Check if we got a response with content
       if (result && result.content && result.content.length > 0) {

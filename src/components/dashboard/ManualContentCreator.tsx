@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ContentForm, ContentFormData } from "./content-creator/ContentForm";
@@ -74,7 +73,7 @@ const ManualContentCreator: React.FC<ManualContentCreatorProps> = ({ className }
   
       const result = await sendToN8n({
         customPayload: payload
-      }, currentWebhookUrl);
+      }, true); // Changed from currentWebhookUrl to true to use content webhook
       
       // Check if we got a response with content
       if (result && result.content && result.content.length > 0) {
