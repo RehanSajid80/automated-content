@@ -39,8 +39,26 @@ export const useN8nResponseProcessor = () => {
       title = data.title;
     }
     
-    // Handle content with multiple possible formats
-    if (data) {
+    // Check for new format with specific content sections
+    if (data && (data.pillarContent || data.supportContent || data.metaTags || data.socialPosts || data.emailCampaign)) {
+      console.log("Found structured content with specific sections");
+      
+      // Combine sections into a single output
+      const combinedOutput = JSON.stringify({
+        pillarContent: data.pillarContent || "",
+        supportContent: data.supportContent || "",
+        metaTags: data.metaTags || "",
+        socialPosts: data.socialPosts || "",
+        emailCampaign: data.emailCampaign || ""
+      });
+      
+      contentArray = [{ 
+        output: combinedOutput,
+        title: data.title || "Generated Content" 
+      }];
+    }
+    // Handle standard content formats
+    else if (data) {
       if (data.output) {
         console.log("Found output property in response");
         contentArray = [{ output: data.output, title: data.title || "" }];

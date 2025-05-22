@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Copy } from "lucide-react";
+import { AlertTriangle, Copy, FileText, Tag, Share2, Building2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ContentSection } from "./content-display/ContentSection";
@@ -91,14 +91,39 @@ const AIContentDisplay: React.FC<AIContentDisplayProps> = ({ content }) => {
     );
   }
 
+  // Map section names to icons
+  const getSectionIcon = (section: string) => {
+    switch(section) {
+      case 'pillar': return <FileText className="w-4 h-4" />;
+      case 'support': return <Building2 className="w-4 h-4" />;
+      case 'meta': return <Tag className="w-4 h-4" />;
+      case 'social': return <Share2 className="w-4 h-4" />;
+      case 'email': return <Mail className="w-4 h-4" />;
+      default: return null;
+    }
+  };
+
+  // Map section names to display names
+  const getSectionName = (section: string) => {
+    switch(section) {
+      case 'pillar': return 'Pillar Content';
+      case 'support': return 'Support Content';
+      case 'meta': return 'Meta Tags';
+      case 'social': return 'Social Posts';
+      case 'email': return 'Email Campaign';
+      default: return section.charAt(0).toUpperCase() + section.slice(1);
+    }
+  };
+
   return (
     <Card className="animate-fade-in">
       <CardContent className="pt-6">
         <Tabs defaultValue={availableSections[0]} className="w-full">
           <TabsList>
             {availableSections.map(section => (
-              <TabsTrigger key={section} value={section}>
-                {section.charAt(0).toUpperCase() + section.slice(1)} Content
+              <TabsTrigger key={section} value={section} className="flex items-center gap-2">
+                {getSectionIcon(section)}
+                <span>{getSectionName(section)}</span>
               </TabsTrigger>
             ))}
           </TabsList>

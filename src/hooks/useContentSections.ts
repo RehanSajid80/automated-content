@@ -12,6 +12,7 @@ interface ContentSections {
   support: string;
   meta: string;
   social: string;
+  email: string;
 }
 
 export const useContentSections = (content: ContentItem[]) => {
@@ -19,7 +20,8 @@ export const useContentSections = (content: ContentItem[]) => {
     pillar: "",
     support: "",
     meta: "",
-    social: ""
+    social: "",
+    email: ""
   });
   
   useEffect(() => {
@@ -39,73 +41,116 @@ export const useContentSections = (content: ContentItem[]) => {
     }
     
     console.log("useContentSections: Start parsing content sections");
-    console.log("useContentSections: Content starts with:", rawContent.substring(0, 100));
-    
-    const parsedSections = {
-      pillar: "",
-      support: "",
-      meta: "",
-      social: ""
-    };
     
     try {
-      // Log the markers we're looking for
-      console.log("useContentSections: Looking for section markers");
-      console.log("Contains '### Support Content':", rawContent.includes("### Support Content"));
-      console.log("Contains '### Meta Tags':", rawContent.includes("### Meta Tags"));
-      console.log("Contains '### Social Media Posts':", rawContent.includes("### Social Media Posts"));
-      
-      // Parse pillar content
-      const supportMarkers = ["### Support Content", "# Support Content", "<h1>Common Questions"];
-      let pillarContent = rawContent;
-      
-      for (const marker of supportMarkers) {
-        if (rawContent.includes(marker)) {
-          console.log(`useContentSections: Found marker '${marker}'`);
-          pillarContent = rawContent.split(marker)[0];
-          break;
+      // First check if the content is already structured as JSON
+      try {
+        // Handle case where the content is already structured in JSON format
+        if (typeof rawContent === 'string' && 
+            (rawContent.trim().startsWith('{') || rawContent.trim().startsWith('['))) {
+          const parsedJson = JSON.parse(rawContent);
+          
+          // Check if it's the expected format with our sections
+          if (parsedJson.pillarContent || parsedJson.supportContent || 
+              parsedJson.metaTags || parsedJson.socialPosts || parsedJson.emailCampaign) {
+            
+            console.log("useContentSections: Found JSON structured content");
+            
+            setSections({
+              pillar: parsedJson.pillarContent || "",
+              support: parsedJson.supportContent || "",
+              meta: typeof parsedJson.metaTags === 'object' ? 
+                JSON.stringify(parsedJson.metaTags, null, 2) : parsedJson.metaTags || "",
+              social: Array.isArray(parsedJson.socialPosts) ? 
+                parsedJson.socialPosts.join("\n\n") : parsedJson.socialPosts || "",
+              email: typeof parsedJson.emailCampaign === 'object' ? 
+                JSON.stringify(parsedJson.emailCampaign, null, 2) : parsedJson.emailCampaign || ""
+            });
+            
+            return;
+          }
         }
+      } catch (jsonError) {
+        console.log("useContentSections: Content is not in JSON format, will try text parsing");
       }
-      parsedSections.pillar = pillarContent.trim();
       
-      // Parse other sections
-      const supportStartRegex = /(### Support Content|# Support Content|<h1>Common Questions)/i;
-      const metaStartRegex = /(### Meta Tags|# Meta Tags)/i;
-      const socialStartRegex = /(### Social Media Posts|# Social Media Posts)/i;
+      // If not JSON, try to parse the content based on section markers
+      const parsedSections = {
+        pillar: "",
+        support: "",
+        meta: "",
+        social: "",
+        email: ""
+      };
       
-      if (supportStartRegex.test(rawContent)) {
-        console.log("useContentSections: Found support content section");
-        const afterSupportMatch = rawContent.split(supportStartRegex)[1] || "";
-        if (metaStartRegex.test(afterSupportMatch)) {
-          parsedSections.support = afterSupportMatch.split(metaStartRegex)[0].trim();
-        } else if (socialStartRegex.test(afterSupportMatch)) {
-          parsedSections.support = afterSupportMatch.split(socialStartRegex)[0].trim();
-        } else {
-          parsedSections.support = afterSupportMatch.trim();
+      // Look for section markers in the content
+      const pillarMarkers = ["### Pillar Content", "# Pillar Content", "pillarContent:", "### 1. Pillar Content"];
+      const supportMarkers = ["### Support Content", "# Support Content", "supportContent:", "### 2. Support"];
+      const metaMarkers = ["### Meta Tags", "# Meta Tags", "metaTags:", "### 3. Meta"];
+      const socialMarkers = ["### Social Media Posts", "# Social Media Posts", "socialPosts:", "### 4. Social"];
+      const emailMarkers = ["### Email Campaign", "# Email Campaign", "emailCampaign:", "### 5. Email"];
+      
+      // Extract content for each section
+      let pillarContent = "";
+      let supportContent = "";
+      let metaContent = "";
+      let socialContent = "";
+      let emailContent = "";
+      
+      // Helper function to extract content between markers
+      const extractContent = (content: string, startMarkers: string[], nextMarkers: string[]) => {
+        for (const marker of startMarkers) {
+          if (content.includes(marker)) {
+            const startIndex = content.indexOf(marker) + marker.length;
+            let endIndex = content.length;
+            
+            // Find the next section marker
+            for (const nextMarker of nextMarkers) {
+              const nextIndex = content.indexOf(nextMarker, startIndex);
+              if (nextIndex !== -1 && nextIndex < endIndex) {
+                endIndex = nextIndex;
+              }
+            }
+            
+            return content.substring(startIndex, endIndex).trim();
+          }
         }
-      }
+        return "";
+      };
       
-      if (metaStartRegex.test(rawContent)) {
-        console.log("useContentSections: Found meta tags section");
-        const afterMetaMatch = rawContent.split(metaStartRegex)[1] || "";
-        if (socialStartRegex.test(afterMetaMatch)) {
-          parsedSections.meta = afterMetaMatch.split(socialStartRegex)[0].trim();
-        } else {
-          parsedSections.meta = afterMetaMatch.trim();
-        }
-      }
+      // Build array of all markers for finding next section
+      const allMarkers = [...supportMarkers, ...metaMarkers, ...socialMarkers, ...emailMarkers];
       
-      if (socialStartRegex.test(rawContent)) {
-        console.log("useContentSections: Found social media posts section");
-        parsedSections.social = rawContent.split(socialStartRegex)[1].trim();
-      }
+      // Extract pillar content (everything before the first support marker)
+      pillarContent = extractContent(rawContent, pillarMarkers, allMarkers);
+      
+      // Extract other sections
+      const nextStartsAfterSupport = [...metaMarkers, ...socialMarkers, ...emailMarkers];
+      supportContent = extractContent(rawContent, supportMarkers, nextStartsAfterSupport);
+      
+      const nextStartsAfterMeta = [...socialMarkers, ...emailMarkers];
+      metaContent = extractContent(rawContent, metaMarkers, nextStartsAfterMeta);
+      
+      const nextStartsAfterSocial = [...emailMarkers];
+      socialContent = extractContent(rawContent, socialMarkers, nextStartsAfterSocial);
+      
+      // Email content is everything after email marker
+      emailContent = extractContent(rawContent, emailMarkers, []);
+      
+      // Update the parsed sections
+      parsedSections.pillar = pillarContent;
+      parsedSections.support = supportContent;
+      parsedSections.meta = metaContent;
+      parsedSections.social = socialContent;
+      parsedSections.email = emailContent;
       
       // Log the resulting sections
       console.log("useContentSections: Parsed sections:", {
         pillar: parsedSections.pillar ? `${parsedSections.pillar.length} chars` : "empty",
         support: parsedSections.support ? `${parsedSections.support.length} chars` : "empty",
         meta: parsedSections.meta ? `${parsedSections.meta.length} chars` : "empty",
-        social: parsedSections.social ? `${parsedSections.social.length} chars` : "empty"
+        social: parsedSections.social ? `${parsedSections.social.length} chars` : "empty",
+        email: parsedSections.email ? `${parsedSections.email.length} chars` : "empty"
       });
       
       setSections(parsedSections);
@@ -116,7 +161,8 @@ export const useContentSections = (content: ContentItem[]) => {
         pillar: rawContent,
         support: "",
         meta: "",
-        social: ""
+        social: "",
+        email: ""
       });
     }
   }, [content]);

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { FileText, Tag, Share2, Building2 } from "lucide-react";
+import { FileText, Tag, Share2, Building2, Mail } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ContentGeneratorProps, contentTypes } from "./types/content";
@@ -15,6 +15,12 @@ import { useN8nConfig } from "@/hooks/useN8nConfig";
 import { supabase } from "@/integrations/supabase/client";
 import GeneratedContent from "./GeneratedContent";
 import { useContentSections } from "@/hooks/useContentSections";
+
+// Update content types with email
+const extendedContentTypes = [
+  ...contentTypes,
+  { id: "email", name: "Email Campaign" }
+];
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ 
   className, 
@@ -96,6 +102,20 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       primary_keyword: keywords,
       related_keywords: keywords,
       tone: "Friendly and informative",
+      // Add expected output format instructions
+      output_format: {
+        pillarContent: "A full article in plain text (1200-1500 words), no HTML. Use clear text headings, examples, and actionable insights.",
+        supportContent: "A supplementary article (500-800 words) on a related subtopic or question. Use text-based headings and bullet lists.",
+        metaTags: {
+          metaTitle: "SEO optimized title (70 characters max)",
+          metaDescription: "Compelling meta description (150-160 characters)"
+        },
+        socialPosts: "4-5 social media posts with emojis, CTAs, and suggested posting times",
+        emailCampaign: {
+          subjectLines: "3-5 compelling email subject lines",
+          emails: "2-3 short email body texts (100-150 words each) with personalization tokens"
+        }
+      }
     });
 
     try {
@@ -210,8 +230,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   return (
     <div className={cn("", className)}>
       <Tabs defaultValue="pillar" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 mb-6">
-          {contentTypes.map(type => (
+        <TabsList className="grid grid-cols-5 mb-6">
+          {extendedContentTypes.map(type => (
             <TabsTrigger 
               key={type.id} 
               value={type.id}
@@ -221,12 +241,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
               {type.id === "support" && <Building2 size={16} />}
               {type.id === "meta" && <Tag size={16} />}
               {type.id === "social" && <Share2 size={16} />}
+              {type.id === "email" && <Mail size={16} />}
               <span className="ml-2 hidden sm:inline">{type.name}</span>
             </TabsTrigger>
           ))}
         </TabsList>
         
-        {contentTypes.map(type => (
+        {extendedContentTypes.map(type => (
           <TabsContent key={type.id} value={type.id} className="space-y-4">
             <ContentGeneratorForm
               activeTab={activeTab}
