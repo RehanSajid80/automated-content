@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import ApiUsageMetrics from "./ApiUsageMetrics";
 import { useToast } from "@/hooks/use-toast";
@@ -10,14 +10,16 @@ import WebhookConnection from "./api/WebhookConnection";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
 
 const ApiConnectionsManager = () => {
+  // API key state
   const [openaiApiKey, setOpenaiApiKey] = React.useState("");
   const [openaiStatus, setOpenaiStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
-  const [webhookUrl, setWebhookUrl] = React.useState("");
-  const [contentWebhookUrl, setContentWebhookUrl] = React.useState("");
-  const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
+  
+  // Webhook state
   const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content'>('keywords');
+  const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
+  
   const { toast } = useToast();
-  const { getWebhookUrl, getContentWebhookUrl, saveWebhookUrl } = useN8nConfig();
+  const { webhooks, fetchWebhookUrls } = useN8nConfig();
 
   const resetConnections = async () => {
     try {
@@ -26,8 +28,6 @@ const ApiConnectionsManager = () => {
       localStorage.removeItem("semrush-webhook-url");
       localStorage.removeItem("n8n-content-webhook-url");
       setOpenaiApiKey("");
-      setWebhookUrl("");
-      setContentWebhookUrl("");
       setOpenaiStatus('checking');
       setWebhookStatus('checking');
       
@@ -35,6 +35,9 @@ const ApiConnectionsManager = () => {
         title: "Connections Reset",
         description: "All API connections have been reset successfully",
       });
+      
+      // Force reload page to refresh all states
+      window.location.reload();
     } catch (error) {
       toast({
         title: "Error",
@@ -44,7 +47,8 @@ const ApiConnectionsManager = () => {
     }
   };
 
-  React.useEffect(() => {
+  // Check OpenAI API key on mount
+  useEffect(() => {
     const checkOpenAI = async () => {
       try {
         const key = await getApiKey(API_KEYS.OPENAI);
@@ -73,25 +77,19 @@ const ApiConnectionsManager = () => {
     checkOpenAI();
   }, []);
 
-  React.useEffect(() => {
-    const loadWebhookUrls = () => {
-      // Load both webhook URLs
-      const keywordWebhookUrl = getWebhookUrl();
-      const contentGenUrl = getContentWebhookUrl();
-      
-      setWebhookUrl(keywordWebhookUrl);
-      setContentWebhookUrl(contentGenUrl);
-      
-      // Simple check to set status - we can't really test the webhook without sending data
-      if (activeWebhookType === 'keywords') {
-        setWebhookStatus(keywordWebhookUrl ? 'connected' : 'disconnected');
-      } else {
-        setWebhookStatus(contentGenUrl ? 'connected' : 'disconnected');
-      }
-    };
-    
-    loadWebhookUrls();
-  }, [activeWebhookType]);
+  // Update webhook status based on type
+  useEffect(() => {
+    if (activeWebhookType === 'keywords') {
+      setWebhookStatus(webhooks.keywordWebhook ? 'connected' : 'disconnected');
+    } else {
+      setWebhookStatus(webhooks.contentWebhook ? 'connected' : 'disconnected');
+    }
+  }, [activeWebhookType, webhooks]);
+
+  // Fetch webhook URLs on mount
+  useEffect(() => {
+    fetchWebhookUrls();
+  }, []);
 
   const handleSaveOpenaiKey = async () => {
     if (openaiApiKey && openaiApiKey !== "••••••••••••••••••••••••••") {
@@ -109,35 +107,6 @@ const ApiConnectionsManager = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const handleSaveWebhook = () => {
-    if (activeWebhookType === 'keywords' && webhookUrl) {
-      saveWebhookUrl(webhookUrl);
-      setWebhookStatus('checking');
-      toast({
-        title: "Keyword Webhook URL Saved",
-        description: "Your keyword webhook URL has been saved",
-      });
-    } else if (activeWebhookType === 'content' && contentWebhookUrl) {
-      saveWebhookUrl(contentWebhookUrl, 'content');
-      setWebhookStatus('checking');
-      toast({
-        title: "Content Webhook URL Saved",
-        description: "Your content generation webhook URL has been saved",
-      });
-    } else {
-      toast({
-        title: "Webhook URL Required",
-        description: "Please enter a valid webhook URL",
-        variant: "destructive",
-      });
-    }
-    
-    // Set status after a short delay to simulate checking
-    setTimeout(() => {
-      setWebhookStatus('connected');
-    }, 1000);
   };
 
   const handleWebhookTypeChange = (type: 'keywords' | 'content') => {
@@ -159,14 +128,8 @@ const ApiConnectionsManager = () => {
               onKeyChange={setOpenaiApiKey}
             />
             <WebhookConnection
-              webhookUrl={webhookUrl}
-              contentWebhookUrl={contentWebhookUrl}
-              status={webhookStatus}
-              onSaveWebhook={handleSaveWebhook}
-              onUrlChange={setWebhookUrl}
-              onContentUrlChange={setContentWebhookUrl}
-              onWebhookTypeChange={handleWebhookTypeChange}
               activeWebhookType={activeWebhookType}
+              onWebhookTypeChange={handleWebhookTypeChange}
             />
           </div>
         </main>

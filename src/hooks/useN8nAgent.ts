@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";  // Updated from @/components/ui/use-toast
 import { useN8nConfig } from './useN8nConfig';
 import { useN8nResponseProcessor } from './useN8nResponseProcessor';
 
@@ -16,6 +16,7 @@ interface N8nAgentPayload {
   currentInstruction?: string;
   currentImageUrl?: string;
   customPayload?: any;
+  output_format?: any;
 }
 
 export const useN8nAgent = () => {
@@ -26,21 +27,25 @@ export const useN8nAgent = () => {
   const [contentTitle, setContentTitle] = useState<string>('');
   const [rawResponse, setRawResponse] = useState<any>(null);
   
-  const { getWebhookUrl } = useN8nConfig();
+  const { getWebhookUrl, getContentWebhookUrl } = useN8nConfig();
   const { processResponse } = useN8nResponseProcessor();
 
-  const sendToN8n = async (payload: N8nAgentPayload, customWebhookUrl?: string) => {
+  const sendToN8n = async (payload: N8nAgentPayload, useContentWebhook = false, customWebhookUrl?: string) => {
     setIsLoading(true);
     setError(null);
     setRawResponse(null);
     
     try {
-      const webhookUrl = customWebhookUrl || getWebhookUrl();
+      // Determine which webhook URL to use
+      const webhookUrl = customWebhookUrl || 
+                         (useContentWebhook ? getContentWebhookUrl() : getWebhookUrl());
       
       if (!webhookUrl) {
         throw new Error("No webhook URL configured. Please check API connections settings.");
       }
 
+      console.log(`Using ${useContentWebhook ? 'content' : 'keyword'} webhook URL:`, webhookUrl);
+      
       const defaultUrl = "https://www.officespacesoftware.com";
       const targetUrl = payload.targetUrl || defaultUrl;
       
@@ -54,7 +59,6 @@ export const useN8nAgent = () => {
         };
       
       console.log("Sending data to n8n webhook:", finalPayload);
-      console.log("Using webhook URL:", webhookUrl);
       
       const controller = new AbortController();
       // Increase timeout to 180 seconds (3 minutes)
@@ -90,9 +94,8 @@ export const useN8nAgent = () => {
         if (result.content && result.content.length > 0) {
           setGeneratedContent(result.content);
           
-          toast({
-            title: "Content Generated",
-            description: "Successfully received content from webhook",
+          toast.success("Content Generated", {
+            description: "Successfully received content from webhook"
           });
         }
         
@@ -124,10 +127,8 @@ export const useN8nAgent = () => {
       setError(errorMessage);
       console.error("N8n webhook error:", err);
       
-      toast({
-        title: "Webhook Error",
-        description: errorMessage,
-        variant: "destructive"
+      toast.error("Webhook Error", {
+        description: errorMessage
       });
       
       return { suggestions: [], content: [], title: '', error: errorMessage };

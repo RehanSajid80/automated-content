@@ -1,34 +1,85 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Webhook, CheckCircle, XCircle, Globe } from "lucide-react";
+import { Webhook, CheckCircle, XCircle, Globe, RefreshCw } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { useN8nConfig } from "@/hooks/useN8nConfig";
+import { toast } from "sonner";
 
 interface WebhookConnectionProps {
-  webhookUrl: string;
-  contentWebhookUrl?: string;
-  status: 'checking' | 'connected' | 'disconnected';
-  onSaveWebhook: () => void;
-  onUrlChange: (url: string) => void;
-  onContentUrlChange?: (url: string) => void;
-  onWebhookTypeChange?: (type: 'keywords' | 'content') => void;
+  onSaveWebhook?: () => void;
   activeWebhookType?: 'keywords' | 'content';
+  onWebhookTypeChange?: (type: 'keywords' | 'content') => void;
 }
 
 const WebhookConnection: React.FC<WebhookConnectionProps> = ({
-  webhookUrl,
-  contentWebhookUrl,
-  status,
   onSaveWebhook,
-  onUrlChange,
-  onContentUrlChange,
   onWebhookTypeChange,
   activeWebhookType = 'keywords'
 }) => {
+  const { 
+    getWebhookUrl, 
+    getContentWebhookUrl, 
+    saveWebhookUrl, 
+    isLoading, 
+    fetchWebhookUrls 
+  } = useN8nConfig();
+  
+  const [webhookUrl, setWebhookUrl] = React.useState("");
+  const [contentWebhookUrl, setContentWebhookUrl] = React.useState("");
+  const [status, setStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
+  
+  // Load webhook URLs on mount and when activeWebhookType changes
+  useEffect(() => {
+    loadWebhookUrls();
+  }, [activeWebhookType]);
+  
+  const loadWebhookUrls = () => {
+    const keywordWebhookUrl = getWebhookUrl();
+    const contentGenUrl = getContentWebhookUrl();
+    
+    setWebhookUrl(keywordWebhookUrl);
+    setContentWebhookUrl(contentGenUrl);
+    
+    // Set status based on active webhook type
+    if (activeWebhookType === 'keywords') {
+      setStatus(keywordWebhookUrl ? 'connected' : 'disconnected');
+    } else {
+      setStatus(contentGenUrl ? 'connected' : 'disconnected');
+    }
+  };
+
+  const handleRefreshWebhooks = async () => {
+    setStatus('checking');
+    await fetchWebhookUrls();
+    loadWebhookUrls();
+    toast.success("Webhook configurations refreshed");
+  };
+
+  const handleSaveWebhook = async () => {
+    setStatus('checking');
+    
+    if (activeWebhookType === 'keywords' && webhookUrl) {
+      await saveWebhookUrl(webhookUrl);
+      setStatus('connected');
+    } else if (activeWebhookType === 'content' && contentWebhookUrl) {
+      await saveWebhookUrl(contentWebhookUrl, 'content');
+      setStatus('connected');
+    } else {
+      toast.error("Please enter a valid webhook URL");
+      setStatus('disconnected');
+      return;
+    }
+    
+    if (onSaveWebhook) {
+      onSaveWebhook();
+    }
+  };
+
   const renderStatus = () => {
     switch (status) {
       case 'connected':
@@ -84,7 +135,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
           </RadioGroup>
         )}
 
-        {activeWebhookType === 'content' && onContentUrlChange ? (
+        {activeWebhookType === 'content' ? (
           <div className="space-y-2">
             <label htmlFor="content-webhook-url" className="text-sm font-medium">
               Content Generation Webhook URL
@@ -93,7 +144,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
               id="content-webhook-url"
               placeholder="Enter your content generation webhook URL"
               value={contentWebhookUrl || ''}
-              onChange={(e) => onContentUrlChange(e.target.value)}
+              onChange={(e) => setContentWebhookUrl(e.target.value)}
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
@@ -109,7 +160,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
               id="webhook-url"
               placeholder="Enter your webhook URL"
               value={webhookUrl}
-              onChange={(e) => onUrlChange(e.target.value)}
+              onChange={(e) => setWebhookUrl(e.target.value)}
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
@@ -117,10 +168,16 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
             </p>
           </div>
         )}
-        <Button onClick={onSaveWebhook} className="w-full sm:w-auto">
-          <Globe className="mr-2 h-4 w-4" />
-          Save Webhook URL
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSaveWebhook} className="w-full sm:w-auto" disabled={isLoading}>
+            <Globe className="mr-2 h-4 w-4" />
+            Save Webhook URL
+          </Button>
+          <Button onClick={handleRefreshWebhooks} variant="outline" className="w-full sm:w-auto" disabled={isLoading}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
