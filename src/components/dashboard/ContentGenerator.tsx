@@ -14,6 +14,7 @@ import { createContentPayload } from "@/utils/payloadUtils";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
 import { supabase } from "@/integrations/supabase/client";
 import GeneratedContent from "./GeneratedContent";
+import { useContentSections } from "@/hooks/useContentSections";
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ 
   className, 
@@ -52,6 +53,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     setContentTitle
   } = useN8nAgent();
 
+  // Use contentSections hook to parse different content types
+  const contentSections = useContentSections(n8nContent);
+
   // Effect to get content webhook URL on component mount
   const [contentWebhookUrl, setContentWebhookUrl] = useState("");
   
@@ -70,13 +74,24 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     }
   }, [initialKeywords]);
 
+  // Set appropriate content based on active tab and parsed sections
+  useEffect(() => {
+    if (contentSections && Object.keys(contentSections).length > 0) {
+      const sectionContent = contentSections[activeTab];
+      if (sectionContent && sectionContent.trim().length > 0) {
+        // Set the corresponding content based on active tab
+        setGeneratedContent(sectionContent);
+      }
+    }
+  }, [activeTab, contentSections, setGeneratedContent]);
+
   const handleGenerate = async () => {
     // Get the most current webhook URL
     const currentWebhookUrl = getContentWebhookUrl();
     
     // Create standard content payload
     const payload = createContentPayload({
-      content_type: activeTab,
+      content_type: "all", // Request all content types at once
       topic: keywords,
       primary_keyword: keywords,
       related_keywords: keywords,
@@ -90,7 +105,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       });
 
       console.log("Using content webhook URL:", currentWebhookUrl);
-      console.log(`Generating content for type: ${activeTab}`);
+      console.log(`Generating all content types for topic: ${keywords}`);
       
       const result = await sendToN8n({
         customPayload: payload
@@ -98,8 +113,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       
       // Check if we got a response with content
       if (result && result.content && result.content.length > 0) {
-        // Update the generated content
-        setGeneratedContent(result.content[0].output || "");
+        // Update the generated content based on active tab
+        if (contentSections && contentSections[activeTab]) {
+          setGeneratedContent(contentSections[activeTab]);
+        } else {
+          // Fallback to first content item if sections not parsed
+          setGeneratedContent(result.content[0].output || "");
+        }
         
         // Update the content title if available
         if (result.title) {
@@ -220,7 +240,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
               onSuggestUrl={handleSuggestUrlClick}
               isGenerating={isGenerating || isN8nLoading}
               isCheckingUrl={isCheckingExistence}
-              generatingProgress={isN8nLoading ? `Generating content via n8n AI agent... (${contentWebhookUrl ? "Webhook configured" : "Using default webhook"})` : generatingProgress}
+              generatingProgress={isN8nLoading ? `Generating all content types via n8n AI agent... (${contentWebhookUrl ? "Webhook configured" : "Using default webhook"})` : generatingProgress}
             />
             
             {generatedContent && activeTab === type.id && (
