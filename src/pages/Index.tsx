@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
@@ -6,7 +7,7 @@ import DashboardTab from "@/components/dashboard/DashboardTab";
 import ContentManagementTab from "@/components/dashboard/ContentManagementTab";
 import ContentAnalytics from "@/components/dashboard/ContentAnalytics";
 import KeywordResearch from "@/components/dashboard/KeywordResearch";
-import AISuggestionsTab from "@/components/dashboard/AISuggestionsTab";
+import EnhancedAISuggestionsTab from "@/components/dashboard/EnhancedAISuggestionsTab";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useContentStats } from "@/hooks/useContentStats";
 import { useNavigationEvents } from "@/hooks/useNavigationEvents";
@@ -109,7 +110,7 @@ const Index = () => {
         </div>
       </TabsContent>
       
-      <AISuggestionsTab keywordData={keywordData} />
+      <EnhancedAISuggestionsTab keywordData={keywordData} />
     </DashboardLayout>
   );
 };
