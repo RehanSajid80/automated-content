@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -66,12 +65,12 @@ export const useN8nAgent = () => {
         webhookUrl = getWebhookUrl();
       }
       
-      // Check if this is a custom keywords request
+      // Check if this is a custom keywords request (now called AI Content Suggestions)
       if (payload.requestType === 'customKeywords' || (payload.customPayload && payload.customPayload.custom_keywords)) {
         const customKeywordsWebhook = getCustomKeywordsWebhookUrl();
         if (customKeywordsWebhook) {
           webhookUrl = customKeywordsWebhook;
-          console.log("Using custom keywords webhook:", webhookUrl);
+          console.log("Using AI Content Suggestions webhook:", webhookUrl);
         }
       }
       
@@ -124,6 +123,53 @@ export const useN8nAgent = () => {
         console.log("Raw webhook response:", responseText.substring(0, 300) + "...");
         setRawResponse(responseText);
         
+        // Process the AI Content Suggestions specific format
+        if (responseText.includes("pillarContent") && 
+            (responseText.includes("supportContent") || responseText.includes("socialMediaPosts") || responseText.includes("emailSeries"))) {
+          console.log("Detected AI Content Suggestions format response");
+          
+          try {
+            const aiContentData = JSON.parse(responseText);
+            if (aiContentData.pillarContent || aiContentData.supportContent || 
+                aiContentData.socialMediaPosts || aiContentData.emailSeries) {
+              // Process this specific format
+              const structuredContent = [{
+                topicArea: aiContentData.title || payload.topicArea || "Content Suggestions",
+                pillarContent: aiContentData.pillarContent ? [aiContentData.pillarContent] : [],
+                supportPages: aiContentData.supportContent ? [aiContentData.supportContent] : [],
+                metaTags: [],
+                socialMedia: aiContentData.socialMediaPosts || [],
+                email: aiContentData.emailSeries ? 
+                  aiContentData.emailSeries.map((email: any) => 
+                    `Subject: ${email.subject}\n\n${email.body}`
+                  ) : [],
+                reasoning: aiContentData.reasoning ? 
+                  typeof aiContentData.reasoning === 'string' ? 
+                    aiContentData.reasoning : 
+                    JSON.stringify(aiContentData.reasoning, null, 2) 
+                  : null
+              }];
+              
+              setGeneratedContent(structuredContent);
+              
+              toast.success("Content Generated", {
+                description: "Successfully received AI content suggestions"
+              });
+              
+              return {
+                suggestions: [],
+                content: structuredContent,
+                title: aiContentData.title || '',
+                rawResponse: responseText
+              };
+            }
+          } catch (parseErr) {
+            console.log("Error parsing AI Content Suggestions format:", parseErr);
+            // Continue to standard processing if parsing fails
+          }
+        }
+        
+        // Standard processing for other formats
         const result = processResponse(responseText);
         
         // Update state with processed results

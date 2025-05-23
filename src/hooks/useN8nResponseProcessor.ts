@@ -39,8 +39,27 @@ export const useN8nResponseProcessor = () => {
       title = data.title;
     }
     
-    // Check for new format with specific content sections
-    if (data && (data.pillarContent || data.supportContent || data.metaTags || data.socialPosts || data.emailCampaign)) {
+    // Check for AI Content Suggestions specific format
+    if (data && (data.pillarContent || data.supportContent || data.socialMediaPosts || data.emailSeries)) {
+      console.log("Found AI Content Suggestions format");
+      
+      // Transform the AI suggestions format to our content structure
+      contentArray = [{
+        topicArea: data.title || "Content Suggestions",
+        pillarContent: data.pillarContent ? [data.pillarContent] : [],
+        supportPages: data.supportContent ? [data.supportContent] : [],
+        metaTags: [], // No specific meta tags in this format
+        socialMedia: data.socialMediaPosts || [],
+        email: data.emailSeries ? data.emailSeries.map((email: any) => 
+          `Subject: ${email.subject}\n\n${email.body}`
+        ) : [],
+        reasoning: data.reasoning ? 
+          JSON.stringify(data.reasoning, null, 2) : 
+          "No reasoning provided"
+      }];
+    }
+    // Check for new format with specific content sections (legacy)
+    else if (data && (data.pillarContent || data.supportContent || data.metaTags || data.socialPosts || data.emailCampaign)) {
       console.log("Found structured content with specific sections");
       
       // Combine sections into a single output

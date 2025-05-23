@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, FileSpreadsheet, Tag, Share2, Mail, Download, Copy, Star } from "lucide-react";
+import { FileText, FileSpreadsheet, Tag, Share2, Mail, Download, Copy, Star, ChevronDown, AlertCircle, Info, BookOpen } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { personaTypes } from "@/data/personaTypes";
 import { contentGoals } from "@/data/contentGoals";
 import { toast } from "sonner";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ContentSuggestion {
   topicArea: string;
@@ -17,7 +18,7 @@ interface ContentSuggestion {
   metaTags: string[];
   socialMedia: string[];
   email?: string[];
-  reasoning: string;
+  reasoning?: string;
 }
 
 interface StructuredContentSuggestionsProps {
@@ -35,6 +36,7 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
 }) => {
   const [activeTab, setActiveTab] = useState("pillar");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [showReasoning, setShowReasoning] = useState(false);
   
   const personaName = personaTypes.find(p => p.id === persona)?.name || "All Personas";
   const goalName = contentGoals.find(g => g.id === goal)?.name || "General Content";
@@ -58,31 +60,44 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
       if (suggestions.length > 0) {
         const suggestion = suggestions[0];
         
-        exportContent += `## Pillar Content Ideas:\n`;
-        suggestion.pillarContent.forEach(idea => {
-          exportContent += `- ${idea}\n`;
-        });
+        if (suggestion.pillarContent && suggestion.pillarContent.length > 0) {
+          exportContent += `## Pillar Content Ideas:\n`;
+          suggestion.pillarContent.forEach(idea => {
+            exportContent += `- ${idea}\n`;
+          });
+        }
         
-        exportContent += `\n## Support Pages:\n`;
-        suggestion.supportPages.forEach(page => {
-          exportContent += `- ${page}\n`;
-        });
+        if (suggestion.supportPages && suggestion.supportPages.length > 0) {
+          exportContent += `\n## Support Pages:\n`;
+          suggestion.supportPages.forEach(page => {
+            exportContent += `- ${page}\n`;
+          });
+        }
         
-        exportContent += `\n## Meta Tags:\n`;
-        suggestion.metaTags.forEach(tag => {
-          exportContent += `- ${tag}\n`;
-        });
+        if (suggestion.metaTags && suggestion.metaTags.length > 0) {
+          exportContent += `\n## Meta Tags:\n`;
+          suggestion.metaTags.forEach(tag => {
+            exportContent += `- ${tag}\n`;
+          });
+        }
         
-        exportContent += `\n## Social Media Posts:\n`;
-        suggestion.socialMedia.forEach(post => {
-          exportContent += `- ${post}\n`;
-        });
+        if (suggestion.socialMedia && suggestion.socialMedia.length > 0) {
+          exportContent += `\n## Social Media Posts:\n`;
+          suggestion.socialMedia.forEach(post => {
+            exportContent += `- ${post}\n`;
+          });
+        }
         
         if (suggestion.email && suggestion.email.length > 0) {
           exportContent += `\n## Email Campaign Ideas:\n`;
           suggestion.email.forEach(email => {
             exportContent += `- ${email}\n`;
           });
+        }
+        
+        if (suggestion.reasoning) {
+          exportContent += `\n## Content Strategy Reasoning:\n`;
+          exportContent += suggestion.reasoning;
         }
       }
     }
@@ -133,17 +148,42 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
             <Badge variant="outline">{goalName}</Badge>
           </div>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="flex items-center gap-1"
-          onClick={handleExport}
-        >
-          <Download className="h-4 w-4 mr-1" />
-          Export Plan
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className={`flex items-center gap-1 ${showReasoning ? 'bg-muted' : ''}`}
+            onClick={() => setShowReasoning(!showReasoning)}
+          >
+            <Info className="h-4 w-4 mr-1" />
+            {showReasoning ? "Hide" : "Show"} Reasoning
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={handleExport}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Export Plan
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
+        {showReasoning && suggestions[0]?.reasoning && (
+          <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
+            <h3 className="text-sm font-medium mb-2 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Content Strategy Reasoning
+            </h3>
+            <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+              {typeof suggestions[0].reasoning === 'string' 
+                ? suggestions[0].reasoning 
+                : JSON.stringify(suggestions[0].reasoning, null, 2)}
+            </div>
+          </div>
+        )}
+        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-5 mb-4">
             <TabsTrigger value="pillar" className="flex items-center gap-1">
@@ -152,7 +192,7 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
               <span className="inline sm:hidden">Pillar</span>
             </TabsTrigger>
             <TabsTrigger value="support" className="flex items-center gap-1">
-              <FileSpreadsheet className="h-4 w-4" />
+              <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Support Pages</span>
               <span className="inline sm:hidden">Support</span>
             </TabsTrigger>
@@ -178,228 +218,261 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
               {index > 0 && <h3 className="text-lg font-semibold mb-2">{suggestion.topicArea}</h3>}
               
               <TabsContent value="pillar" className="space-y-4">
-                <Accordion type="multiple" className="w-full">
-                  {suggestion.pillarContent.map((content, i) => (
-                    <AccordionItem key={`pillar-${i}`} value={`pillar-${i}`}>
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-start gap-2 pr-4">
+                {suggestion.pillarContent && suggestion.pillarContent.length > 0 ? (
+                  <div className="border rounded-lg">
+                    {suggestion.pillarContent.map((content, i) => (
+                      <div 
+                        key={`pillar-${i}`}
+                        className="p-5 border-b last:border-b-0"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-lg font-semibold">{content}</h3>
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-6 w-6 rounded-full"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleSelectItem(content);
-                            }}
-                          >
-                            {selectedItems.includes(content) ? (
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            ) : (
-                              <Star className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <span className="text-sm font-medium">
-                            {content.split(':')[0] || content.substring(0, 60) + '...'}
-                          </span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="p-4 bg-muted/50 rounded-md relative">
-                          <p className="text-sm">{content}</p>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="absolute top-2 right-2"
                             onClick={() => handleCopyToClipboard(content)}
+                            className="ml-2"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
                         </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                        <div className="flex justify-end">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => toggleSelectItem(content)}
+                            className="flex items-center gap-1"
+                          >
+                            {selectedItems.includes(content) ? (
+                              <>
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span>Selected</span>
+                              </>
+                            ) : (
+                              <>
+                                <Star className="h-4 w-4" />
+                                <span>Select</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No pillar content suggestions available
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="support" className="space-y-4">
-                <Accordion type="multiple" className="w-full">
-                  {suggestion.supportPages.map((content, i) => (
-                    <AccordionItem key={`support-${i}`} value={`support-${i}`}>
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-start gap-2 pr-4">
+                {suggestion.supportPages && suggestion.supportPages.length > 0 ? (
+                  <div className="border rounded-lg">
+                    {suggestion.supportPages.map((content, i) => (
+                      <div 
+                        key={`support-${i}`}
+                        className="p-5 border-b last:border-b-0"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-lg font-semibold">{content}</h3>
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-6 w-6 rounded-full"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleSelectItem(content);
-                            }}
-                          >
-                            {selectedItems.includes(content) ? (
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            ) : (
-                              <Star className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <span className="text-sm font-medium">
-                            {content.split(':')[0] || content.substring(0, 60) + '...'}
-                          </span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="p-4 bg-muted/50 rounded-md relative">
-                          <p className="text-sm">{content}</p>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="absolute top-2 right-2"
                             onClick={() => handleCopyToClipboard(content)}
+                            className="ml-2"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
                         </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                        <div className="flex justify-end">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => toggleSelectItem(content)}
+                            className="flex items-center gap-1"
+                          >
+                            {selectedItems.includes(content) ? (
+                              <>
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span>Selected</span>
+                              </>
+                            ) : (
+                              <>
+                                <Star className="h-4 w-4" />
+                                <span>Select</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No support content suggestions available
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="meta" className="space-y-4">
-                <Accordion type="multiple" className="w-full">
-                  {suggestion.metaTags.map((content, i) => (
-                    <AccordionItem key={`meta-${i}`} value={`meta-${i}`}>
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-start gap-2 pr-4">
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-6 w-6 rounded-full"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleSelectItem(content);
-                            }}
-                          >
-                            {selectedItems.includes(content) ? (
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            ) : (
-                              <Star className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <span className="text-sm font-medium">
-                            {content.split(':')[0] || content.substring(0, 60) + '...'}
-                          </span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="p-4 bg-muted/50 rounded-md relative">
+                {suggestion.metaTags && suggestion.metaTags.length > 0 ? (
+                  <div className="border rounded-lg">
+                    {suggestion.metaTags.map((content, i) => (
+                      <div 
+                        key={`meta-${i}`}
+                        className="p-4 border-b last:border-b-0"
+                      >
+                        <div className="flex justify-between items-start">
                           <p className="text-sm">{content}</p>
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="absolute top-2 right-2"
                             onClick={() => handleCopyToClipboard(content)}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
                         </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No meta tags suggestions available
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="social" className="space-y-4">
-                <Accordion type="multiple" className="w-full">
-                  {suggestion.socialMedia.map((content, i) => (
-                    <AccordionItem key={`social-${i}`} value={`social-${i}`}>
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-start gap-2 pr-4">
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-6 w-6 rounded-full"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleSelectItem(content);
-                            }}
-                          >
-                            {selectedItems.includes(content) ? (
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            ) : (
-                              <Star className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <span className="text-sm font-medium">
-                            {content.split(/[\n:]/)[0] || content.substring(0, 60) + '...'}
-                          </span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="p-4 bg-muted/50 rounded-md relative">
-                          <p className="text-sm whitespace-pre-wrap">{content}</p>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="absolute top-2 right-2"
-                            onClick={() => handleCopyToClipboard(content)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </TabsContent>
-              
-              <TabsContent value="email" className="space-y-4">
-                <Accordion type="multiple" className="w-full">
-                  {suggestion.email ? 
-                    suggestion.email.map((content, i) => (
-                      <AccordionItem key={`email-${i}`} value={`email-${i}`}>
-                        <AccordionTrigger className="text-left">
-                          <div className="flex items-start gap-2 pr-4">
+                {suggestion.socialMedia && suggestion.socialMedia.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                    {suggestion.socialMedia.map((content, i) => {
+                      // Determine social media platform from content
+                      let platform = "Social Post";
+                      let icon = <Share2 className="h-4 w-4" />;
+                      
+                      if (content.toLowerCase().includes("linkedin")) {
+                        platform = "LinkedIn";
+                      } else if (content.toLowerCase().includes("twitter") || content.toLowerCase().includes("x style")) {
+                        platform = "Twitter/X";
+                      } else if (content.toLowerCase().includes("instagram") || content.toLowerCase().includes("facebook")) {
+                        platform = "Instagram/Facebook";
+                      }
+                      
+                      return (
+                        <div 
+                          key={`social-${i}`}
+                          className="border rounded-lg p-4 bg-card relative"
+                        >
+                          <Badge variant="outline" className="mb-2">
+                            {icon}
+                            <span className="ml-1">{platform}</span>
+                          </Badge>
+                          
+                          <p className="text-sm whitespace-pre-wrap mb-4">{content}</p>
+                          
+                          <div className="flex justify-between items-center mt-2">
                             <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              className="h-6 w-6 rounded-full"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleSelectItem(content);
-                              }}
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => toggleSelectItem(content)}
+                              className="flex items-center gap-1"
                             >
                               {selectedItems.includes(content) ? (
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <>
+                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                  <span>Selected</span>
+                                </>
                               ) : (
-                                <Star className="h-4 w-4" />
+                                <>
+                                  <Star className="h-4 w-4" />
+                                  <span>Select</span>
+                                </>
                               )}
                             </Button>
-                            <span className="text-sm font-medium">
-                              {content.split(':')[0] || content.substring(0, 60) + '...'}
-                            </span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="p-4 bg-muted/50 rounded-md relative">
-                            <p className="text-sm whitespace-pre-wrap">{content}</p>
+                            
                             <Button 
                               size="icon" 
                               variant="ghost" 
-                              className="absolute top-2 right-2"
                               onClick={() => handleCopyToClipboard(content)}
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
                           </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    )) : 
-                    <div className="p-4 text-center text-muted-foreground">
-                      No email campaign suggestions generated.
-                    </div>
-                  }
-                </Accordion>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No social media post suggestions available
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="email" className="space-y-4">
+                {suggestion.email && suggestion.email.length > 0 ? (
+                  <div className="space-y-4">
+                    {suggestion.email.map((content, i) => {
+                      // Parse email content
+                      let subject = "";
+                      let body = content;
+                      
+                      if (content.startsWith("Subject:")) {
+                        const parts = content.split("\n\n");
+                        if (parts.length >= 2) {
+                          subject = parts[0].replace("Subject:", "").trim();
+                          body = parts.slice(1).join("\n\n");
+                        }
+                      }
+                      
+                      return (
+                        <div 
+                          key={`email-${i}`}
+                          className="border rounded-lg overflow-hidden"
+                        >
+                          <div className="bg-muted/30 p-3 border-b flex justify-between items-center">
+                            <h3 className="font-medium">{subject || `Email Template ${i + 1}`}</h3>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              onClick={() => handleCopyToClipboard(content)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="p-4 bg-card">
+                            <p className="text-sm whitespace-pre-wrap">{body}</p>
+                          </div>
+                          <div className="p-3 border-t bg-background flex justify-end">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => toggleSelectItem(content)}
+                              className="flex items-center gap-1"
+                            >
+                              {selectedItems.includes(content) ? (
+                                <>
+                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                  <span>Selected</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Star className="h-4 w-4" />
+                                  <span>Select</span>
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No email campaign suggestions available
+                  </div>
+                )}
               </TabsContent>
             </div>
           ))}
