@@ -5,7 +5,8 @@ import { FormattedContent } from "./components/FormattedContent";
 import { RawResponseView } from "./components/RawResponseView";
 import { EmptyContentState } from "./components/EmptyContentState";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface DebugContentViewerProps {
   rawResponse: any;
@@ -17,13 +18,50 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
   processedContent 
 }) => {
   const [reprocessedContent, setReprocessedContent] = React.useState<any[]>([]);
-  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingError, setProcessingError] = React.useState<string | null>(null);
 
   // Process raw response if it contains JSON as a string within code blocks
   const preprocessRawResponse = (rawResponse: any) => {
     console.log("Preprocessing raw response:", typeof rawResponse);
     
     try {
+      // First, handle the special case of n8n response structure:
+      // Array with single object containing 'output' property with a string containing JSON code block
+      if (Array.isArray(rawResponse) && 
+          rawResponse.length === 1 && 
+          rawResponse[0].output && 
+          typeof rawResponse[0].output === 'string') {
+        
+        console.log("Detected n8n response format, extracting from output property");
+        const outputStr = rawResponse[0].output;
+        
+        // Extract JSON from code block
+        const jsonMatch = outputStr.match(/```json\s*([\s\S]*?)\s*```/) || 
+                          outputStr.match(/```\s*([\s\S]*?)\s*```/);
+        
+        if (jsonMatch) {
+          try {
+            const extractedJson = JSON.parse(jsonMatch[1]);
+            console.log("Successfully extracted JSON from n8n output code block");
+            return extractedJson;
+          } catch (err) {
+            console.error("Error parsing JSON from n8n output code block:", err);
+            // Try cleaning the JSON string
+            try {
+              const cleanedJson = jsonMatch[1]
+                .replace(/\\n/g, '')
+                .replace(/\\"/g, '"')
+                .replace(/\\/g, '\\\\');
+              return JSON.parse(cleanedJson);
+            } catch (cleanErr) {
+              console.error("Failed to parse cleaned JSON from n8n output code block");
+            }
+          }
+        }
+      }
+    
+      // Standard processing for other formats
       if (typeof rawResponse === 'string') {
         // Try to extract JSON from code blocks
         const jsonMatch = rawResponse.match(/```json\s*([\s\S]*?)\s*```/) || 
@@ -93,6 +131,8 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
   // Manually process the raw response
   const processRawResponse = () => {
     setIsProcessing(true);
+    setProcessingError(null);
+    
     try {
       const processedRawResponse = preprocessRawResponse(rawResponse);
       console.log("Processed raw response for display:", processedRawResponse);
@@ -113,6 +153,9 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
       
       console.log("Content to display:", contentToDisplay);
       setReprocessedContent(contentToDisplay);
+    } catch (error) {
+      console.error("Error processing raw response:", error);
+      setProcessingError(error instanceof Error ? error.message : "Unknown error processing response");
     } finally {
       setIsProcessing(false);
     }
@@ -145,11 +188,21 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
       </TabsList>
       
       <TabsContent value="formatted" className="space-y-4">
+        {processingError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Processing Error</AlertTitle>
+            <AlertDescription>{processingError}</AlertDescription>
+          </Alert>
+        )}
+      
         {((!processedContent || processedContent.length === 0) && rawResponse) && (
           <div className="mb-4 p-4 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
             <div className="flex justify-between items-center">
               <p className="text-amber-800 dark:text-amber-400 text-sm font-medium">
-                No processed content available. Try processing the raw response.
+                {reprocessedContent.length === 0 
+                  ? "No processed content available. Try processing the raw response."
+                  : "Content processed from raw response. Displaying best effort interpretation."}
               </p>
               
               <Button

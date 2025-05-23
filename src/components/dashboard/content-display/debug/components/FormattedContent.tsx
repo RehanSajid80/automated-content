@@ -19,7 +19,59 @@ export const FormattedContent: React.FC<FormattedContentProps> = ({ processedCon
         // Handle objects wrapped in code blocks or "output" field
         let contentToDisplay = item;
         
-        // Check if it's a string output that might contain JSON
+        // Special case: Handle array with a single item containing "output" property with a string
+        if (Array.isArray(processedContent) && 
+            processedContent.length === 1 && 
+            item.output && 
+            typeof item.output === 'string') {
+          console.log("Detected array with single output object, processing special case");
+          
+          // Try to extract JSON from code blocks (```json...```)
+          const jsonMatch = item.output.match(/```json\s*([\s\S]*?)\s*```/) || 
+                             item.output.match(/```\s*([\s\S]*?)\s*```/);
+                              
+          if (jsonMatch) {
+            try {
+              console.log("Found code block in output, extracting JSON");
+              const extractedJson = JSON.parse(jsonMatch[1]);
+              console.log("Extracted JSON from code block:", extractedJson);
+              return (
+                <div key={index} className="space-y-6">
+                  {extractedJson.pillarContent || extractedJson.supportContent || 
+                   extractedJson.socialMediaPosts || extractedJson.emailSeries ? (
+                    <AIContentItem item={extractedJson} index={index} />
+                  ) : (
+                    <GenericContentItem item={extractedJson} index={index} />
+                  )}
+                </div>
+              );
+            } catch (err) {
+              console.error("Failed to parse JSON from code block:", err);
+              // Try to clean the JSON string and parse again (handle common issues)
+              try {
+                const cleanedJson = jsonMatch[1].replace(/\\n/g, '')
+                                             .replace(/\\"/g, '"')
+                                             .replace(/\\/g, '\\\\');
+                const extractedJson = JSON.parse(cleanedJson);
+                console.log("Extracted JSON from cleaned code block:", extractedJson);
+                return (
+                  <div key={index} className="space-y-6">
+                    {extractedJson.pillarContent || extractedJson.supportContent || 
+                     extractedJson.socialMediaPosts || extractedJson.emailSeries ? (
+                      <AIContentItem item={extractedJson} index={index} />
+                    ) : (
+                      <GenericContentItem item={extractedJson} index={index} />
+                    )}
+                  </div>
+                );
+              } catch (cleanErr) {
+                console.error("Failed to parse cleaned JSON from code block:", cleanErr);
+              }
+            }
+          }
+        }
+        
+        // Regular processing for other items
         if (item.output && typeof item.output === 'string') {
           console.log("Processing output string:", item.output.substring(0, 100));
           
