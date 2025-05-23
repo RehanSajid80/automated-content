@@ -33,6 +33,15 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
             return JSON.parse(jsonMatch[1]);
           } catch (err) {
             console.error("Failed to parse JSON from code block in raw response");
+            // Try to clean and parse again
+            try {
+              const cleanedJson = jsonMatch[1].replace(/\\n/g, '')
+                                              .replace(/\\"/g, '"')
+                                              .replace(/\\/g, '\\\\');
+              return JSON.parse(cleanedJson);
+            } catch (cleanErr) {
+              console.error("Failed to clean and parse JSON from code block");
+            }
           }
         }
         
@@ -57,6 +66,14 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
               return JSON.parse(jsonMatch[1]);
             } catch (err) {
               console.error("Failed to parse JSON from code block in output");
+              try {
+                const cleanedJson = jsonMatch[1].replace(/\\n/g, '')
+                                              .replace(/\\"/g, '"')
+                                              .replace(/\\/g, '\\\\');
+                return JSON.parse(cleanedJson);
+              } catch (cleanErr) {
+                console.error("Failed to clean and parse JSON from output");
+              }
             }
           }
         }
@@ -101,9 +118,10 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
     }
   };
 
-  // Process raw response once on component mount
+  // Auto-process raw response once on component mount
   React.useEffect(() => {
     if (rawResponse && (!processedContent || processedContent.length === 0)) {
+      console.log("Auto-processing raw response on mount");
       processRawResponse();
     }
   }, [rawResponse, processedContent]);

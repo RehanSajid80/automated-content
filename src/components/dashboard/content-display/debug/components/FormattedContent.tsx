@@ -34,6 +34,17 @@ export const FormattedContent: React.FC<FormattedContentProps> = ({ processedCon
               contentToDisplay = extractedJson;
             } catch (err) {
               console.error("Failed to parse JSON from code block:", err);
+              // Try to clean the JSON string and parse again (handle common issues)
+              try {
+                const cleanedJson = jsonMatch[1].replace(/\\n/g, '')
+                                               .replace(/\\"/g, '"')
+                                               .replace(/\\/g, '\\\\');
+                const extractedJson = JSON.parse(cleanedJson);
+                console.log("Extracted JSON from cleaned code block:", extractedJson);
+                contentToDisplay = extractedJson;
+              } catch (cleanErr) {
+                console.error("Failed to parse cleaned JSON from code block:", cleanErr);
+              }
             }
           } else {
             // Try to parse the entire output as JSON if no code blocks found
@@ -49,7 +60,7 @@ export const FormattedContent: React.FC<FormattedContentProps> = ({ processedCon
           }
         }
 
-        // Enhanced check for AI content format
+        // Enhanced check for AI content format - check more properties and be more lenient
         const isAIContent = contentToDisplay && (
           contentToDisplay.pillarContent !== undefined || 
           contentToDisplay.supportContent !== undefined || 
