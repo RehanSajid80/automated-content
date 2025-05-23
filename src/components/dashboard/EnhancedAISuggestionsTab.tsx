@@ -47,12 +47,15 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     console.log("EnhancedAISuggestionsTab - isAISuggestionMode:", isAISuggestionMode);
   }, [generatedContent, isN8nLoading, isAgentLoading, isAISuggestionMode]);
   
+  // Force showing suggestions if content is available, regardless of isAISuggestionMode
+  const shouldShowSuggestions = generatedContent && generatedContent.length > 0;
+  
   // Convert generatedContent to the format expected by StructuredContentSuggestions
-  const structuredSuggestions = generatedContent && generatedContent.length > 0 ? 
+  const structuredSuggestions = shouldShowSuggestions ? 
     generatedContent.map(item => ({
       topicArea: item.topicArea || topicArea,
-      pillarContent: item.pillarContent || [],
-      supportPages: item.supportPages || [],
+      pillarContent: Array.isArray(item.pillarContent) ? item.pillarContent : [item.pillarContent],
+      supportPages: Array.isArray(item.supportPages) ? item.supportPages : [item.supportPages],
       metaTags: item.metaTags || [],
       socialMedia: item.socialMedia || [],
       email: item.email || [],
@@ -87,21 +90,21 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             addCustomKeyword={addCustomKeyword}
           />
           
-          {/* Always display the structured suggestions when they exist, not just in isAISuggestionMode */}
-          {((isAISuggestionMode && structuredSuggestions.length > 0) || structuredSuggestions.length > 0) && (
+          {/* Always display the structured suggestions when content is available */}
+          {shouldShowSuggestions && (
             <StructuredContentSuggestions
               suggestions={structuredSuggestions}
               persona={selectedPersona}
               goal={selectedGoal}
-              isLoading={isN8nLoading || isAgentLoading}
+              isLoading={false}
             />
           )}
           
           {/* Debug content display */}
-          {process.env.NODE_ENV === 'development' && structuredSuggestions.length === 0 && generatedContent && generatedContent.length > 0 && (
+          {process.env.NODE_ENV === 'development' && !shouldShowSuggestions && generatedContent && (
             <div className="mt-6 p-4 border border-yellow-400 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
-              <h3 className="font-medium mb-2">Debug: Content Available But Not Displaying</h3>
-              <p className="text-sm mb-2">Content is available but may not be in the expected format.</p>
+              <h3 className="font-medium mb-2">Debug: Raw Content Response</h3>
+              <p className="text-sm mb-2">Content is available but may not be processed correctly.</p>
               <pre className="text-xs bg-card p-3 rounded overflow-auto max-h-40">
                 {JSON.stringify(generatedContent, null, 2)}
               </pre>

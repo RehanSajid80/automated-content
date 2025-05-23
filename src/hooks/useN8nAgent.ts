@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -40,7 +39,7 @@ export const useN8nAgent = () => {
    * @param customWebhookUrl Optional direct webhook URL (deprecated, use webhookOption instead)
    */
   const sendToN8n = async (
-    payload: N8nAgentPayload, 
+    payload: any, 
     webhookOption?: boolean | string,
     customWebhookUrl?: string
   ) => {
@@ -124,118 +123,99 @@ export const useN8nAgent = () => {
         console.log("Raw webhook response:", responseText.substring(0, 300) + "...");
         setRawResponse(responseText);
         
-        // Check if the response is an array of AI Content Suggestions
-        if (responseText.includes("pillarContent") && 
-            (responseText.includes("supportContent") || 
-             responseText.includes("socialMediaPosts") || 
-             responseText.includes("emailSeries"))) {
-          console.log("Detected AI Content Suggestions format response");
+        // Direct processing for AI Content Suggestions format
+        try {
+          let parsedResponse = JSON.parse(responseText);
           
-          try {
-            let aiContentData;
+          // Check if it's an array or single object with the expected properties
+          if (Array.isArray(parsedResponse) && parsedResponse.length > 0 && 
+             (parsedResponse[0].pillarContent || parsedResponse[0].supportContent || 
+              parsedResponse[0].socialMediaPosts || parsedResponse[0].emailSeries)) {
+            console.log("Detected AI Content Suggestions array format");
             
-            // Try to parse as JSON
-            try {
-              aiContentData = JSON.parse(responseText);
-            } catch (parseErr) {
-              console.log("Error parsing AI Content Suggestions:", parseErr);
-              // Continue to standard processing if parsing fails
-              const result = processResponse(responseText);
-              
-              // Update state with processed results
-              updateStateWithResults(result);
-              
-              return {
-                suggestions: result.suggestions || [],
-                content: result.content || [],
-                title: result.title || '',
-                rawResponse: responseText
-              };
-            }
+            const processedContent = parsedResponse.map(item => ({
+              topicArea: item.title || payload.topicArea || "Content Suggestions",
+              pillarContent: typeof item.pillarContent === 'string' ? [item.pillarContent] : item.pillarContent || [],
+              supportPages: typeof item.supportContent === 'string' ? [item.supportContent] : item.supportContent || [],
+              metaTags: [],
+              socialMedia: item.socialMediaPosts || [],
+              email: item.emailSeries ? 
+                item.emailSeries.map((email: any) => 
+                  `Subject: ${email.subject}\n\n${email.body}`
+                ) : [],
+              reasoning: item.reasoning || null
+            }));
             
-            // Handle both array and single object responses
-            if (Array.isArray(aiContentData)) {
-              console.log("Processing AI Content Suggestions array format");
-              
-              // Transform array format
-              const structuredContent = aiContentData.map(item => ({
-                topicArea: item.title || payload.topicArea || "Content Suggestions",
-                pillarContent: item.pillarContent ? [item.pillarContent] : [],
-                supportPages: item.supportContent ? [item.supportContent] : [],
-                metaTags: [],
-                socialMedia: item.socialMediaPosts || [],
-                email: item.emailSeries ? 
-                  item.emailSeries.map((email: any) => 
-                    `Subject: ${email.subject}\n\n${email.body}`
-                  ) : [],
-                reasoning: item.reasoning ? 
-                  typeof item.reasoning === 'string' ? 
-                    item.reasoning : 
-                    JSON.stringify(item.reasoning, null, 2) 
-                  : null
-              }));
-              
-              setGeneratedContent(structuredContent);
-              
-              toast.success("Content Generated", {
-                description: "Successfully received AI content suggestions"
-              });
-              
-              return {
-                suggestions: [],
-                content: structuredContent,
-                title: '',
-                rawResponse: responseText
-              };
-            }
-            else if (aiContentData && 
-                   (aiContentData.pillarContent || 
-                    aiContentData.supportContent || 
-                    aiContentData.socialMediaPosts || 
-                    aiContentData.emailSeries)) {
-              console.log("Processing AI Content Suggestions single object format");
-              // Process single object format
-              const structuredContent = [{
-                topicArea: aiContentData.title || payload.topicArea || "Content Suggestions",
-                pillarContent: aiContentData.pillarContent ? [aiContentData.pillarContent] : [],
-                supportPages: aiContentData.supportContent ? [aiContentData.supportContent] : [],
-                metaTags: [],
-                socialMedia: aiContentData.socialMediaPosts || [],
-                email: aiContentData.emailSeries ? 
-                  aiContentData.emailSeries.map((email: any) => 
-                    `Subject: ${email.subject}\n\n${email.body}`
-                  ) : [],
-                reasoning: aiContentData.reasoning ? 
-                  typeof aiContentData.reasoning === 'string' ? 
-                    aiContentData.reasoning : 
-                    JSON.stringify(aiContentData.reasoning, null, 2) 
-                  : null
-              }];
-              
-              setGeneratedContent(structuredContent);
-              
-              toast.success("Content Generated", {
-                description: "Successfully received AI content suggestions"
-              });
-              
-              return {
-                suggestions: [],
-                content: structuredContent,
-                title: aiContentData.title || '',
-                rawResponse: responseText
-              };
-            }
-          } catch (parseErr) {
-            console.log("Error processing AI Content Suggestions format:", parseErr);
-            // Continue to standard processing if parsing fails
+            setGeneratedContent(processedContent);
+            
+            toast.success("Content Generated", {
+              description: "Successfully received AI content suggestions"
+            });
+            
+            return {
+              suggestions: [],
+              content: processedContent,
+              title: '',
+              rawResponse: responseText
+            };
           }
+          else if (parsedResponse && 
+                 (parsedResponse.pillarContent || 
+                  parsedResponse.supportContent || 
+                  parsedResponse.socialMediaPosts || 
+                  parsedResponse.emailSeries)) {
+            console.log("Detected AI Content Suggestions single object format");
+            
+            const processedContent = [{
+              topicArea: parsedResponse.title || payload.topicArea || "Content Suggestions",
+              pillarContent: typeof parsedResponse.pillarContent === 'string' ? [parsedResponse.pillarContent] : parsedResponse.pillarContent || [],
+              supportPages: typeof parsedResponse.supportContent === 'string' ? [parsedResponse.supportContent] : parsedResponse.supportContent || [],
+              metaTags: [],
+              socialMedia: parsedResponse.socialMediaPosts || [],
+              email: parsedResponse.emailSeries ? 
+                parsedResponse.emailSeries.map((email: any) => 
+                  `Subject: ${email.subject}\n\n${email.body}`
+                ) : [],
+              reasoning: parsedResponse.reasoning || null
+            }];
+            
+            setGeneratedContent(processedContent);
+            
+            toast.success("Content Generated", {
+              description: "Successfully received AI content suggestions"
+            });
+            
+            return {
+              suggestions: [],
+              content: processedContent,
+              title: parsedResponse.title || '',
+              rawResponse: responseText
+            };
+          }
+        } catch (parseError) {
+          console.log("Error directly parsing response:", parseError);
+          // Continue to standard processing if direct parsing fails
         }
         
         // Standard processing for other formats
         const result = processResponse(responseText);
         
         // Update state with processed results
-        updateStateWithResults(result);
+        if (result.content && result.content.length > 0) {
+          setGeneratedContent(result.content);
+          
+          toast.success("Content Generated", {
+            description: "Successfully received content from webhook"
+          });
+        }
+        
+        if (result.suggestions && result.suggestions.length > 0) {
+          setSuggestions(result.suggestions);
+        }
+        
+        if (result.title) {
+          setContentTitle(result.title);
+        }
         
         return {
           suggestions: result.suggestions || [],

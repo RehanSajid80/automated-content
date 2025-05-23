@@ -1,4 +1,3 @@
-
 /**
  * This hook handles processing of n8n webhook responses
  */
@@ -39,30 +38,32 @@ export const useN8nResponseProcessor = () => {
       title = data.title;
     }
     
-    // Handle AI Content Suggestions specific format (as an array or single object)
-    if (Array.isArray(data) && data.length > 0 && 
-        (data[0].pillarContent || data[0].supportContent || 
-         data[0].socialMediaPosts || data[0].emailSeries)) {
-      console.log("Found AI Content Suggestions format as array");
+    // Handle AI Content Suggestions specific format (as an array of objects)
+    if (Array.isArray(data) && data.length > 0) {
+      console.log("Processing array of content items:", data.length);
       
-      // Process array format
-      contentArray = data.map(item => ({
-        topicArea: item.title || "Content Suggestions",
-        pillarContent: item.pillarContent ? [item.pillarContent] : [],
-        supportPages: item.supportContent ? [item.supportContent] : [],
-        metaTags: [], // No specific meta tags in this format
-        socialMedia: item.socialMediaPosts || [],
-        email: item.emailSeries ? item.emailSeries.map((email: any) => 
-          `Subject: ${email.subject}\n\n${email.body}`
-        ) : [],
-        reasoning: item.reasoning ? 
-          typeof item.reasoning === 'string' ? 
-            item.reasoning : 
-            JSON.stringify(item.reasoning, null, 2) 
-          : "No reasoning provided"
-      }));
+      contentArray = data.map(item => {
+        // Check if this is the AI Content Suggestions format
+        if (item.pillarContent || item.supportContent || item.socialMediaPosts || item.emailSeries) {
+          console.log("Found AI Content Suggestions in array format");
+          return {
+            topicArea: item.title || "Content Suggestions",
+            pillarContent: typeof item.pillarContent === 'string' ? [item.pillarContent] : item.pillarContent || [],
+            supportPages: typeof item.supportContent === 'string' ? [item.supportContent] : item.supportContent || [],
+            metaTags: item.metaTags || [],
+            socialMedia: item.socialMediaPosts || [],
+            email: item.emailSeries ? item.emailSeries.map((email: any) => 
+              `Subject: ${email.subject}\n\n${email.body}`
+            ) : [],
+            reasoning: item.reasoning || null
+          };
+        } else {
+          // Generic object in array
+          return item;
+        }
+      });
       
-      console.log("Processed AI Content Suggestions array:", contentArray);
+      console.log("Processed array items:", contentArray.length);
     }
     // Check for AI Content Suggestions specific format (single object)
     else if (data && (data.pillarContent || data.supportContent || data.socialMediaPosts || data.emailSeries)) {
@@ -71,18 +72,14 @@ export const useN8nResponseProcessor = () => {
       // Transform the AI suggestions format to our content structure
       contentArray = [{
         topicArea: data.title || "Content Suggestions",
-        pillarContent: data.pillarContent ? [data.pillarContent] : [],
-        supportPages: data.supportContent ? [data.supportContent] : [],
-        metaTags: [], // No specific meta tags in this format
+        pillarContent: typeof data.pillarContent === 'string' ? [data.pillarContent] : data.pillarContent || [],
+        supportPages: typeof data.supportContent === 'string' ? [data.supportContent] : data.supportContent || [],
+        metaTags: [],
         socialMedia: data.socialMediaPosts || [],
         email: data.emailSeries ? data.emailSeries.map((email: any) => 
           `Subject: ${email.subject}\n\n${email.body}`
         ) : [],
-        reasoning: data.reasoning ? 
-          typeof data.reasoning === 'string' ? 
-            data.reasoning : 
-            JSON.stringify(data.reasoning, null, 2) 
-          : "No reasoning provided"
+        reasoning: data.reasoning || null
       }];
       
       console.log("Processed AI Content Suggestions object:", contentArray);
