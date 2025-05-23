@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -99,6 +100,7 @@ export const useN8nAgent = () => {
       const timeoutId = setTimeout(() => controller.abort(), 180000);
       
       try {
+        // This is the actual HTTP request sent to the webhook
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -94,7 +93,7 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
 
   const handleAISuggestions = async () => {
     if (!topicArea) {
-      toast.error("Topic Area Required", {
+      toast.success("Topic Area Required", {
         description: "Please select a topic area before getting AI suggestions"
       });
       return;
@@ -151,6 +150,7 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
       const personaName = personaTypes.find(p => p.id === selectedPersona)?.name || "Generic User";
       const goalName = contentGoals.find(g => g.id === selectedGoal)?.name || "General Content";
       
+      // This is the exact payload that gets sent to the webhook
       await sendToN8n({
         keywords: keywordsToSelect.length > 0 
           ? keywordsToProcess.filter(kw => keywordsToSelect.includes(kw.keyword)) 
