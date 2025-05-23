@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FormattedContent } from "./components/FormattedContent";
 import { RawResponseView } from "./components/RawResponseView";
