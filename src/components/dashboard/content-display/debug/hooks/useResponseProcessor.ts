@@ -16,41 +16,73 @@ export const useResponseProcessor = (rawResponse: any, processedContent: any[]) 
     setProcessingError(null);
     
     try {
+      // Enhanced logging to debug processing
+      console.log("Processing raw response type:", typeof rawResponse);
+      if (typeof rawResponse === 'object') {
+        console.log("Raw response keys:", Object.keys(rawResponse));
+      }
+      
       const processedRawResponse = preprocessRawResponse(rawResponse);
       console.log("Processed raw response for display:", processedRawResponse);
       
-      // Handle direct processing for display
-      const contentToDisplay = processedRawResponse ? (
-        Array.isArray(processedRawResponse) ? processedRawResponse : 
-        // If not an array but has AI content structure, wrap in array
-        (processedRawResponse && (
+      // Handle direct processing for display with better format detection
+      let contentToDisplay: any[] = [];
+      
+      if (processedRawResponse) {
+        // Case 1: Already an array of content items
+        if (Array.isArray(processedRawResponse)) {
+          contentToDisplay = processedRawResponse;
+        }
+        // Case 2: Single content item with expected AI content structure
+        else if (typeof processedRawResponse === 'object' && (
           processedRawResponse.pillarContent !== undefined ||
           processedRawResponse.supportContent !== undefined ||
           processedRawResponse.socialMediaPosts !== undefined ||
           processedRawResponse.emailSeries !== undefined
-        )) ? [processedRawResponse] :
-        // Last resort - wrap rawResponse in array
-        [{ output: typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse) }]
-      ) : [];
+        )) {
+          contentToDisplay = [processedRawResponse];
+        }
+        // Case 3: Response with 'content' array
+        else if (processedRawResponse.content && Array.isArray(processedRawResponse.content)) {
+          contentToDisplay = processedRawResponse.content;
+        }
+        // Case 4: Raw string or unstructured object as fallback
+        else {
+          contentToDisplay = [{ 
+            output: typeof rawResponse === 'string' ? 
+              rawResponse : JSON.stringify(rawResponse, (key, value) => {
+                // Handle circular references
+                if (typeof value === 'object' && value !== null) {
+                  if (value.message && value.message.startsWith('[Circular Reference')) {
+                    return `[Circular Reference: ${value.message}]`;
+                  }
+                }
+                return value;
+              }, 2)
+          }];
+        }
+      }
       
-      console.log("Content to display:", contentToDisplay);
+      console.log("Final content to display:", contentToDisplay.length, "items");
       setReprocessedContent(contentToDisplay);
     } catch (error) {
       console.error("Error processing raw response:", error);
-      setProcessingError(error instanceof Error ? error.message : "Unknown error processing response");
+      setProcessingError(error instanceof Error ? 
+        error.message : "Unknown error processing response");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Auto-process raw response once on component mount
+  // Auto-process raw response once on component mount or when raw response changes
   useEffect(() => {
     if (rawResponse && (!processedContent || processedContent.length === 0)) {
-      console.log("Auto-processing raw response on mount");
+      console.log("Auto-processing raw response on mount or change");
       processRawResponse();
     }
-  }, [rawResponse, processedContent]);
+  }, [rawResponse]);
 
+  // Use processed content if available, otherwise use reprocessed content
   const contentToDisplay = processedContent?.length > 0 ? processedContent : 
                           reprocessedContent?.length > 0 ? reprocessedContent : [];
 
@@ -62,4 +94,3 @@ export const useResponseProcessor = (rawResponse: any, processedContent: any[]) 
     contentToDisplay
   };
 };
-

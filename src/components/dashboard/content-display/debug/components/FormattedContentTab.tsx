@@ -23,21 +23,26 @@ export const FormattedContentTab: React.FC<FormattedContentTabProps> = ({
   onProcessRawResponse,
   contentToDisplay
 }) => {
+  const hasValidRawResponse = Boolean(rawResponse && 
+    (typeof rawResponse === 'object' || 
+     (typeof rawResponse === 'string' && rawResponse.trim().length > 0)));
+
   return (
     <div className="space-y-4">
       <ProcessingError error={processingError} />
       
-      {((!processedContent || processedContent.length === 0) && rawResponse) && (
+      {/* Show processing notification when we have a raw response but no processed content */}
+      {hasValidRawResponse && (!processedContent || processedContent.length === 0) && (
         <ProcessingNotification
           isProcessing={isProcessing}
-          hasProcessedContent={processedContent && processedContent.length > 0}
-          hasReprocessedContent={reprocessedContent.length > 0}
+          hasProcessedContent={Boolean(processedContent && processedContent.length > 0)}
+          hasReprocessedContent={Boolean(reprocessedContent && reprocessedContent.length > 0)}
           onProcessRawResponse={onProcessRawResponse}
         />
       )}
       
+      {/* Show formatted content if available */}
       <FormattedContent processedContent={contentToDisplay} />
     </div>
   );
 };
-
