@@ -53,12 +53,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     <TabsContent value="ai-suggestions" className="m-0">
       <div className="container py-8 px-4 md:px-6 lg:px-8 w-full max-w-full">
         <DashboardHeader 
-          title={
-            <div className="flex flex-wrap items-center gap-2">
-              AI Content Suggestions
-              <Badge variant="outline" className="ml-2">Enhanced</Badge>
-            </div>
-          }
+          title="AI Content Suggestions"
           description="Get targeted content suggestions based on personas and business goals"
         />
         
