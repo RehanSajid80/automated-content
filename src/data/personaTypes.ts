@@ -7,28 +7,38 @@ export interface PersonaType {
 
 export const personaTypes: PersonaType[] = [
   {
-    id: "facility-manager",
-    name: "Facility Manager",
-    description: "Professionals responsible for maintaining office space and facilities"
+    id: "space-planner",
+    name: "Sam the Space Planner",
+    description: "Focused on optimizing office layouts and space utilization"
   },
   {
-    id: "it-director",
-    name: "IT Director",
-    description: "Technology leaders managing workplace systems and infrastructure"
+    id: "facility-operator",
+    name: "Farah the Facility Operator",
+    description: "Manages day-to-day facility operations and maintenance"
   },
   {
-    id: "workplace-experience",
-    name: "Workplace Experience Lead",
-    description: "Focused on employee experience and workplace engagement"
+    id: "decision-maker",
+    name: "Danielle the Decision Maker",
+    description: "Executive responsible for workplace strategy decisions"
   },
   {
-    id: "operations-manager",
-    name: "Operations Manager",
-    description: "Oversees daily business operations and resource allocation"
+    id: "it-operator",
+    name: "Ishani the IT Operator",
+    description: "Manages workplace technology systems and infrastructure"
   },
   {
-    id: "hr-manager",
-    name: "HR Manager",
-    description: "Human resources professionals focused on employee workplace needs"
+    id: "people-planner",
+    name: "Parker the People Planner",
+    description: "Focuses on employee experience and workspace needs"
+  },
+  {
+    id: "workplace-strategist",
+    name: "Susie the Workplace Experience/Strategist",
+    description: "Develops workplace strategy and employee experience initiatives"
+  },
+  {
+    id: "real-estate-head",
+    name: "Mike the Head of Real Estate",
+    description: "Oversees real estate portfolio and workplace investments"
   }
 ];

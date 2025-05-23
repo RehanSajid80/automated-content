@@ -13,7 +13,7 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
   const [localKeywords, setLocalKeywords] = useState(initialKeywords);
   const [isN8nLoading, setIsN8nLoading] = useState(false);
   const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
-  const [selectedPersona, setSelectedPersona] = useState<string>("facility-manager");
+  const [selectedPersona, setSelectedPersona] = useState<string>("space-planner"); // Updated default persona
   const [selectedGoal, setSelectedGoal] = useState<string>("increase-seo");
   const [customKeywords, setCustomKeywords] = useState<string[]>([]);
   
