@@ -143,7 +143,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="custom-keywords" id="custom-keywords" />
-              <Label htmlFor="custom-keywords">Custom Keywords Webhook</Label>
+              <Label htmlFor="custom-keywords">Get AI Content Suggestions</Label>
             </div>
           </RadioGroup>
         )}
@@ -167,17 +167,17 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
         ) : activeWebhookType === 'custom-keywords' ? (
           <div className="space-y-2">
             <label htmlFor="custom-keywords-webhook-url" className="text-sm font-medium">
-              Custom Keywords Webhook URL
+              AI Content Suggestions Webhook URL
             </label>
             <Input
               id="custom-keywords-webhook-url"
-              placeholder="Enter your custom keywords webhook URL"
+              placeholder="Enter your AI content suggestions webhook URL"
               value={customKeywordsWebhookUrl || ''}
               onChange={(e) => setCustomKeywordsWebhookUrl(e.target.value)}
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              This webhook will be used to process user-entered custom keywords
+              This webhook will be used to process user-entered custom keywords and generate content suggestions
             </p>
           </div>
         ) : (
