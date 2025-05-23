@@ -7,7 +7,6 @@ import { useEnhancedContentSuggestions } from "@/hooks/useEnhancedContentSuggest
 import { EnhancedTopicSuggestionForm } from "./content-suggestions/EnhancedTopicSuggestionForm";
 import { StructuredContentSuggestions } from "./content-suggestions/StructuredContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -25,6 +24,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   className 
 }) => {
   const [forceRerender, setForceRerender] = useState(0);
+  const [isForceProcessing, setIsForceProcessing] = useState(false);
   
   const { 
     selectedKeywords,
@@ -56,15 +56,47 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     console.log("EnhancedAISuggestionsTab - rawResponse:", rawResponse);
   }, [generatedContent, isN8nLoading, isAgentLoading, isAISuggestionMode, rawResponse]);
   
+  // Auto-process empty arrays
+  useEffect(() => {
+    if (Array.isArray(rawResponse) && rawResponse.length === 0) {
+      toast.info("Received empty array response, retrying content processing");
+      processRawResponse();
+    }
+  }, [rawResponse]);
+  
   // Function to manually process raw response if needed
   const processRawResponse = () => {
-    if (!rawResponse) return;
+    setIsForceProcessing(true);
+    if (!rawResponse) {
+      toast.error("No raw response available to process");
+      setIsForceProcessing(false);
+      return;
+    }
     
     try {
       let processedContent;
       
+      // Handle empty array as a special case
+      if (Array.isArray(rawResponse) && rawResponse.length === 0) {
+        toast.error("Empty array response - no content to display");
+        setIsForceProcessing(false);
+        return;
+      }
+      
       if (typeof rawResponse === 'string') {
-        processedContent = JSON.parse(rawResponse);
+        // Attempt to parse string as JSON
+        try {
+          processedContent = JSON.parse(rawResponse);
+        } catch (parseError) {
+          console.error("Error parsing raw response as JSON:", parseError);
+          // If can't parse as JSON, treat the string as content directly
+          processedContent = [{ 
+            pillarContent: rawResponse,
+            supportContent: "",
+            socialMediaPosts: [],
+            emailSeries: []
+          }];
+        }
       } else {
         processedContent = rawResponse;
       }
@@ -73,6 +105,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
       if (Array.isArray(processedContent)) {
         if (processedContent.length === 0) {
           toast.error("Empty response received from AI");
+          setIsForceProcessing(false);
           return;
         }
         setGeneratedContent(processedContent);
@@ -85,11 +118,14 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     } catch (err) {
       console.error("Error processing raw response:", err);
       toast.error("Failed to process content");
+    } finally {
+      setIsForceProcessing(false);
     }
   };
   
   // Force showing suggestions if content is available, regardless of isAISuggestionMode
-  const hasContent = generatedContent && generatedContent.length > 0;
+  const hasContent = generatedContent && generatedContent.length > 0 && 
+                    Object.keys(generatedContent[0]).length > 0;
   
   // Convert generatedContent to the format expected by StructuredContentSuggestions
   const structuredSuggestions = hasContent ? 
@@ -132,7 +168,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             autoSelectTrendingKeywords={autoSelectTrendingKeywords}
             isAISuggestionMode={isAISuggestionMode}
             handleAISuggestions={handleAISuggestions}
-            isLoading={isN8nLoading || isAgentLoading}
+            isLoading={isN8nLoading || isAgentLoading || isForceProcessing}
             selectedPersona={selectedPersona}
             setSelectedPersona={setSelectedPersona}
             selectedGoal={selectedGoal}
@@ -142,7 +178,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           />
           
           {/* Show when data is loading */}
-          {(isN8nLoading || isAgentLoading) && (
+          {(isN8nLoading || isAgentLoading || isForceProcessing) && (
             <div className="p-8 flex justify-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
@@ -152,18 +188,26 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           )}
           
           {/* Always display the structured suggestions when content is available */}
-          {!isN8nLoading && !isAgentLoading && structuredSuggestions.length > 0 && (
-            <StructuredContentSuggestions
-              key={`suggestions-${forceRerender}`}
-              suggestions={structuredSuggestions}
-              persona={selectedPersona}
-              goal={selectedGoal}
-              isLoading={false}
-            />
+          {!isN8nLoading && !isAgentLoading && !isForceProcessing && hasContent && (
+            <>
+              <ContentDebugger 
+                generatedContent={generatedContent}
+                forceRender={handleForceRefresh}
+                rawResponse={rawResponse}
+              />
+              
+              <StructuredContentSuggestions
+                key={`suggestions-${forceRerender}`}
+                suggestions={structuredSuggestions}
+                persona={selectedPersona}
+                goal={selectedGoal}
+                isLoading={false}
+              />
+            </>
           )}
           
           {/* Show error message when no content is displayed */}
-          {!isN8nLoading && !isAgentLoading && isAISuggestionMode && 
+          {!isN8nLoading && !isAgentLoading && !isForceProcessing && isAISuggestionMode && 
            (!hasContent || structuredSuggestions.length === 0) && rawResponse && (
             <Alert className="mt-6" variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -183,29 +227,14 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             </Alert>
           )}
           
-          {/* Debug content display */}
-          {(process.env.NODE_ENV === 'development' || true) && rawResponse && (
-            <Card className="mt-6 p-4 border border-yellow-400 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+          {/* Debug content display for unexpected formats */}
+          {!isN8nLoading && !isAgentLoading && !isForceProcessing && rawResponse && !hasContent && (
+            <Card className="mt-6 p-4">
               <ContentDebugger 
                 generatedContent={generatedContent}
                 forceRender={handleForceRefresh}
+                rawResponse={rawResponse}
               />
-              
-              <h3 className="font-medium mb-2">Debug: Raw Content Response</h3>
-              <p className="text-sm mb-2">Content is available but may not be processed correctly.</p>
-              <pre className="text-xs bg-card p-3 rounded overflow-auto max-h-40">
-                {typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse, null, 2)}
-              </pre>
-              
-              <h4 className="font-medium mt-4 mb-2">Processed Content</h4>
-              <pre className="text-xs bg-card p-3 rounded overflow-auto max-h-40">
-                {JSON.stringify(generatedContent, null, 2)}
-              </pre>
-              
-              <h4 className="font-medium mt-4 mb-2">Structured Content</h4>
-              <pre className="text-xs bg-card p-3 rounded overflow-auto max-h-40">
-                {JSON.stringify(structuredSuggestions, null, 2)}
-              </pre>
             </Card>
           )}
         </div>
