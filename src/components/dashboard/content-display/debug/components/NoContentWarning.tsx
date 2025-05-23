@@ -34,11 +34,11 @@ export const NoContentWarning: React.FC<NoContentWarningProps> = ({
       <div className="text-sm text-amber-700 dark:text-amber-400 space-y-2 pt-2">
         <p>Try the following:</p>
         <ul className="list-disc pl-6 space-y-1">
-          <li>Check console logs for API errors</li>
+          <li>Check if the JSON response is correctly formatted</li>
+          <li>Look for content wrapped in code blocks (```json...```)</li>
           <li>Verify webhook URLs are correct</li>
-          <li>Try a different persona or goal</li>
-          <li>Use the debug tools to view raw responses</li>
-          <li>Check for circular references in the response</li>
+          <li>Use the debug tools to view and process raw responses</li>
+          <li>Check for objects with the right structure (pillarContent, supportContent, etc.)</li>
           <li>Try the "Process Raw Response" button in the debug tools</li>
         </ul>
       </div>
