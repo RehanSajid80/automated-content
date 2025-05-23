@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { useEnhancedContentSuggestions } from "@/hooks/useEnhancedContentSuggestions";
+import { useEnhancedContentSuggestions } from "@/hooks/content-suggestions";
 import { EnhancedTopicSuggestionForm } from "./content-suggestions/EnhancedTopicSuggestionForm";
 import { StructuredContentSuggestions } from "./content-suggestions/StructuredContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
