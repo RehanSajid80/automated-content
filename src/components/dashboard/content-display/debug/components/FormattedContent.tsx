@@ -21,6 +21,8 @@ export const FormattedContent: React.FC<FormattedContentProps> = ({ processedCon
         
         // Check if it's a string output that might contain JSON
         if (item.output && typeof item.output === 'string') {
+          console.log("Processing output string:", item.output.substring(0, 100));
+          
           // Try to extract JSON from code blocks (```json...```)
           const jsonMatch = item.output.match(/```json\s*([\s\S]*?)\s*```/) || 
                             item.output.match(/```\s*([\s\S]*?)\s*```/);
@@ -51,12 +53,16 @@ export const FormattedContent: React.FC<FormattedContentProps> = ({ processedCon
         const isAIContent = contentToDisplay && (
           contentToDisplay.pillarContent !== undefined || 
           contentToDisplay.supportContent !== undefined || 
+          contentToDisplay.supportPages !== undefined ||
           contentToDisplay.socialMediaPosts !== undefined || 
+          contentToDisplay.socialMedia !== undefined ||
           contentToDisplay.emailSeries !== undefined ||
+          contentToDisplay.email !== undefined ||
           contentToDisplay.reasoning !== undefined
         );
         
-        console.log(`Item ${index} is AI content:`, isAIContent);
+        console.log(`Item ${index} is AI content:`, isAIContent, "Content keys:", 
+          contentToDisplay ? Object.keys(contentToDisplay) : "no content");
         
         return isAIContent ? 
           <AIContentItem key={index} item={contentToDisplay} index={index} /> : 

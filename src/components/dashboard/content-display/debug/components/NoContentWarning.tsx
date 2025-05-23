@@ -1,6 +1,6 @@
 
 import React from "react";
-import { AlertCircle, Bug, RefreshCw } from "lucide-react";
+import { AlertCircle, Bug, RefreshCw, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface NoContentWarningProps {
@@ -35,12 +35,21 @@ export const NoContentWarning: React.FC<NoContentWarningProps> = ({
         <p>Try the following:</p>
         <ul className="list-disc pl-6 space-y-1">
           <li>Check if the JSON response is correctly formatted</li>
-          <li>Look for content wrapped in code blocks (```json...```)</li>
+          <li className="font-medium">Look for content wrapped in code blocks (```json...```) - this is the most common issue</li>
+          <li>Click "Process Raw Response" to try to extract content from the raw API response</li>
           <li>Verify webhook URLs are correct</li>
           <li>Use the debug tools to view and process raw responses</li>
-          <li>Check for objects with the right structure (pillarContent, supportContent, etc.)</li>
-          <li>Try the "Process Raw Response" button in the debug tools</li>
         </ul>
+      </div>
+      
+      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm space-y-2">
+        <div className="flex items-center gap-2">
+          <Code className="h-4 w-4 text-blue-600" />
+          <p className="font-medium text-blue-600 dark:text-blue-400">Debugging Tip</p>
+        </div>
+        <p className="text-blue-600 dark:text-blue-400 pl-6">
+          If your content is wrapped in code blocks, manually process it using the "Process Raw Response" button in the debug tools.
+        </p>
       </div>
       
       {onRefresh && (

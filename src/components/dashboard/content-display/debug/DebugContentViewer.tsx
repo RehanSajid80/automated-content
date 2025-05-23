@@ -4,6 +4,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FormattedContent } from "./components/FormattedContent";
 import { RawResponseView } from "./components/RawResponseView";
 import { EmptyContentState } from "./components/EmptyContentState";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface DebugContentViewerProps {
   rawResponse: any;
@@ -14,43 +16,68 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
   rawResponse, 
   processedContent 
 }) => {
+  const [reprocessedContent, setReprocessedContent] = React.useState<any[]>([]);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+
   // Process raw response if it contains JSON as a string within code blocks
   const preprocessRawResponse = (rawResponse: any) => {
-    if (typeof rawResponse === 'string') {
-      // Try to extract JSON from code blocks
-      const jsonMatch = rawResponse.match(/```json\s*([\s\S]*?)\s*```/) || 
-                        rawResponse.match(/```\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        try {
-          return JSON.parse(jsonMatch[1]);
-        } catch (err) {
-          console.error("Failed to parse JSON from code block in raw response");
+    console.log("Preprocessing raw response:", typeof rawResponse);
+    setIsProcessing(true);
+    
+    try {
+      if (typeof rawResponse === 'string') {
+        // Try to extract JSON from code blocks
+        const jsonMatch = rawResponse.match(/```json\s*([\s\S]*?)\s*```/) || 
+                          rawResponse.match(/```\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          try {
+            return JSON.parse(jsonMatch[1]);
+          } catch (err) {
+            console.error("Failed to parse JSON from code block in raw response");
+          }
         }
+        
+        // Try parsing as direct JSON
+        if (rawResponse.trim().startsWith('{') || rawResponse.trim().startsWith('[')) {
+          try {
+            return JSON.parse(rawResponse);
+          } catch (err) {
+            console.error("Failed to parse raw response as direct JSON");
+          }
+        }
+      } else if (Array.isArray(rawResponse) && rawResponse.length > 0) {
+        // Check if the array contains objects with an output property that might contain code blocks
+        const firstItem = rawResponse[0];
+        if (firstItem && firstItem.output && typeof firstItem.output === 'string') {
+          // Try to extract JSON from code blocks in the output
+          const jsonMatch = firstItem.output.match(/```json\s*([\s\S]*?)\s*```/) || 
+                            firstItem.output.match(/```\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            try {
+              return JSON.parse(jsonMatch[1]);
+            } catch (err) {
+              console.error("Failed to parse JSON from code block in output");
+            }
+          }
+        }
+      } else if (rawResponse?.output && typeof rawResponse.output === 'string') {
+        // Handle object with output property that might contain JSON
+        return preprocessRawResponse(rawResponse.output);
       }
       
-      // Try parsing as direct JSON
-      if (rawResponse.trim().startsWith('{') || rawResponse.trim().startsWith('[')) {
-        try {
-          return JSON.parse(rawResponse);
-        } catch (err) {
-          console.error("Failed to parse raw response as direct JSON");
-        }
-      }
-    } else if (rawResponse?.output && typeof rawResponse.output === 'string') {
-      // Handle object with output property that might contain JSON
-      return preprocessRawResponse(rawResponse.output);
+      return rawResponse;
+    } finally {
+      setIsProcessing(false);
     }
-    
-    return rawResponse;
   };
   
-  // Process raw response
-  const processedRawResponse = preprocessRawResponse(rawResponse);
-  console.log("Processed raw response for display:", processedRawResponse);
-  
-  // Handle direct processing for display
-  const contentToDisplay = processedContent?.length > 0 ? processedContent : 
-    processedRawResponse ? (
+  // Manually process the raw response
+  const processRawResponse = () => {
+    const processedRawResponse = preprocessRawResponse(rawResponse);
+    console.log("Processed raw response for display:", processedRawResponse);
+    
+    // Handle direct processing for display
+    const contentToDisplay = processedRawResponse ? (
       Array.isArray(processedRawResponse) ? processedRawResponse : 
       // If not an array but has AI content structure, wrap in array
       (processedRawResponse && (
@@ -62,7 +89,22 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
       // Last resort - wrap rawResponse in array
       [{ output: typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse) }]
     ) : [];
+    
+    console.log("Content to display:", contentToDisplay);
+    setReprocessedContent(contentToDisplay);
+  };
 
+  // Process raw response once on component mount
+  React.useEffect(() => {
+    if (rawResponse && (!processedContent || processedContent.length === 0)) {
+      processRawResponse();
+    }
+  }, [rawResponse]);
+  
+  // Content to display - either the processed content or reprocessed content
+  const contentToDisplay = processedContent?.length > 0 ? processedContent : 
+                          reprocessedContent?.length > 0 ? reprocessedContent : [];
+  
   // Log what we're displaying
   console.log("Content to display:", contentToDisplay);
 
@@ -78,6 +120,26 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
       </TabsList>
       
       <TabsContent value="formatted" className="space-y-4">
+        {(processedContent?.length === 0 && rawResponse) && (
+          <div className="mb-4 p-4 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
+            <div className="flex justify-between items-center">
+              <p className="text-amber-800 dark:text-amber-400 text-sm font-medium">
+                No processed content available. Try processing the raw response.
+              </p>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isProcessing}
+                onClick={processRawResponse}
+                className="flex items-center gap-2"
+              >
+                {isProcessing ? "Processing..." : "Process Raw Response"}
+                {isProcessing && <RefreshCw className="h-4 w-4 animate-spin" />}
+              </Button>
+            </div>
+          </div>
+        )}
         <FormattedContent processedContent={contentToDisplay} />
       </TabsContent>
       
