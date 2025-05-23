@@ -17,13 +17,13 @@ export const useResponseProcessor = (rawResponse: any, processedContent: any[]) 
     
     try {
       // Enhanced logging to debug processing
-      console.log("Processing raw response type:", typeof rawResponse);
+      console.log("TESTING - Processing raw response type:", typeof rawResponse);
       if (typeof rawResponse === 'object') {
-        console.log("Raw response keys:", Object.keys(rawResponse));
+        console.log("TESTING - Raw response keys:", Object.keys(rawResponse));
       }
       
       const processedRawResponse = preprocessRawResponse(rawResponse);
-      console.log("Processed raw response for display:", processedRawResponse);
+      console.log("TESTING - Processed raw response for display:", processedRawResponse);
       
       // Handle direct processing for display with better format detection
       let contentToDisplay: any[] = [];
@@ -63,10 +63,11 @@ export const useResponseProcessor = (rawResponse: any, processedContent: any[]) 
         }
       }
       
-      console.log("Final content to display:", contentToDisplay.length, "items");
+      console.log("TESTING - Final content to display:", contentToDisplay.length, "items");
+      console.log("TESTING - Content details:", JSON.stringify(contentToDisplay).substring(0, 500));
       setReprocessedContent(contentToDisplay);
     } catch (error) {
-      console.error("Error processing raw response:", error);
+      console.error("TESTING - Error processing raw response:", error);
       setProcessingError(error instanceof Error ? 
         error.message : "Unknown error processing response");
     } finally {
@@ -76,8 +77,8 @@ export const useResponseProcessor = (rawResponse: any, processedContent: any[]) 
 
   // Auto-process raw response once on component mount or when raw response changes
   useEffect(() => {
-    if (rawResponse && (!processedContent || processedContent.length === 0)) {
-      console.log("Auto-processing raw response on mount or change");
+    if (rawResponse && (!processedContent || processedContent.length === 0) && !isProcessing) {
+      console.log("TESTING - Auto-processing raw response on mount or change");
       processRawResponse();
     }
   }, [rawResponse]);

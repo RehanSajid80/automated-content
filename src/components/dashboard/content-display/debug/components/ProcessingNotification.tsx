@@ -30,8 +30,8 @@ export const ProcessingNotification: React.FC<ProcessingNotificationProps> = ({
         <div className="flex flex-col gap-2">
           <p>
             {!hasReprocessedContent
-              ? "Raw response detected but no processed content available. Try processing the raw response to display content."
-              : "Content processed from raw response. Displaying best effort interpretation."}
+              ? "TESTING: Raw response detected but no processed content available. Try processing the raw response to display content."
+              : "TESTING: Content processed from raw response. Displaying best effort interpretation."}
           </p>
           
           <Button

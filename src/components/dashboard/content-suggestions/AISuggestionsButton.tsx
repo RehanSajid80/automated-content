@@ -18,17 +18,17 @@ export const AISuggestionsButton: React.FC<AISuggestionsButtonProps> = ({
     <Button
       onClick={onClick}
       disabled={disabled || isLoading}
-      className="w-full mt-4"
+      className="w-full mt-4 bg-blue-600 hover:bg-blue-700"
     >
       {isLoading ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Generating AI Suggestions...
+          Generating AI Suggestions... (TEST MODE)
         </>
       ) : (
         <>
           <Sparkles className="mr-2 h-4 w-4" />
-          Get AI Content Suggestions
+          Get AI Content Suggestions (TEST MODE)
         </>
       )}
     </Button>
