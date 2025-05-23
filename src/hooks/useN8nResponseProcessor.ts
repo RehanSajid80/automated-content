@@ -39,9 +39,34 @@ export const useN8nResponseProcessor = () => {
       title = data.title;
     }
     
-    // Check for AI Content Suggestions specific format
-    if (data && (data.pillarContent || data.supportContent || data.socialMediaPosts || data.emailSeries)) {
-      console.log("Found AI Content Suggestions format");
+    // Handle AI Content Suggestions specific format (as an array or single object)
+    if (Array.isArray(data) && data.length > 0 && 
+        (data[0].pillarContent || data[0].supportContent || 
+         data[0].socialMediaPosts || data[0].emailSeries)) {
+      console.log("Found AI Content Suggestions format as array");
+      
+      // Process array format
+      contentArray = data.map(item => ({
+        topicArea: item.title || "Content Suggestions",
+        pillarContent: item.pillarContent ? [item.pillarContent] : [],
+        supportPages: item.supportContent ? [item.supportContent] : [],
+        metaTags: [], // No specific meta tags in this format
+        socialMedia: item.socialMediaPosts || [],
+        email: item.emailSeries ? item.emailSeries.map((email: any) => 
+          `Subject: ${email.subject}\n\n${email.body}`
+        ) : [],
+        reasoning: item.reasoning ? 
+          typeof item.reasoning === 'string' ? 
+            item.reasoning : 
+            JSON.stringify(item.reasoning, null, 2) 
+          : "No reasoning provided"
+      }));
+      
+      console.log("Processed AI Content Suggestions array:", contentArray);
+    }
+    // Check for AI Content Suggestions specific format (single object)
+    else if (data && (data.pillarContent || data.supportContent || data.socialMediaPosts || data.emailSeries)) {
+      console.log("Found AI Content Suggestions format as single object");
       
       // Transform the AI suggestions format to our content structure
       contentArray = [{
@@ -54,9 +79,13 @@ export const useN8nResponseProcessor = () => {
           `Subject: ${email.subject}\n\n${email.body}`
         ) : [],
         reasoning: data.reasoning ? 
-          JSON.stringify(data.reasoning, null, 2) : 
-          "No reasoning provided"
+          typeof data.reasoning === 'string' ? 
+            data.reasoning : 
+            JSON.stringify(data.reasoning, null, 2) 
+          : "No reasoning provided"
       }];
+      
+      console.log("Processed AI Content Suggestions object:", contentArray);
     }
     // Check for new format with specific content sections (legacy)
     else if (data && (data.pillarContent || data.supportContent || data.metaTags || data.socialPosts || data.emailCampaign)) {

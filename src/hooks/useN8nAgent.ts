@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -123,16 +124,77 @@ export const useN8nAgent = () => {
         console.log("Raw webhook response:", responseText.substring(0, 300) + "...");
         setRawResponse(responseText);
         
-        // Process the AI Content Suggestions specific format
+        // Check if the response is an array of AI Content Suggestions
         if (responseText.includes("pillarContent") && 
-            (responseText.includes("supportContent") || responseText.includes("socialMediaPosts") || responseText.includes("emailSeries"))) {
+            (responseText.includes("supportContent") || 
+             responseText.includes("socialMediaPosts") || 
+             responseText.includes("emailSeries"))) {
           console.log("Detected AI Content Suggestions format response");
           
           try {
-            const aiContentData = JSON.parse(responseText);
-            if (aiContentData.pillarContent || aiContentData.supportContent || 
-                aiContentData.socialMediaPosts || aiContentData.emailSeries) {
-              // Process this specific format
+            let aiContentData;
+            
+            // Try to parse as JSON
+            try {
+              aiContentData = JSON.parse(responseText);
+            } catch (parseErr) {
+              console.log("Error parsing AI Content Suggestions:", parseErr);
+              // Continue to standard processing if parsing fails
+              const result = processResponse(responseText);
+              
+              // Update state with processed results
+              updateStateWithResults(result);
+              
+              return {
+                suggestions: result.suggestions || [],
+                content: result.content || [],
+                title: result.title || '',
+                rawResponse: responseText
+              };
+            }
+            
+            // Handle both array and single object responses
+            if (Array.isArray(aiContentData)) {
+              console.log("Processing AI Content Suggestions array format");
+              
+              // Transform array format
+              const structuredContent = aiContentData.map(item => ({
+                topicArea: item.title || payload.topicArea || "Content Suggestions",
+                pillarContent: item.pillarContent ? [item.pillarContent] : [],
+                supportPages: item.supportContent ? [item.supportContent] : [],
+                metaTags: [],
+                socialMedia: item.socialMediaPosts || [],
+                email: item.emailSeries ? 
+                  item.emailSeries.map((email: any) => 
+                    `Subject: ${email.subject}\n\n${email.body}`
+                  ) : [],
+                reasoning: item.reasoning ? 
+                  typeof item.reasoning === 'string' ? 
+                    item.reasoning : 
+                    JSON.stringify(item.reasoning, null, 2) 
+                  : null
+              }));
+              
+              setGeneratedContent(structuredContent);
+              
+              toast.success("Content Generated", {
+                description: "Successfully received AI content suggestions"
+              });
+              
+              return {
+                suggestions: [],
+                content: structuredContent,
+                title: '',
+                rawResponse: responseText
+              };
+            }
+            else if (aiContentData && 
+                   (aiContentData.pillarContent || 
+                    aiContentData.supportContent || 
+                    aiContentData.socialMediaPosts || 
+                    aiContentData.emailSeries)) {
+              console.log("Processing AI Content Suggestions single object format");
+              // Process single object format
               const structuredContent = [{
                 topicArea: aiContentData.title || payload.topicArea || "Content Suggestions",
                 pillarContent: aiContentData.pillarContent ? [aiContentData.pillarContent] : [],
@@ -164,7 +226,7 @@ export const useN8nAgent = () => {
               };
             }
           } catch (parseErr) {
-            console.log("Error parsing AI Content Suggestions format:", parseErr);
+            console.log("Error processing AI Content Suggestions format:", parseErr);
             // Continue to standard processing if parsing fails
           }
         }
@@ -173,21 +235,7 @@ export const useN8nAgent = () => {
         const result = processResponse(responseText);
         
         // Update state with processed results
-        if (result.content && result.content.length > 0) {
-          setGeneratedContent(result.content);
-          
-          toast.success("Content Generated", {
-            description: "Successfully received content from webhook"
-          });
-        }
-        
-        if (result.suggestions && result.suggestions.length > 0) {
-          setSuggestions(result.suggestions);
-        }
-        
-        if (result.title) {
-          setContentTitle(result.title);
-        }
+        updateStateWithResults(result);
         
         return {
           suggestions: result.suggestions || [],
@@ -216,6 +264,26 @@ export const useN8nAgent = () => {
       return { suggestions: [], content: [], title: '', error: errorMessage };
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Helper to update state with processed results
+  const updateStateWithResults = (result: any) => {
+    // Update state with processed results
+    if (result.content && result.content.length > 0) {
+      setGeneratedContent(result.content);
+      
+      toast.success("Content Generated", {
+        description: "Successfully received content from webhook"
+      });
+    }
+    
+    if (result.suggestions && result.suggestions.length > 0) {
+      setSuggestions(result.suggestions);
+    }
+    
+    if (result.title) {
+      setContentTitle(result.title);
     }
   };
   

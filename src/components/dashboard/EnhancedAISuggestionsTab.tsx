@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -38,6 +38,14 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   } = useEnhancedContentSuggestions(keywordData);
   
   const { generatedContent, isLoading: isAgentLoading } = useN8nAgent();
+  
+  // Debug logs to track content state
+  useEffect(() => {
+    console.log("EnhancedAISuggestionsTab - generatedContent updated:", generatedContent);
+    console.log("EnhancedAISuggestionsTab - isN8nLoading:", isN8nLoading);
+    console.log("EnhancedAISuggestionsTab - isAgentLoading:", isAgentLoading);
+    console.log("EnhancedAISuggestionsTab - isAISuggestionMode:", isAISuggestionMode);
+  }, [generatedContent, isN8nLoading, isAgentLoading, isAISuggestionMode]);
   
   // Convert generatedContent to the format expected by StructuredContentSuggestions
   const structuredSuggestions = generatedContent && generatedContent.length > 0 ? 
@@ -79,13 +87,25 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             addCustomKeyword={addCustomKeyword}
           />
           
-          {isAISuggestionMode && (
+          {/* Always display the structured suggestions when they exist, not just in isAISuggestionMode */}
+          {((isAISuggestionMode && structuredSuggestions.length > 0) || structuredSuggestions.length > 0) && (
             <StructuredContentSuggestions
               suggestions={structuredSuggestions}
               persona={selectedPersona}
               goal={selectedGoal}
               isLoading={isN8nLoading || isAgentLoading}
             />
+          )}
+          
+          {/* Debug content display */}
+          {process.env.NODE_ENV === 'development' && structuredSuggestions.length === 0 && generatedContent && generatedContent.length > 0 && (
+            <div className="mt-6 p-4 border border-yellow-400 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+              <h3 className="font-medium mb-2">Debug: Content Available But Not Displaying</h3>
+              <p className="text-sm mb-2">Content is available but may not be in the expected format.</p>
+              <pre className="text-xs bg-card p-3 rounded overflow-auto max-h-40">
+                {JSON.stringify(generatedContent, null, 2)}
+              </pre>
+            </div>
           )}
         </div>
       </div>
