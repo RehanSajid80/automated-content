@@ -1,15 +1,13 @@
 
 import React, { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Webhook, CheckCircle, XCircle, Globe, RefreshCw } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
+import { Webhook } from "lucide-react";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
 import { toast } from "sonner";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { WebhookTypeSelector } from "./webhook/WebhookTypeSelector";
+import { WebhookUrlInput } from "./webhook/WebhookUrlInput";
+import { WebhookStatusBadge } from "./webhook/WebhookStatusBadge";
+import { WebhookActions } from "./webhook/WebhookActions";
 
 interface WebhookConnectionProps {
   onSaveWebhook?: () => void;
@@ -90,38 +88,13 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
     }
   };
 
-  const renderStatus = () => {
-    switch (status) {
-      case 'connected':
-        return (
-          <Badge variant="success" className="ml-2">
-            <CheckCircle className="w-4 h-4 mr-1" />
-            Connected
-          </Badge>
-        );
-      case 'disconnected':
-        return (
-          <Badge variant="destructive" className="ml-2">
-            <XCircle className="w-4 h-4 mr-1" />
-            Not Connected
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary" className="ml-2">
-            Checking...
-          </Badge>
-        );
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Webhook className="h-5 w-5" />
           Webhook Integration
-          {renderStatus()}
+          <WebhookStatusBadge status={status} />
         </CardTitle>
         <CardDescription>
           Connect your content generation system to n8n.io workflows for automation
@@ -129,96 +102,40 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {onWebhookTypeChange && (
-          <RadioGroup 
-            value={activeWebhookType} 
-            onValueChange={(value) => onWebhookTypeChange(value as 'keywords' | 'content' | 'custom-keywords')}
-            className="flex flex-col space-y-1 mb-4"
-          >
-            <div className="flex items-center space-x-2 opacity-50">
-              <RadioGroupItem value="keywords" id="keywords" disabled />
-              <Label htmlFor="keywords">Keyword Sync Webhook (Disabled for Testing)</Label>
-            </div>
-            <div className="flex items-center space-x-2 opacity-50">
-              <RadioGroupItem value="content" id="content" disabled />
-              <Label htmlFor="content">Content Generation Webhook (Disabled for Testing)</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="custom-keywords" id="custom-keywords" />
-              <Label htmlFor="custom-keywords" className="font-bold">Get AI Content Suggestions (ACTIVE)</Label>
-            </div>
-          </RadioGroup>
+          <WebhookTypeSelector 
+            activeWebhookType={activeWebhookType} 
+            onWebhookTypeChange={onWebhookTypeChange} 
+          />
         )}
 
         {activeWebhookType === 'content' ? (
-          <div className="space-y-2 opacity-50">
-            <Label htmlFor="content-webhook-url" className="text-sm font-medium">
-              Content Generation Webhook URL (Disabled for Testing)
-            </Label>
-            <Input
-              id="content-webhook-url"
-              placeholder="Enter your content generation webhook URL"
-              value={contentWebhookUrl || ''}
-              onChange={(e) => setContentWebhookUrl(e.target.value)}
-              className="font-mono text-sm"
-              disabled
-            />
-            <p className="text-xs text-muted-foreground">
-              This webhook will be used for AI content generation
-            </p>
-          </div>
+          <WebhookUrlInput
+            type="content"
+            value={contentWebhookUrl || ''}
+            onChange={setContentWebhookUrl}
+          />
         ) : activeWebhookType === 'custom-keywords' ? (
-          <div className="space-y-2">
-            <Label htmlFor="custom-keywords-webhook-url" className="text-sm font-medium">
-              AI Content Suggestions Webhook URL
-            </Label>
-            <Input
-              id="custom-keywords-webhook-url"
-              placeholder="Enter your AI content suggestions webhook URL"
-              value={customKeywordsWebhookUrl || ''}
-              onChange={(e) => setCustomKeywordsWebhookUrl(e.target.value)}
-              className="font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              This webhook will be used to process user-entered custom keywords and generate content suggestions
-            </p>
-            <Alert variant="default" className="mt-4 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
-              <AlertDescription className="text-blue-800 dark:text-blue-400">
-                For testing purposes, only the AI Content Suggestions webhook is active. Other webhooks are disabled.
-              </AlertDescription>
-            </Alert>
-          </div>
+          <WebhookUrlInput
+            type="custom-keywords"
+            value={customKeywordsWebhookUrl || ''}
+            onChange={setCustomKeywordsWebhookUrl}
+          />
         ) : (
-          <div className="space-y-2 opacity-50">
-            <Label htmlFor="webhook-url" className="text-sm font-medium">
-              {onWebhookTypeChange ? 'Keyword Sync' : ''} Webhook URL (Disabled for Testing)
-            </Label>
-            <Input
-              id="webhook-url"
-              placeholder="Enter your webhook URL"
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              className="font-mono text-sm"
-              disabled
-            />
-            <p className="text-xs text-muted-foreground">
-              This webhook will be used to sync data with external services
-            </p>
-          </div>
+          <WebhookUrlInput
+            type="keywords"
+            value={webhookUrl}
+            onChange={setWebhookUrl}
+          />
         )}
-        <div className="flex gap-2">
-          <Button onClick={handleSaveWebhook} className="w-full sm:w-auto" disabled={isLoading || activeWebhookType !== 'custom-keywords'}>
-            <Globe className="mr-2 h-4 w-4" />
-            Save Webhook URL
-          </Button>
-          <Button onClick={handleRefreshWebhooks} variant="outline" className="w-full sm:w-auto" disabled={isLoading}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
+        <WebhookActions 
+          onSave={handleSaveWebhook} 
+          onRefresh={handleRefreshWebhooks} 
+          isLoading={isLoading} 
+          activeWebhookType={activeWebhookType}
+        />
       </CardContent>
     </Card>
   );
 };
 
 export default WebhookConnection;
-
