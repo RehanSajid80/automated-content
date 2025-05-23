@@ -22,7 +22,6 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
   // Process raw response if it contains JSON as a string within code blocks
   const preprocessRawResponse = (rawResponse: any) => {
     console.log("Preprocessing raw response:", typeof rawResponse);
-    setIsProcessing(true);
     
     try {
       if (typeof rawResponse === 'string') {
@@ -49,6 +48,7 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
         // Check if the array contains objects with an output property that might contain code blocks
         const firstItem = rawResponse[0];
         if (firstItem && firstItem.output && typeof firstItem.output === 'string') {
+          console.log("Found output property in array item:", firstItem.output.substring(0, 100));
           // Try to extract JSON from code blocks in the output
           const jsonMatch = firstItem.output.match(/```json\s*([\s\S]*?)\s*```/) || 
                             firstItem.output.match(/```\s*([\s\S]*?)\s*```/);
@@ -62,36 +62,43 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
         }
       } else if (rawResponse?.output && typeof rawResponse.output === 'string') {
         // Handle object with output property that might contain JSON
+        console.log("Found output property in object:", rawResponse.output.substring(0, 100));
         return preprocessRawResponse(rawResponse.output);
       }
       
       return rawResponse;
-    } finally {
-      setIsProcessing(false);
+    } catch (error) {
+      console.error("Error preprocessing raw response:", error);
+      return rawResponse;
     }
   };
   
   // Manually process the raw response
   const processRawResponse = () => {
-    const processedRawResponse = preprocessRawResponse(rawResponse);
-    console.log("Processed raw response for display:", processedRawResponse);
-    
-    // Handle direct processing for display
-    const contentToDisplay = processedRawResponse ? (
-      Array.isArray(processedRawResponse) ? processedRawResponse : 
-      // If not an array but has AI content structure, wrap in array
-      (processedRawResponse && (
-        processedRawResponse.pillarContent !== undefined ||
-        processedRawResponse.supportContent !== undefined ||
-        processedRawResponse.socialMediaPosts !== undefined ||
-        processedRawResponse.emailSeries !== undefined
-      )) ? [processedRawResponse] :
-      // Last resort - wrap rawResponse in array
-      [{ output: typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse) }]
-    ) : [];
-    
-    console.log("Content to display:", contentToDisplay);
-    setReprocessedContent(contentToDisplay);
+    setIsProcessing(true);
+    try {
+      const processedRawResponse = preprocessRawResponse(rawResponse);
+      console.log("Processed raw response for display:", processedRawResponse);
+      
+      // Handle direct processing for display
+      const contentToDisplay = processedRawResponse ? (
+        Array.isArray(processedRawResponse) ? processedRawResponse : 
+        // If not an array but has AI content structure, wrap in array
+        (processedRawResponse && (
+          processedRawResponse.pillarContent !== undefined ||
+          processedRawResponse.supportContent !== undefined ||
+          processedRawResponse.socialMediaPosts !== undefined ||
+          processedRawResponse.emailSeries !== undefined
+        )) ? [processedRawResponse] :
+        // Last resort - wrap rawResponse in array
+        [{ output: typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse) }]
+      ) : [];
+      
+      console.log("Content to display:", contentToDisplay);
+      setReprocessedContent(contentToDisplay);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Process raw response once on component mount
@@ -99,7 +106,7 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
     if (rawResponse && (!processedContent || processedContent.length === 0)) {
       processRawResponse();
     }
-  }, [rawResponse]);
+  }, [rawResponse, processedContent]);
   
   // Content to display - either the processed content or reprocessed content
   const contentToDisplay = processedContent?.length > 0 ? processedContent : 
@@ -120,7 +127,7 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
       </TabsList>
       
       <TabsContent value="formatted" className="space-y-4">
-        {(processedContent?.length === 0 && rawResponse) && (
+        {((!processedContent || processedContent.length === 0) && rawResponse) && (
           <div className="mb-4 p-4 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
             <div className="flex justify-between items-center">
               <p className="text-amber-800 dark:text-amber-400 text-sm font-medium">

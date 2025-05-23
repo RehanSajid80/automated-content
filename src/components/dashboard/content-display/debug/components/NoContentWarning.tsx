@@ -1,6 +1,6 @@
 
 import React from "react";
-import { AlertCircle, Bug, RefreshCw, Code } from "lucide-react";
+import { AlertCircle, Bug, RefreshCw, Code, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface NoContentWarningProps {
@@ -50,6 +50,23 @@ export const NoContentWarning: React.FC<NoContentWarningProps> = ({
         <p className="text-blue-600 dark:text-blue-400 pl-6">
           If your content is wrapped in code blocks, manually process it using the "Process Raw Response" button in the debug tools.
         </p>
+      </div>
+      
+      <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-sm">
+        <div className="flex items-center gap-2">
+          <FileCode className="h-4 w-4 text-green-600" />
+          <p className="font-medium text-green-600 dark:text-green-400">Content Structure Example</p>
+        </div>
+        <pre className="text-xs text-green-600 dark:text-green-400 pl-6 mt-2 whitespace-pre-wrap">
+{`{
+  "pillarContent": "Your main article content...",
+  "supportContent": "Supporting article content...",
+  "socialMediaPosts": ["Post 1", "Post 2"],
+  "emailSeries": [
+    { "subject": "Email subject", "body": "Email body" }
+  ]
+}`}
+        </pre>
       </div>
       
       {onRefresh && (

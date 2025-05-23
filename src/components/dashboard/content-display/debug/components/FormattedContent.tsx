@@ -25,7 +25,7 @@ export const FormattedContent: React.FC<FormattedContentProps> = ({ processedCon
           
           // Try to extract JSON from code blocks (```json...```)
           const jsonMatch = item.output.match(/```json\s*([\s\S]*?)\s*```/) || 
-                            item.output.match(/```\s*([\s\S]*?)\s*```/);
+                           item.output.match(/```\s*([\s\S]*?)\s*```/);
                             
           if (jsonMatch) {
             try {
