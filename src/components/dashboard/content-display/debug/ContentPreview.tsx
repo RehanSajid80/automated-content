@@ -1,226 +1,229 @@
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Copy, FileText, Mail, Share2, Tag, Building2 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface ContentPreviewProps {
   generatedContent: any[];
 }
 
 export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent }) => {
+  const [activeItem, setActiveItem] = React.useState(0);
+
   if (!generatedContent || generatedContent.length === 0) {
     return (
-      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded">
-        <p className="text-sm text-amber-700 dark:text-amber-400">No content available to display</p>
+      <div className="text-center p-4 border rounded-md bg-muted/30">
+        <p className="text-muted-foreground">No content available to preview</p>
       </div>
     );
   }
 
-  const content = generatedContent[0];
-  
-  // Helper function to handle arrays or strings
-  const formatContentArray = (contentItem: any) => {
-    if (!contentItem) return ["No content available"];
-    if (Array.isArray(contentItem)) return contentItem;
-    if (typeof contentItem === 'string') return [contentItem];
-    return [JSON.stringify(contentItem)];
-  };
-  
-  // Get content sections or empty arrays
-  const pillarContent = formatContentArray(content.pillarContent);
-  const supportContent = formatContentArray(content.supportContent);
-  const socialMedia = formatContentArray(content.socialMediaPosts);
-  const emailSeries = Array.isArray(content.emailSeries) ? content.emailSeries : [];
-  
-  // Function to format email content
-  const formatEmail = (email: any) => {
-    if (!email) return null;
-    return (
-      <div className="border rounded-md p-3 mb-2 bg-card">
-        <h4 className="font-medium text-sm mb-1">Subject: {email.subject}</h4>
-        <p className="whitespace-pre-line text-sm">{email.body}</p>
-      </div>
-    );
-  };
-
-  return (
-    <Card className="border-0 shadow-none">
-      <CardContent className="p-0">
+  const renderContentItem = (content: any) => {
+    // Check if this is a structured content item with pillar content or other sections
+    const hasPillarContent = content.pillarContent !== undefined;
+    const hasOutput = content.output !== undefined;
+    
+    if (hasPillarContent) {
+      // Render structured content with tabs
+      return (
         <Tabs defaultValue="pillar" className="w-full">
-          <TabsList className="grid grid-cols-5 mb-4">
-            <TabsTrigger value="pillar" className="flex items-center gap-1">
-              <FileText className="h-4 w-4" />
-              <span>Pillar</span>
-            </TabsTrigger>
-            <TabsTrigger value="support" className="flex items-center gap-1">
-              <Building2 className="h-4 w-4" />
-              <span>Support</span>
-            </TabsTrigger>
-            <TabsTrigger value="social" className="flex items-center gap-1">
-              <Share2 className="h-4 w-4" />
-              <span>Social</span>
-            </TabsTrigger>
-            <TabsTrigger value="email" className="flex items-center gap-1">
-              <Mail className="h-4 w-4" />
-              <span>Email</span>
-            </TabsTrigger>
-            <TabsTrigger value="reasoning" className="flex items-center gap-1">
-              <Tag className="h-4 w-4" />
-              <span>Why?</span>
-            </TabsTrigger>
+          <TabsList className="mb-4">
+            {content.pillarContent && <TabsTrigger value="pillar">Pillar Content</TabsTrigger>}
+            {content.supportContent && <TabsTrigger value="support">Support Content</TabsTrigger>}
+            {content.socialMediaPosts && content.socialMediaPosts.length > 0 && <TabsTrigger value="social">Social Posts</TabsTrigger>}
+            {content.emailSeries && content.emailSeries.length > 0 && <TabsTrigger value="email">Emails</TabsTrigger>}
+            {content.metaTags && <TabsTrigger value="meta">Meta Tags</TabsTrigger>}
           </TabsList>
-
-          <TabsContent value="pillar">
-            <div className="space-y-3">
-              {pillarContent.length > 0 ? (
-                pillarContent.map((item, index) => (
-                  <div key={index} className="bg-card border rounded-md p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium">{item}</h3>
-                      <Button size="sm" variant="ghost" onClick={() => {
-                        navigator.clipboard.writeText(item);
-                        toast.success("Copied to clipboard");
-                      }}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
+          
+          {content.pillarContent && (
+            <TabsContent value="pillar" className="mt-0">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Pillar Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px] rounded-md border p-4">
+                    <div className="prose max-w-none dark:prose-invert">
+                      {Array.isArray(content.pillarContent) 
+                        ? content.pillarContent.map((item: string, i: number) => (
+                            <div key={i} className="mb-6">
+                              <p>{item}</p>
+                              {i < content.pillarContent.length - 1 && <hr className="my-4" />}
+                            </div>
+                          ))
+                        : <p>{content.pillarContent}</p>
+                      }
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-muted-foreground">No pillar content available</div>
-              )}
-            </div>
-          </TabsContent>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
           
-          <TabsContent value="support">
-            <div className="space-y-3">
-              {supportContent.length > 0 ? (
-                supportContent.map((item, index) => (
-                  <div key={index} className="bg-card border rounded-md p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium">{item}</h3>
-                      <Button size="sm" variant="ghost" onClick={() => {
-                        navigator.clipboard.writeText(item);
-                        toast.success("Copied to clipboard");
-                      }}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
+          {content.supportContent && (
+            <TabsContent value="support" className="mt-0">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Support Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px] rounded-md border p-4">
+                    <div className="prose max-w-none dark:prose-invert">
+                      {Array.isArray(content.supportContent) 
+                        ? content.supportContent.map((item: string, i: number) => (
+                            <div key={i} className="mb-6">
+                              <p>{item}</p>
+                              {i < content.supportContent.length - 1 && <hr className="my-4" />}
+                            </div>
+                          ))
+                        : <p>{content.supportContent}</p>
+                      }
                     </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+          
+          {content.socialMediaPosts && content.socialMediaPosts.length > 0 && (
+            <TabsContent value="social" className="mt-0">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Social Media Posts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px] rounded-md border p-4">
+                    <div className="space-y-4">
+                      {content.socialMediaPosts.map((post: any, i: number) => (
+                        <div key={i} className="p-3 border rounded-md">
+                          <p className="whitespace-pre-wrap">{typeof post === 'string' ? post : JSON.stringify(post)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+          
+          {content.emailSeries && content.emailSeries.length > 0 && (
+            <TabsContent value="email" className="mt-0">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Email Series</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px] rounded-md border p-4">
+                    <div className="space-y-4">
+                      {content.emailSeries.map((email: any, i: number) => (
+                        <div key={i} className="p-3 border rounded-md">
+                          <p className="font-medium">Subject: {email.subject}</p>
+                          <p className="whitespace-pre-wrap mt-2">{email.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+          
+          {content.metaTags && (
+            <TabsContent value="meta" className="mt-0">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Meta Tags</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 p-4 border rounded-md">
+                    {typeof content.metaTags === 'object' ? (
+                      <>
+                        {content.metaTags.metaTitle && (
+                          <div>
+                            <p className="font-medium">Meta Title:</p>
+                            <p>{content.metaTags.metaTitle}</p>
+                          </div>
+                        )}
+                        {content.metaTags.metaDescription && (
+                          <div className="mt-2">
+                            <p className="font-medium">Meta Description:</p>
+                            <p>{content.metaTags.metaDescription}</p>
+                          </div>
+                        )}
+                      </>
+                    ) : Array.isArray(content.metaTags) ? (
+                      content.metaTags.map((tag: any, i: number) => (
+                        <div key={i}>
+                          <p className="whitespace-pre-wrap">{tag}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p>{content.metaTags.toString()}</p>
+                    )}
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-muted-foreground">No support content available</div>
-              )}
-            </div>
-          </TabsContent>
-          
-          <SocialPostsTab content={content} />
-          
-          <EmailSeriesTab content={content} />
-          
-          <ReasoningTab content={content} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
-      </CardContent>
-    </Card>
-  );
-};
+      );
+    } else if (hasOutput) {
+      // Render simple output
+      return (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              {content.title ? content.title : "Generated Content"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px] rounded-md border p-4">
+              <pre className="whitespace-pre-wrap text-sm">{content.output}</pre>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      );
+    } else {
+      // Render raw content as JSON
+      return (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Raw Content</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px] rounded-md border p-4">
+              <pre className="text-xs whitespace-pre-wrap">
+                {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
+              </pre>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      );
+    }
+  };
 
-const SocialPostsTab: React.FC<{ content: any }> = ({ content }) => {
   return (
-    <TabsContent value="social">
-      <div className="space-y-3">
-        {content.socialMediaPosts && content.socialMediaPosts.length > 0 ? (
-          content.socialMediaPosts.map((post: string, index: number) => {
-            // Determine social media platform from content
-            let platform = "";
-            let badgeVariant = "default";
-            
-            if (post.toLowerCase().includes("linkedin")) {
-              platform = "LinkedIn";
-              badgeVariant = "outline";
-            } else if (post.toLowerCase().includes("twitter") || post.toLowerCase().includes("x style")) {
-              platform = "Twitter/X";
-              badgeVariant = "secondary";
-            } else if (post.toLowerCase().includes("instagram") || post.toLowerCase().includes("facebook")) {
-              platform = "Instagram/Facebook";
-              badgeVariant = "default";
-            }
-            
-            return (
-              <div key={index} className="bg-card border rounded-md p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <Badge variant={badgeVariant as any}>{platform}</Badge>
-                  <Button size="sm" variant="ghost" onClick={() => {
-                    navigator.clipboard.writeText(post);
-                    toast.success("Post copied to clipboard");
-                  }}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-                <p className="text-sm whitespace-pre-line">{post}</p>
-              </div>
-            );
-          })
-        ) : (
-          <div className="text-center text-muted-foreground">No social posts available</div>
-        )}
-      </div>
-    </TabsContent>
-  );
-};
+    <div className="space-y-4">
+      {generatedContent.length > 1 && (
+        <div className="flex space-x-2 overflow-x-auto pb-2">
+          {generatedContent.map((_, idx) => (
+            <button
+              key={idx}
+              className={`px-3 py-1 text-sm rounded-md ${
+                activeItem === idx
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted hover:bg-muted/80"
+              }`}
+              onClick={() => setActiveItem(idx)}
+            >
+              Item {idx + 1}
+            </button>
+          ))}
+        </div>
+      )}
 
-const EmailSeriesTab: React.FC<{ content: any }> = ({ content }) => {
-  return (
-    <TabsContent value="email">
-      <div className="space-y-3">
-        {content.emailSeries && content.emailSeries.length > 0 ? (
-          content.emailSeries.map((email: any, index: number) => (
-            <div key={index} className="relative">
-              <div className="border rounded-md p-3 mb-2 bg-card">
-                <h4 className="font-medium text-sm mb-1">Subject: {email.subject}</h4>
-                <p className="whitespace-pre-line text-sm">{email.body}</p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="absolute top-2 right-2"
-                onClick={() => {
-                  const emailText = `Subject: ${email.subject}\n\n${email.body}`;
-                  navigator.clipboard.writeText(emailText);
-                  toast.success("Email copied to clipboard");
-                }}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          ))
-        ) : (
-          <div className="text-center text-muted-foreground">No email content available</div>
-        )}
-      </div>
-    </TabsContent>
-  );
-};
-
-const ReasoningTab: React.FC<{ content: any }> = ({ content }) => {
-  return (
-    <TabsContent value="reasoning">
-      <div className="space-y-3">
-        {content.reasoning ? (
-          Object.entries(content.reasoning).map(([key, value]: [string, any]) => (
-            <div key={key} className="bg-card border rounded-md p-3">
-              <h4 className="font-medium text-sm capitalize mb-1">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
-              <p className="text-sm text-muted-foreground">{value as string}</p>
-            </div>
-          ))
-        ) : (
-          <div className="text-center text-muted-foreground">No reasoning available</div>
-        )}
-      </div>
-    </TabsContent>
+      {renderContentItem(generatedContent[activeItem])}
+    </div>
   );
 };

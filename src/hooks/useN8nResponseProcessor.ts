@@ -33,7 +33,7 @@ export const useN8nResponseProcessor = () => {
       };
     }
     
-    // Handle AI Content Suggestions specific format (AI format has pillarContent, etc.)
+    // Direct format detection for AI Content Suggestions format
     if (isAIContentSuggestionsFormat(data)) {
       console.log("Detected AI Content Suggestions format directly");
       const formattedContent = formatAIContentSuggestions(data);
@@ -164,8 +164,8 @@ export const useN8nResponseProcessor = () => {
     
     // Check single object format
     return Boolean(data && 
-      (data.pillarContent || data.supportContent || 
-       data.socialMediaPosts || data.emailSeries));
+      (data.pillarContent !== undefined || data.supportContent !== undefined || 
+       data.socialMediaPosts !== undefined || data.emailSeries !== undefined));
   };
   
   // Helper function to format AI Content Suggestions consistently

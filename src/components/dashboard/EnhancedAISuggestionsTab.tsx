@@ -25,7 +25,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
 }) => {
   const [forceRerender, setForceRerender] = useState(0);
   const [isForceProcessing, setIsForceProcessing] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
+  const [debugMode, setDebugMode] = useState(true); // Always show debug mode initially
   
   const { 
     selectedKeywords,
@@ -92,11 +92,38 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         setIsForceProcessing(false);
         return;
       }
+
+      // Special handling for pillarContent/supportContent objects (common format)
+      if (rawResponse && (rawResponse.pillarContent || rawResponse.supportContent || 
+          rawResponse.socialMediaPosts || rawResponse.emailSeries)) {
+        // Wrap single object in array for consistent handling
+        processedContent = [rawResponse];
+        setGeneratedContent(processedContent);
+        toast.success("Content processed successfully");
+        setIsForceProcessing(false);
+        return;
+      }
       
       if (typeof rawResponse === 'string') {
         // Attempt to parse string as JSON
         try {
           processedContent = JSON.parse(rawResponse);
+          
+          // Check if parsed content is properly formatted
+          if (processedContent && (processedContent.pillarContent || 
+              processedContent.supportContent || processedContent.socialMediaPosts)) {
+            setGeneratedContent([processedContent]);
+          } else if (Array.isArray(processedContent)) {
+            setGeneratedContent(processedContent);
+          } else {
+            // Create a structured format from unstructured response
+            setGeneratedContent([{ 
+              pillarContent: typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse),
+              supportContent: "",
+              socialMediaPosts: [],
+              emailSeries: []
+            }]);
+          }
         } catch (parseError) {
           console.error("Error parsing raw response as JSON:", parseError);
           // If can't parse as JSON, treat the string as content directly
@@ -106,22 +133,11 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             socialMediaPosts: [],
             emailSeries: []
           }];
+          setGeneratedContent(processedContent);
         }
       } else {
         processedContent = rawResponse;
-      }
-      
-      // Handle both array and single object formats
-      if (Array.isArray(processedContent)) {
-        if (processedContent.length === 0) {
-          toast.error("Empty response received from AI");
-          setIsForceProcessing(false);
-          return;
-        }
-        setGeneratedContent(processedContent);
-      } else {
-        // Single object format, convert to array
-        setGeneratedContent([processedContent]);
+        setGeneratedContent(Array.isArray(processedContent) ? processedContent : [processedContent]);
       }
       
       toast.success("Content processed successfully");
@@ -162,6 +178,13 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     setForceRerender(prev => prev + 1);
     processRawResponse();
   };
+
+  // Immediate content processing on first render if we have raw response but no processed content
+  useEffect(() => {
+    if (rawResponse && (!generatedContent || generatedContent.length === 0)) {
+      processRawResponse();
+    }
+  }, [rawResponse]);
 
   return (
     <TabsContent value="ai-suggestions" className="m-0">
@@ -211,13 +234,22 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             </div>
           )}
 
-          {/* Debug tool - show if debug mode is enabled or if there's a problem */}
-          {(debugMode || (rawResponse && !hasContent)) && !isN8nLoading && !isAgentLoading && !isForceProcessing && rawResponse && (
-            <ContentDebugger 
-              generatedContent={generatedContent}
-              forceRender={handleForceRefresh}
-              rawResponse={rawResponse}
-            />
+          {/* Debug tool - always show initially for troubleshooting */}
+          {(debugMode || (rawResponse && !hasContent)) && !isN8nLoading && !isAgentLoading && !isForceProcessing && (
+            <Card className="mb-6 border-amber-500">
+              <div className="p-4">
+                <h3 className="text-lg font-medium mb-2">Debug Tools</h3>
+                <p className="text-sm mb-4">
+                  If your content isn't displaying correctly, try using these debug tools to process and display the raw response.
+                </p>
+                
+                <ContentDebugger 
+                  generatedContent={generatedContent}
+                  forceRender={handleForceRefresh}
+                  rawResponse={rawResponse}
+                />
+              </div>
+            </Card>
           )}
           
           {/* Always display the structured suggestions when content is available */}
@@ -236,9 +268,9 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
            (!hasContent || structuredSuggestions.length === 0) && rawResponse && (
             <Alert className="mt-6" variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>No Content Displayed</AlertTitle>
+              <AlertTitle>Content Processing Issue</AlertTitle>
               <AlertDescription className="space-y-2">
-                <p>Content was generated but couldn't be properly formatted for display. This may be due to an unexpected response format.</p>
+                <p>Content was generated but couldn't be properly formatted for display. Use the debug tools above to see and process the raw response.</p>
                 <Button 
                   variant="outline" 
                   size="sm" 

@@ -18,7 +18,7 @@ export const ContentDebugger: React.FC<ContentDebuggerProps> = ({
   forceRender,
   rawResponse
 }) => {
-  const [isOpen, setIsOpen] = React.useState(true); // Changed to true by default
+  const [isOpen, setIsOpen] = React.useState(true); // Default to open
   const [activeTab, setActiveTab] = React.useState("preview");
 
   return (
@@ -53,6 +53,7 @@ export const ContentDebugger: React.FC<ContentDebuggerProps> = ({
           <TabsList className="w-full">
             <TabsTrigger value="preview" className="flex-1">Visual Preview</TabsTrigger>
             <TabsTrigger value="raw" className="flex-1">Raw Content</TabsTrigger>
+            {rawResponse && <TabsTrigger value="debug" className="flex-1">Debug View</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="preview" className="pt-4">
@@ -65,6 +66,19 @@ export const ContentDebugger: React.FC<ContentDebuggerProps> = ({
               onForceRender={forceRender} 
             />
           </TabsContent>
+
+          {rawResponse && (
+            <TabsContent value="debug" className="pt-4">
+              <div className="border rounded-md p-4 mt-2 bg-muted/50 overflow-auto max-h-[400px]">
+                <pre className="text-xs whitespace-pre-wrap">
+                  {typeof rawResponse === 'string' 
+                    ? rawResponse 
+                    : JSON.stringify(rawResponse, null, 2)
+                  }
+                </pre>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </CollapsibleContent>
     </Collapsible>
