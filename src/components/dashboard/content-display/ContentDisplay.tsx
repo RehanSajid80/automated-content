@@ -17,6 +17,7 @@ interface ContentDisplayProps {
   handleRegenerateContent: (sectionKey: string) => void;
   handleSaveContent: (sectionKey: string) => void;
   forceRender: () => void;
+  rawResponse?: any; // Add this prop
 }
 
 export const ContentDisplay: React.FC<ContentDisplayProps> = ({
@@ -28,7 +29,8 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
   handleContentChange,
   handleRegenerateContent,
   handleSaveContent,
-  forceRender
+  forceRender,
+  rawResponse // Use this prop
 }) => {
   return (
     <Card className="mt-4">
@@ -49,6 +51,7 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
         <ContentDebugger 
           generatedContent={generatedContent} 
           forceRender={forceRender} 
+          rawResponse={rawResponse} // Pass this prop
         />
         
         {isEditing ? (
