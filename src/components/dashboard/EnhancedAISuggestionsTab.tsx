@@ -84,24 +84,26 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         return;
       }
       
+      console.log("Processing raw response:", typeof rawResponse, rawResponse);
+      
       // If rawResponse is directly usable, use it
       if (rawResponse && (
-        rawResponse.pillarContent !== undefined ||
-        rawResponse.supportContent !== undefined ||
-        rawResponse.socialMediaPosts !== undefined ||
-        rawResponse.emailSeries !== undefined
+        (typeof rawResponse === 'object' && (
+          rawResponse.pillarContent !== undefined ||
+          rawResponse.supportContent !== undefined ||
+          rawResponse.socialMediaPosts !== undefined ||
+          rawResponse.emailSeries !== undefined
+        )) ||
+        (Array.isArray(rawResponse) && rawResponse.length > 0 && typeof rawResponse[0] === 'object' && (
+          rawResponse[0].pillarContent !== undefined ||
+          rawResponse[0].supportContent !== undefined ||
+          rawResponse[0].socialMediaPosts !== undefined ||
+          rawResponse[0].emailSeries !== undefined
+        ))
       )) {
-        // Wrap single object in array for consistent handling
-        processedContent = [rawResponse];
-        setGeneratedContent(processedContent);
-        toast.success("Content processed successfully");
-        setIsForceProcessing(false);
-        return;
-      }
-      
-      // Handle array content directly
-      if (Array.isArray(rawResponse) && rawResponse.length > 0) {
-        processedContent = rawResponse;
+        // Wrap single object in array for consistent handling if needed
+        processedContent = Array.isArray(rawResponse) ? rawResponse : [rawResponse];
+        console.log("Using content directly:", processedContent);
         setGeneratedContent(processedContent);
         toast.success("Content processed successfully");
         setIsForceProcessing(false);
@@ -111,19 +113,32 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
       if (typeof rawResponse === 'string') {
         // Attempt to parse string as JSON
         try {
+          console.log("Attempting to parse string response as JSON");
           processedContent = JSON.parse(rawResponse);
+          
+          console.log("Parsed content:", processedContent);
           
           // Check if parsed content is properly formatted
           if (processedContent && (
-            processedContent.pillarContent !== undefined || 
-            processedContent.supportContent !== undefined || 
-            processedContent.socialMediaPosts !== undefined || 
-            processedContent.emailSeries !== undefined
+            (Array.isArray(processedContent) && processedContent.length > 0 && typeof processedContent[0] === 'object' && (
+              processedContent[0].pillarContent !== undefined ||
+              processedContent[0].supportContent !== undefined ||
+              processedContent[0].socialMediaPosts !== undefined ||
+              processedContent[0].emailSeries !== undefined
+            )) ||
+            (typeof processedContent === 'object' && (
+              processedContent.pillarContent !== undefined || 
+              processedContent.supportContent !== undefined || 
+              processedContent.socialMediaPosts !== undefined || 
+              processedContent.emailSeries !== undefined
+            ))
           )) {
-            setGeneratedContent([processedContent]);
-          } else if (Array.isArray(processedContent)) {
-            setGeneratedContent(processedContent);
+            // Handle both array and single object formats
+            const contentArray = Array.isArray(processedContent) ? processedContent : [processedContent];
+            console.log("Setting generated content from parsed JSON:", contentArray);
+            setGeneratedContent(contentArray);
           } else {
+            console.log("Parsed content doesn't match expected format");
             // Create a structured format from unstructured response
             setGeneratedContent([{ 
               pillarContent: typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse),
@@ -141,10 +156,13 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             socialMediaPosts: [],
             emailSeries: []
           }];
+          console.log("Using raw string as content:", processedContent);
           setGeneratedContent(processedContent);
         }
       } else {
+        // For other types, wrap in array as needed
         processedContent = rawResponse;
+        console.log("Using non-string content directly:", processedContent);
         setGeneratedContent(Array.isArray(processedContent) ? processedContent : [processedContent]);
       }
       
@@ -160,6 +178,8 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   // Convert generatedContent to the format expected by StructuredContentSuggestions
   const processContentForDisplay = (contentArray: any[]) => {
     if (!contentArray || contentArray.length === 0) return [];
+    
+    console.log("Processing content array for display:", contentArray);
     
     return contentArray.map(item => {
       // Initialize with default values
@@ -243,6 +263,9 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     });
   };
   
+  // Always show debug mode if there's raw content but no processed content
+  const shouldAlwaysShowDebug = rawResponse && (!generatedContent || generatedContent.length === 0);
+  
   // Force showing suggestions if content is available, regardless of isAISuggestionMode
   const hasContent = generatedContent && generatedContent.length > 0 && 
                     Object.keys(generatedContent[0] || {}).length > 0;
@@ -256,6 +279,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   // Auto process raw response on first render if needed
   useEffect(() => {
     if (rawResponse && (!generatedContent || generatedContent.length === 0)) {
+      console.log("Auto-processing raw response since no generated content is available");
       processRawResponse();
     }
   }, [rawResponse]);
@@ -313,8 +337,8 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             </div>
           )}
 
-          {/* Debug tool */}
-          {(debugMode || (rawResponse && !hasContent)) && !isN8nLoading && !isAgentLoading && !isForceProcessing && (
+          {/* Debug tool - show when debug mode is enabled or when there's raw content but no processed content */}
+          {(debugMode || shouldAlwaysShowDebug) && !isN8nLoading && !isAgentLoading && !isForceProcessing && (
             <Card className="mb-6 border-amber-500">
               <div className="p-4">
                 <h3 className="text-lg font-medium mb-2">Debug Tools</h3>

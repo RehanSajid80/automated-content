@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { AlertCircle } from "lucide-react";
 
 interface ContentPreviewProps {
   generatedContent: any[];
@@ -20,7 +21,11 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
     );
   }
 
+  console.log("ContentPreview rendering with content:", generatedContent);
+
   const renderContentItem = (content: any) => {
+    console.log("Rendering content item:", content);
+    
     // Check if this is a structured AI content suggestion
     const isAIContentSuggestion = content.pillarContent !== undefined || 
                                  content.supportContent !== undefined || 
@@ -29,6 +34,10 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
     
     const hasPillarContent = content.pillarContent !== undefined;
     const hasOutput = content.output !== undefined;
+    
+    console.log("Is AI Content Suggestion:", isAIContentSuggestion);
+    console.log("Has Pillar Content:", hasPillarContent);
+    console.log("Has Output:", hasOutput);
     
     // Format specifically for AI content suggestions
     if (isAIContentSuggestion) {
@@ -251,8 +260,15 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Raw Content</CardTitle>
+            <Badge variant="outline" className="ml-2 text-xs">Debug View</Badge>
           </CardHeader>
           <CardContent>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-3 mb-4 flex gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                Raw response displayed. Format not recognized as standard content.
+              </p>
+            </div>
             <ScrollArea className="h-[400px] rounded-md border p-4">
               <pre className="text-xs whitespace-pre-wrap">
                 {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}

@@ -84,8 +84,39 @@ export const useAIContentGeneration = () => {
       console.log(`Sending content request to n8n for persona: ${personaName}, goal: ${goalName}`);
       console.log(`Keywords: ${keywordsToSelect.join(", ")}`);
       
+      // Define expected output format
+      const outputFormat = {
+        pillarContent: "A headline or detailed title for the main article",
+        supportContent: "A headline or detailed title for supporting content",
+        socialMediaPosts: [
+          "LinkedIn style post with hashtags",
+          "Twitter/X style post with hashtags",
+          "Instagram/Facebook style post with emojis"
+        ],
+        emailSeries: [
+          {
+            subject: "Compelling email subject line 1",
+            body: "Brief email body text"
+          },
+          {
+            subject: "Compelling email subject line 2",
+            body: "Brief email body text"
+          },
+          {
+            subject: "Compelling email subject line 3", 
+            body: "Brief email body text"
+          }
+        ],
+        reasoning: {
+          pillarContent: "Strategic reasoning behind pillar content",
+          supportContent: "Strategic reasoning behind support content",
+          socialMediaPosts: "Strategic reasoning behind social media approach",
+          emailSeries: "Strategic reasoning behind email series approach"
+        }
+      };
+      
       // This is the exact payload that gets sent to the webhook
-      await sendToN8n({
+      const response = await sendToN8n({
         keywords: keywordsToSelect.length > 0 
           ? keywordsToProcess.filter(kw => keywordsToSelect.includes(kw.keyword)) 
           : keywordsToProcess,
@@ -93,23 +124,30 @@ export const useAIContentGeneration = () => {
         targetUrl: targetUrl || "https://www.officespacesoftware.com",
         url: targetUrl || "https://www.officespacesoftware.com",
         requestType: 'contentSuggestions',
+        outputFormat: outputFormat,
         customPayload: {
           target_persona: selectedPersona,
           persona_name: personaName,
           content_goal: selectedGoal,
           goal_name: goalName,
-          custom_keywords: customKeywords
+          custom_keywords: customKeywords,
+          expected_format: JSON.stringify(outputFormat)
         }
       }, true);
+      
+      console.log("N8N response received:", response);
       
       toast.success("AI Suggestions Ready", {
         description: "Content suggestions generated for your selected criteria"
       });
+      
+      return response;
     } catch (error) {
       console.error("Error getting AI suggestions:", error);
       toast.error("Error", {
         description: error instanceof Error ? error.message : "Failed to get AI suggestions"
       });
+      throw error;
     } finally {
       setIsN8nLoading(false);
     }

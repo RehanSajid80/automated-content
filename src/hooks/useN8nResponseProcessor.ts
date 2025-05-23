@@ -8,7 +8,7 @@ export const useN8nResponseProcessor = () => {
    * Handles various response formats and normalizes them
    */
   const processResponse = (responseText: string) => {
-    console.log("Processing n8n response");
+    console.log("Processing n8n response:", responseText?.substring(0, 200) + "...");
     
     let data;
     try {
@@ -155,27 +155,45 @@ export const useN8nResponseProcessor = () => {
   const isAIContentSuggestionsFormat = (data: any): boolean => {
     if (!data) return false;
     
+    // Enhanced logging for format detection
+    console.log("Checking AI Content Suggestions format for:", 
+      Array.isArray(data) ? "Array" : typeof data);
+    
     // Check array format
     if (Array.isArray(data) && data.length > 0) {
       const firstItem = data[0];
-      return Boolean(firstItem && 
+      const isAIFormat = Boolean(firstItem && 
         (firstItem.pillarContent || firstItem.supportContent || 
          firstItem.socialMediaPosts || firstItem.emailSeries || 
          firstItem.reasoning));
+      
+      console.log("Array format check result:", isAIFormat);
+      if (isAIFormat) {
+        console.log("AI Content Suggestion format detected in array format");
+      }
+      return isAIFormat;
     }
     
     // Check single object format
-    return Boolean(data && 
+    const isObjectFormat = Boolean(data && 
       (data.pillarContent !== undefined || data.supportContent !== undefined || 
        data.socialMediaPosts !== undefined || data.emailSeries !== undefined || 
        data.reasoning !== undefined));
+    
+    console.log("Object format check result:", isObjectFormat);
+    if (isObjectFormat) {
+      console.log("AI Content Suggestion format detected in object format");
+    }
+    return isObjectFormat;
   };
   
   // Helper function to format AI Content Suggestions consistently
   const formatAIContentSuggestions = (data: any): any[] => {
     if (Array.isArray(data)) {
+      console.log("Formatting array of AI Content Suggestions");
       return data.map(item => normalizeContentItem(item));
     } else {
+      console.log("Formatting single AI Content Suggestion object");
       return [normalizeContentItem(data)];
     }
   };
