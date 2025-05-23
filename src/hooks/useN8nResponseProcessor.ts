@@ -33,6 +33,18 @@ export const useN8nResponseProcessor = () => {
       };
     }
     
+    // Handle AI Content Suggestions specific format (AI format has pillarContent, etc.)
+    if (isAIContentSuggestionsFormat(data)) {
+      console.log("Detected AI Content Suggestions format directly");
+      const formattedContent = formatAIContentSuggestions(data);
+      
+      return {
+        suggestions: [],
+        content: formattedContent,
+        title: Array.isArray(data) && data[0]?.title || data?.title || ""
+      };
+    }
+    
     // Initialize result containers
     let suggestions: any[] = [];
     let contentArray: any[] = [];
@@ -136,6 +148,33 @@ export const useN8nResponseProcessor = () => {
       content: contentArray,
       title
     };
+  };
+  
+  // Helper function to check if the response is in AI Content Suggestions format
+  const isAIContentSuggestionsFormat = (data: any): boolean => {
+    if (!data) return false;
+    
+    // Check array format
+    if (Array.isArray(data) && data.length > 0) {
+      const firstItem = data[0];
+      return Boolean(firstItem && 
+        (firstItem.pillarContent || firstItem.supportContent || 
+         firstItem.socialMediaPosts || firstItem.emailSeries));
+    }
+    
+    // Check single object format
+    return Boolean(data && 
+      (data.pillarContent || data.supportContent || 
+       data.socialMediaPosts || data.emailSeries));
+  };
+  
+  // Helper function to format AI Content Suggestions consistently
+  const formatAIContentSuggestions = (data: any): any[] => {
+    if (Array.isArray(data)) {
+      return data;
+    } else {
+      return [data];
+    }
   };
   
   return {

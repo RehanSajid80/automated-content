@@ -22,6 +22,20 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
 
   const content = generatedContent[0];
   
+  // Helper function to handle arrays or strings
+  const formatContentArray = (contentItem: any) => {
+    if (!contentItem) return ["No content available"];
+    if (Array.isArray(contentItem)) return contentItem;
+    if (typeof contentItem === 'string') return [contentItem];
+    return [JSON.stringify(contentItem)];
+  };
+  
+  // Get content sections or empty arrays
+  const pillarContent = formatContentArray(content.pillarContent);
+  const supportContent = formatContentArray(content.supportContent);
+  const socialMedia = formatContentArray(content.socialMediaPosts);
+  const emailSeries = Array.isArray(content.emailSeries) ? content.emailSeries : [];
+  
   // Function to format email content
   const formatEmail = (email: any) => {
     if (!email) return null;
@@ -61,14 +75,46 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
           </TabsList>
 
           <TabsContent value="pillar">
-            <div className="bg-card border rounded-md p-3">
-              <h3 className="font-medium mb-2">{content.pillarContent || "No pillar content"}</h3>
+            <div className="space-y-3">
+              {pillarContent.length > 0 ? (
+                pillarContent.map((item, index) => (
+                  <div key={index} className="bg-card border rounded-md p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium">{item}</h3>
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        navigator.clipboard.writeText(item);
+                        toast.success("Copied to clipboard");
+                      }}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground">No pillar content available</div>
+              )}
             </div>
           </TabsContent>
           
           <TabsContent value="support">
-            <div className="bg-card border rounded-md p-3">
-              <h3 className="font-medium mb-2">{content.supportContent || "No support content"}</h3>
+            <div className="space-y-3">
+              {supportContent.length > 0 ? (
+                supportContent.map((item, index) => (
+                  <div key={index} className="bg-card border rounded-md p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium">{item}</h3>
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        navigator.clipboard.writeText(item);
+                        toast.success("Copied to clipboard");
+                      }}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground">No support content available</div>
+              )}
             </div>
           </TabsContent>
           
@@ -168,7 +214,7 @@ const ReasoningTab: React.FC<{ content: any }> = ({ content }) => {
           Object.entries(content.reasoning).map(([key, value]: [string, any]) => (
             <div key={key} className="bg-card border rounded-md p-3">
               <h4 className="font-medium text-sm capitalize mb-1">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
-              <p className="text-sm text-muted-foreground">{value}</p>
+              <p className="text-sm text-muted-foreground">{value as string}</p>
             </div>
           ))
         ) : (

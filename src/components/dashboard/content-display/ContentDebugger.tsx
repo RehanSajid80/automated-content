@@ -18,18 +18,25 @@ export const ContentDebugger: React.FC<ContentDebuggerProps> = ({
   forceRender,
   rawResponse
 }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = React.useState(true); // Changed to true by default
   const [activeTab, setActiveTab] = React.useState("preview");
 
   return (
-    <Collapsible open={true} onOpenChange={setIsOpen} className="w-full mb-4">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full mb-4">
       <div className="flex items-center justify-between">
-        <CollapsibleTrigger asChild>
-          <Button variant="outline" size="sm" className="mb-2 flex items-center gap-2">
-            <Code className="h-4 w-4" />
-            {isOpen ? "Hide Content Preview" : "Show Content Preview"}
-          </Button>
-        </CollapsibleTrigger>
+        <div className="flex items-center">
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="sm" className="mb-2 flex items-center gap-2">
+              <Code className="h-4 w-4" />
+              {isOpen ? "Hide Content Preview" : "Show Content Preview"}
+            </Button>
+          </CollapsibleTrigger>
+          {isOpen && (
+            <p className="text-xs text-muted-foreground ml-2 mb-2">
+              {generatedContent?.length ? `${generatedContent.length} content items available` : "No content available"}
+            </p>
+          )}
+        </div>
         <Button 
           variant="outline" 
           size="sm" 

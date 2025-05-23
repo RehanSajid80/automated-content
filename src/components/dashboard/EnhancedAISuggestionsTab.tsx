@@ -25,6 +25,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
 }) => {
   const [forceRerender, setForceRerender] = useState(0);
   const [isForceProcessing, setIsForceProcessing] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   
   const { 
     selectedKeywords,
@@ -49,7 +50,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   
   // Debug logs to track content state
   useEffect(() => {
-    console.log("EnhancedAISuggestionsTab - generatedContent updated:", generatedContent);
+    console.log("EnhancedAISuggestionsTab - generatedContent:", generatedContent);
     console.log("EnhancedAISuggestionsTab - isN8nLoading:", isN8nLoading);
     console.log("EnhancedAISuggestionsTab - isAgentLoading:", isAgentLoading);
     console.log("EnhancedAISuggestionsTab - isAISuggestionMode:", isAISuggestionMode);
@@ -134,14 +135,14 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   
   // Force showing suggestions if content is available, regardless of isAISuggestionMode
   const hasContent = generatedContent && generatedContent.length > 0 && 
-                    Object.keys(generatedContent[0]).length > 0;
+                    Object.keys(generatedContent[0] || {}).length > 0;
                     
   console.log("HasContent check:", hasContent, "Generated content:", generatedContent);
   
   // Convert generatedContent to the format expected by StructuredContentSuggestions
   const structuredSuggestions = hasContent ? 
     generatedContent.map(item => ({
-      topicArea: item.topicArea || topicArea || item.title || "Content Suggestions",
+      topicArea: item.topicArea || item.title || topicArea || "Content Suggestions",
       pillarContent: Array.isArray(item.pillarContent) ? item.pillarContent : [item.pillarContent].filter(Boolean),
       supportPages: Array.isArray(item.supportPages) ? item.supportPages : 
                    Array.isArray(item.supportContent) ? item.supportContent : 
@@ -171,6 +172,16 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         />
         
         <div className="rounded-xl border border-border bg-card p-6 w-full max-w-full">
+          <div className="flex justify-end mb-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setDebugMode(!debugMode)}
+            >
+              {debugMode ? "Hide Debug Tools" : "Show Debug Tools"}
+            </Button>
+          </div>
+          
           <EnhancedTopicSuggestionForm
             topicArea={topicArea}
             setTopicArea={setTopicArea}
@@ -200,8 +211,8 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             </div>
           )}
 
-          {/* Debug tool - always show if raw response exists */}
-          {rawResponse && !isN8nLoading && !isAgentLoading && !isForceProcessing && (
+          {/* Debug tool - show if debug mode is enabled or if there's a problem */}
+          {(debugMode || (rawResponse && !hasContent)) && !isN8nLoading && !isAgentLoading && !isForceProcessing && rawResponse && (
             <ContentDebugger 
               generatedContent={generatedContent}
               forceRender={handleForceRefresh}
