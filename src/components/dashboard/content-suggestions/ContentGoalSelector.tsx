@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FormLabel } from "@/components/ui/form";
+import { Label } from "@/components/ui/label"; // Changed from FormLabel
 import { contentGoals } from "@/data/contentGoals";
 import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -28,7 +28,7 @@ export const ContentGoalSelector: React.FC<ContentGoalSelectorProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <FormLabel>Content Goal</FormLabel>
+        <Label>Content Goal</Label>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

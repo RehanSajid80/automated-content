@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FormLabel } from "@/components/ui/form";
+import { Label } from "@/components/ui/label"; // Changed from FormLabel
 import { personaTypes } from "@/data/personaTypes";
 import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -28,7 +28,7 @@ export const PersonaSelector: React.FC<PersonaSelectorProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <FormLabel>Target Persona</FormLabel>
+        <Label>Target Persona</Label>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
