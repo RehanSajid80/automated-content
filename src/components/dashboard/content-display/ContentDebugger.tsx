@@ -180,51 +180,8 @@ export const ContentDebugger: React.FC<ContentDebuggerProps> = ({
     );
   };
 
-  const displayContent = () => {
-    try {
-      if (!generatedContent || generatedContent.length === 0) {
-        return (
-          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded">
-            <p className="text-sm text-amber-700 dark:text-amber-400">No content available to display</p>
-          </div>
-        );
-      }
-      
-      const contentItem = generatedContent[0];
-      let displayText = "";
-      
-      if (contentItem.pillarContent) {
-        const pillar = Array.isArray(contentItem.pillarContent) 
-          ? contentItem.pillarContent[0] 
-          : contentItem.pillarContent;
-        displayText = pillar;
-      } else if (contentItem.output) {
-        displayText = contentItem.output;
-      } else if (contentItem.content) {
-        displayText = contentItem.content;
-      } else {
-        displayText = JSON.stringify(contentItem);
-      }
-      
-      return (
-        <div className="p-4 mb-4 bg-slate-50 dark:bg-slate-900 border rounded overflow-auto">
-          <h4 className="text-sm font-medium mb-2">Content Preview:</h4>
-          <p className="text-xs font-mono whitespace-pre-line">
-            {displayText.substring(0, 300)}...
-          </p>
-        </div>
-      );
-    } catch (e) {
-      return (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-          <p className="text-sm text-red-700 dark:text-red-400">Error displaying content: {String(e)}</p>
-        </div>
-      );
-    }
-  };
-
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full mb-4">
+    <Collapsible open={true} onOpenChange={setIsOpen} className="w-full mb-4">
       <div className="flex items-center justify-between">
         <CollapsibleTrigger asChild>
           <Button variant="outline" size="sm" className="mb-2 flex items-center gap-2">
@@ -255,8 +212,6 @@ export const ContentDebugger: React.FC<ContentDebuggerProps> = ({
           </TabsContent>
           
           <TabsContent value="raw" className="pt-4">
-            {displayContent()}
-            
             <Card className="overflow-hidden">
               <CardContent className="p-4">
                 <h3 className="text-sm font-medium mb-2">Content Structure Analysis</h3>

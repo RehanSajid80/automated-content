@@ -83,6 +83,15 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         return;
       }
       
+      // Handle array content directly
+      if (Array.isArray(rawResponse) && rawResponse.length > 0) {
+        processedContent = rawResponse;
+        setGeneratedContent(processedContent);
+        toast.success("Content processed successfully");
+        setIsForceProcessing(false);
+        return;
+      }
+      
       if (typeof rawResponse === 'string') {
         // Attempt to parse string as JSON
         try {
@@ -126,6 +135,8 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   // Force showing suggestions if content is available, regardless of isAISuggestionMode
   const hasContent = generatedContent && generatedContent.length > 0 && 
                     Object.keys(generatedContent[0]).length > 0;
+                    
+  console.log("HasContent check:", hasContent, "Generated content:", generatedContent);
   
   // Convert generatedContent to the format expected by StructuredContentSuggestions
   const structuredSuggestions = hasContent ? 
@@ -143,6 +154,8 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         ) : []),
       reasoning: item.reasoning || ""
     })) : [];
+    
+  console.log("Structured suggestions:", structuredSuggestions);
     
   const handleForceRefresh = () => {
     setForceRerender(prev => prev + 1);
@@ -186,24 +199,25 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
               </div>
             </div>
           )}
+
+          {/* Debug tool - always show if raw response exists */}
+          {rawResponse && !isN8nLoading && !isAgentLoading && !isForceProcessing && (
+            <ContentDebugger 
+              generatedContent={generatedContent}
+              forceRender={handleForceRefresh}
+              rawResponse={rawResponse}
+            />
+          )}
           
           {/* Always display the structured suggestions when content is available */}
           {!isN8nLoading && !isAgentLoading && !isForceProcessing && hasContent && (
-            <>
-              <ContentDebugger 
-                generatedContent={generatedContent}
-                forceRender={handleForceRefresh}
-                rawResponse={rawResponse}
-              />
-              
-              <StructuredContentSuggestions
-                key={`suggestions-${forceRerender}`}
-                suggestions={structuredSuggestions}
-                persona={selectedPersona}
-                goal={selectedGoal}
-                isLoading={false}
-              />
-            </>
+            <StructuredContentSuggestions
+              key={`suggestions-${forceRerender}`}
+              suggestions={structuredSuggestions}
+              persona={selectedPersona}
+              goal={selectedGoal}
+              isLoading={false}
+            />
           )}
           
           {/* Show error message when no content is displayed */}
@@ -225,17 +239,6 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
                 </Button>
               </AlertDescription>
             </Alert>
-          )}
-          
-          {/* Debug content display for unexpected formats */}
-          {!isN8nLoading && !isAgentLoading && !isForceProcessing && rawResponse && !hasContent && (
-            <Card className="mt-6 p-4">
-              <ContentDebugger 
-                generatedContent={generatedContent}
-                forceRender={handleForceRefresh}
-                rawResponse={rawResponse}
-              />
-            </Card>
           )}
         </div>
       </div>

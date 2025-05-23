@@ -54,62 +54,47 @@ export const useN8nResponseProcessor = () => {
     if (Array.isArray(data) && data.length > 0) {
       console.log("Processing array of content items:", data.length);
       
+      // Direct check for AI Content Suggestions format
+      const firstItem = data[0];
+      if (firstItem && (firstItem.pillarContent || firstItem.supportContent || 
+                        firstItem.socialMediaPosts || firstItem.emailSeries)) {
+        console.log("Found AI Content Suggestions in array format");
+        contentArray = data;
+        return {
+          suggestions,
+          content: contentArray,
+          title
+        };
+      }
+      
+      // If not AI Content Suggestions format, use standard processing
       contentArray = data.map(item => {
-        // Check if this is the AI Content Suggestions format
-        if (item.pillarContent || item.supportContent || item.socialMediaPosts || item.emailSeries) {
-          console.log("Found AI Content Suggestions in array format");
-          return {
-            topicArea: item.title || "Content Suggestions",
-            pillarContent: typeof item.pillarContent === 'string' ? [item.pillarContent] : item.pillarContent || [],
-            supportPages: typeof item.supportContent === 'string' ? [item.supportContent] : item.supportContent || [],
-            metaTags: item.metaTags || [],
-            socialMedia: item.socialMediaPosts || [],
-            email: item.emailSeries ? item.emailSeries.map((email: any) => 
-              `Subject: ${email.subject}\n\n${email.body}`
-            ) : [],
-            reasoning: item.reasoning || null
-          };
-        } else {
-          // Generic object in array - pass through
-          return item;
-        }
+        return {
+          ...item,
+          title: item.title || "",
+          output: item.output || item.content || JSON.stringify(item)
+        };
       });
       
       console.log("Processed array items:", contentArray.length);
     }
     // Check for AI Content Suggestions specific format (single object)
-    else if (data && (data.pillarContent || data.supportContent || data.socialMediaPosts || data.emailSeries)) {
+    else if (data && (data.pillarContent || data.supportContent || 
+                     data.socialMediaPosts || data.emailSeries)) {
       console.log("Found AI Content Suggestions format as single object");
       
-      // Transform the AI suggestions format to our content structure
-      contentArray = [{
-        topicArea: data.title || "Content Suggestions",
-        pillarContent: typeof data.pillarContent === 'string' ? [data.pillarContent] : data.pillarContent || [],
-        supportPages: typeof data.supportContent === 'string' ? [data.supportContent] : data.supportContent || [],
-        metaTags: data.metaTags || [],
-        socialMedia: data.socialMediaPosts || [],
-        email: data.emailSeries ? data.emailSeries.map((email: any) => 
-          `Subject: ${email.subject}\n\n${email.body}`
-        ) : [],
-        reasoning: data.reasoning || null
-      }];
+      // Just pass through the content directly
+      contentArray = [data];
       
       console.log("Processed AI Content Suggestions object:", contentArray);
     }
     // Check for new format with specific content sections
-    else if (data && (data.pillarContent || data.supportContent || data.metaTags || data.socialPosts || data.emailCampaign)) {
+    else if (data && (data.pillarContent || data.supportContent || 
+                     data.metaTags || data.socialPosts || data.emailCampaign)) {
       console.log("Found structured content with specific sections");
       
       // Combine sections into a single output
-      const combinedOutput = {
-        pillarContent: data.pillarContent || "",
-        supportContent: data.supportContent || "",
-        metaTags: data.metaTags || [],
-        socialMedia: data.socialPosts || [],
-        email: data.emailCampaign || []
-      };
-      
-      contentArray = [combinedOutput];
+      contentArray = [data];
     }
     // Handle standard content formats
     else if (data) {
@@ -137,30 +122,13 @@ export const useN8nResponseProcessor = () => {
         const content = typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
         contentArray = [{ output: content, title: data.title || "" }];
       } else if (Object.keys(data).length > 0) {
-        // As a last resort, use the entire response
-        console.log("No standard content structure found, using entire response");
-        contentArray = [{ 
-          output: JSON.stringify(data),
-          pillarContent: data.pillarContent || "", 
-          supportPages: data.supportPages || data.supportContent || "",
-          title: data.title || "" 
-        }];
+        // As a last resort, use the entire response directly
+        console.log("No standard content structure found, using response directly");
+        contentArray = [data];
       } else {
         console.log("Empty data object, returning empty content");
         contentArray = [];
       }
-      
-      // Ensure every item has an output property
-      contentArray = contentArray.map(item => {
-        if (!item.output && item.content) {
-          return { ...item, output: item.content, title: item.title || "" };
-        } else if (!item.output && !item.pillarContent) {
-          return { ...item, output: JSON.stringify(item), title: item.title || "" };
-        }
-        return { ...item, title: item.title || "" };
-      });
-      
-      console.log("Finished processing content:", contentArray);
     }
     
     return {
