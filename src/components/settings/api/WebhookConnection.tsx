@@ -181,8 +181,8 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
             <p className="text-xs text-muted-foreground">
               This webhook will be used to process user-entered custom keywords and generate content suggestions
             </p>
-            <Alert variant="info" className="mt-4">
-              <AlertDescription>
+            <Alert variant="default" className="mt-4 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+              <AlertDescription className="text-blue-800 dark:text-blue-400">
                 For testing purposes, only the AI Content Suggestions webhook is active. Other webhooks are disabled.
               </AlertDescription>
             </Alert>
@@ -221,3 +221,4 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
 };
 
 export default WebhookConnection;
+
