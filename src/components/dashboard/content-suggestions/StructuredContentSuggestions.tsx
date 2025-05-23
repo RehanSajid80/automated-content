@@ -13,12 +13,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 
 interface ContentSuggestion {
   topicArea: string;
-  pillarContent: string[];
-  supportPages: string[];
-  metaTags: string[];
-  socialMedia: string[];
+  pillarContent: string | string[] | any;
+  supportContent: string | string[] | any;
+  metaTags?: string[];
+  socialMedia?: string[];
+  socialMediaPosts?: string[];
   email?: string[];
-  reasoning?: string;
+  emailSeries?: Array<{subject: string; body: string}> | string[];
+  reasoning?: any;
 }
 
 interface StructuredContentSuggestionsProps {
@@ -60,44 +62,57 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
       if (suggestions.length > 0) {
         const suggestion = suggestions[0];
         
-        if (suggestion.pillarContent && suggestion.pillarContent.length > 0) {
+        if (suggestion.pillarContent) {
           exportContent += `## Pillar Content Ideas:\n`;
-          suggestion.pillarContent.forEach(idea => {
-            exportContent += `- ${idea}\n`;
-          });
+          if (Array.isArray(suggestion.pillarContent)) {
+            suggestion.pillarContent.forEach((idea: any) => {
+              exportContent += `- ${typeof idea === 'string' ? idea : JSON.stringify(idea)}\n`;
+            });
+          } else {
+            exportContent += `- ${typeof suggestion.pillarContent === 'string' ? suggestion.pillarContent : JSON.stringify(suggestion.pillarContent)}\n`;
+          }
         }
         
-        if (suggestion.supportPages && suggestion.supportPages.length > 0) {
+        if (suggestion.supportContent) {
           exportContent += `\n## Support Pages:\n`;
-          suggestion.supportPages.forEach(page => {
-            exportContent += `- ${page}\n`;
-          });
+          if (Array.isArray(suggestion.supportContent)) {
+            suggestion.supportContent.forEach((page: any) => {
+              exportContent += `- ${typeof page === 'string' ? page : JSON.stringify(page)}\n`;
+            });
+          } else {
+            exportContent += `- ${typeof suggestion.supportContent === 'string' ? suggestion.supportContent : JSON.stringify(suggestion.supportContent)}\n`;
+          }
         }
         
-        if (suggestion.metaTags && suggestion.metaTags.length > 0) {
-          exportContent += `\n## Meta Tags:\n`;
-          suggestion.metaTags.forEach(tag => {
-            exportContent += `- ${tag}\n`;
-          });
-        }
-        
-        if (suggestion.socialMedia && suggestion.socialMedia.length > 0) {
+        const socialPosts = suggestion.socialMediaPosts || suggestion.socialMedia;
+        if (socialPosts && socialPosts.length > 0) {
           exportContent += `\n## Social Media Posts:\n`;
-          suggestion.socialMedia.forEach(post => {
-            exportContent += `- ${post}\n`;
+          socialPosts.forEach((post: any) => {
+            exportContent += `- ${typeof post === 'string' ? post : JSON.stringify(post)}\n`;
           });
         }
         
-        if (suggestion.email && suggestion.email.length > 0) {
+        const emails = suggestion.emailSeries || suggestion.email;
+        if (emails && emails.length > 0) {
           exportContent += `\n## Email Campaign Ideas:\n`;
-          suggestion.email.forEach(email => {
-            exportContent += `- ${email}\n`;
+          emails.forEach((email: any) => {
+            if (typeof email === 'object' && email.subject && email.body) {
+              exportContent += `- Subject: ${email.subject}\n  Body: ${email.body}\n\n`;
+            } else {
+              exportContent += `- ${typeof email === 'string' ? email : JSON.stringify(email)}\n`;
+            }
           });
         }
         
         if (suggestion.reasoning) {
           exportContent += `\n## Content Strategy Reasoning:\n`;
-          exportContent += suggestion.reasoning;
+          if (typeof suggestion.reasoning === 'object') {
+            Object.entries(suggestion.reasoning).forEach(([key, value]) => {
+              exportContent += `### ${key}:\n${value}\n\n`;
+            });
+          } else {
+            exportContent += suggestion.reasoning;
+          }
         }
       }
     }
@@ -123,6 +138,22 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
     );
   };
   
+  // Helper function to format content based on type
+  const formatContent = (content: any): string[] => {
+    if (!content) return [];
+    
+    if (Array.isArray(content)) {
+      return content.map(item => typeof item === 'string' ? item : 
+        (item.content || item.title || JSON.stringify(item)));
+    }
+    
+    if (typeof content === 'object') {
+      return [content.content || content.title || JSON.stringify(content)];
+    }
+    
+    return [content.toString()];
+  };
+  
   if (isLoading) {
     return (
       <div className="p-8 flex justify-center">
@@ -135,8 +166,41 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
   }
   
   if (!suggestions || suggestions.length === 0) {
-    return null;
+    return (
+      <div className="p-8 text-center">
+        <p className="text-muted-foreground">No content suggestions available. Click "Get AI Content Suggestions" to generate some.</p>
+      </div>
+    );
   }
+  
+  // Process the suggestions data
+  const processedSuggestions = suggestions.map(suggestion => {
+    const pillarContent = formatContent(suggestion.pillarContent);
+    const supportContent = formatContent(suggestion.supportContent);
+    const socialPosts = suggestion.socialMediaPosts || suggestion.socialMedia || [];
+    
+    // Handle email series which might be objects with subject/body or plain strings
+    let emailSeries = suggestion.emailSeries || suggestion.email || [];
+    const processedEmails = Array.isArray(emailSeries) ? emailSeries.map(email => {
+      if (typeof email === 'object' && email.subject && email.body) {
+        return email;
+      } else if (typeof email === 'string') {
+        const parts = email.split('\n\n');
+        const subject = parts[0].replace(/^Subject:\s*/i, '').trim();
+        const body = parts.slice(1).join('\n\n');
+        return { subject, body };
+      }
+      return { subject: 'No subject provided', body: typeof email === 'string' ? email : JSON.stringify(email) };
+    }) : [];
+    
+    return {
+      ...suggestion,
+      pillarContent,
+      supportContent,
+      socialPosts,
+      processedEmails
+    };
+  });
   
   return (
     <Card className="mt-6">
@@ -170,16 +234,25 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
         </div>
       </CardHeader>
       <CardContent>
-        {showReasoning && suggestions[0]?.reasoning && (
+        {showReasoning && processedSuggestions[0]?.reasoning && (
           <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
             <h3 className="text-sm font-medium mb-2 flex items-center">
               <AlertCircle className="h-4 w-4 mr-2" />
               Content Strategy Reasoning
             </h3>
-            <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {typeof suggestions[0].reasoning === 'string' 
-                ? suggestions[0].reasoning 
-                : JSON.stringify(suggestions[0].reasoning, null, 2)}
+            <div className="space-y-4">
+              {typeof processedSuggestions[0].reasoning === 'object' ? (
+                Object.entries(processedSuggestions[0].reasoning).map(([key, value]) => (
+                  <div key={key} className="space-y-1">
+                    <h4 className="text-xs font-medium text-muted-foreground capitalize">{key} Justification:</h4>
+                    <p className="text-sm pl-4">{String(value)}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {String(processedSuggestions[0].reasoning)}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -213,14 +286,14 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
             </TabsTrigger>
           </TabsList>
           
-          {suggestions.map((suggestion, index) => (
+          {processedSuggestions.map((suggestion, index) => (
             <div key={`suggestion-${index}`} className="mb-4">
               {index > 0 && <h3 className="text-lg font-semibold mb-2">{suggestion.topicArea}</h3>}
               
               <TabsContent value="pillar" className="space-y-4">
                 {suggestion.pillarContent && suggestion.pillarContent.length > 0 ? (
                   <div className="border rounded-lg">
-                    {suggestion.pillarContent.map((content, i) => (
+                    {suggestion.pillarContent.map((content: string, i: number) => (
                       <div 
                         key={`pillar-${i}`}
                         className="p-5 border-b last:border-b-0"
@@ -261,15 +334,15 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                   </div>
                 ) : (
                   <div className="p-4 text-center text-muted-foreground">
-                    No pillar content suggestions available
+                    ⚠️ No pillar content suggestions available
                   </div>
                 )}
               </TabsContent>
               
               <TabsContent value="support" className="space-y-4">
-                {suggestion.supportPages && suggestion.supportPages.length > 0 ? (
+                {suggestion.supportContent && suggestion.supportContent.length > 0 ? (
                   <div className="border rounded-lg">
-                    {suggestion.supportPages.map((content, i) => (
+                    {suggestion.supportContent.map((content: string, i: number) => (
                       <div 
                         key={`support-${i}`}
                         className="p-5 border-b last:border-b-0"
@@ -310,7 +383,7 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                   </div>
                 ) : (
                   <div className="p-4 text-center text-muted-foreground">
-                    No support content suggestions available
+                    ⚠️ No support content suggestions available
                   </div>
                 )}
               </TabsContent>
@@ -318,7 +391,7 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
               <TabsContent value="meta" className="space-y-4">
                 {suggestion.metaTags && suggestion.metaTags.length > 0 ? (
                   <div className="border rounded-lg">
-                    {suggestion.metaTags.map((content, i) => (
+                    {suggestion.metaTags.map((content: string, i: number) => (
                       <div 
                         key={`meta-${i}`}
                         className="p-4 border-b last:border-b-0"
@@ -338,24 +411,24 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                   </div>
                 ) : (
                   <div className="p-4 text-center text-muted-foreground">
-                    No meta tags suggestions available
+                    ⚠️ No meta tags suggestions available
                   </div>
                 )}
               </TabsContent>
               
               <TabsContent value="social" className="space-y-4">
-                {suggestion.socialMedia && suggestion.socialMedia.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
-                    {suggestion.socialMedia.map((content, i) => {
-                      // Determine social media platform from content
+                {suggestion.socialPosts && suggestion.socialPosts.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {suggestion.socialPosts.map((content: string, i: number) => {
+                      // Determine social media platform from content or index
                       let platform = "Social Post";
                       let icon = <Share2 className="h-4 w-4" />;
                       
-                      if (content.toLowerCase().includes("linkedin")) {
+                      if (i === 0 || content.toLowerCase().includes("linkedin")) {
                         platform = "LinkedIn";
-                      } else if (content.toLowerCase().includes("twitter") || content.toLowerCase().includes("x style")) {
+                      } else if (i === 1 || content.toLowerCase().includes("twitter") || content.toLowerCase().includes("x style")) {
                         platform = "Twitter/X";
-                      } else if (content.toLowerCase().includes("instagram") || content.toLowerCase().includes("facebook")) {
+                      } else if (i === 2 || content.toLowerCase().includes("instagram") || content.toLowerCase().includes("facebook")) {
                         platform = "Instagram/Facebook";
                       }
                       
@@ -405,26 +478,17 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                   </div>
                 ) : (
                   <div className="p-4 text-center text-muted-foreground">
-                    No social media post suggestions available
+                    ⚠️ No social media post suggestions available
                   </div>
                 )}
               </TabsContent>
               
               <TabsContent value="email" className="space-y-4">
-                {suggestion.email && suggestion.email.length > 0 ? (
+                {suggestion.processedEmails && suggestion.processedEmails.length > 0 ? (
                   <div className="space-y-4">
-                    {suggestion.email.map((content, i) => {
-                      // Parse email content
-                      let subject = "";
-                      let body = content;
-                      
-                      if (content.startsWith("Subject:")) {
-                        const parts = content.split("\n\n");
-                        if (parts.length >= 2) {
-                          subject = parts[0].replace("Subject:", "").trim();
-                          body = parts.slice(1).join("\n\n");
-                        }
-                      }
+                    {suggestion.processedEmails.map((email: any, i: number) => {
+                      const subject = email.subject || `Email Template ${i + 1}`;
+                      const body = email.body || "No content provided";
                       
                       return (
                         <div 
@@ -432,11 +496,11 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                           className="border rounded-lg overflow-hidden"
                         >
                           <div className="bg-muted/30 p-3 border-b flex justify-between items-center">
-                            <h3 className="font-medium">{subject || `Email Template ${i + 1}`}</h3>
+                            <h3 className="font-medium">{subject}</h3>
                             <Button 
                               size="icon" 
                               variant="ghost" 
-                              onClick={() => handleCopyToClipboard(content)}
+                              onClick={() => handleCopyToClipboard(`Subject: ${subject}\n\n${body}`)}
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
@@ -448,10 +512,10 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              onClick={() => toggleSelectItem(content)}
+                              onClick={() => toggleSelectItem(`Subject: ${subject}\n\n${body}`)}
                               className="flex items-center gap-1"
                             >
-                              {selectedItems.includes(content) ? (
+                              {selectedItems.includes(`Subject: ${subject}\n\n${body}`) ? (
                                 <>
                                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                                   <span>Selected</span>
@@ -470,7 +534,7 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                   </div>
                 ) : (
                   <div className="p-4 text-center text-muted-foreground">
-                    No email campaign suggestions available
+                    ⚠️ No email campaign suggestions available
                   </div>
                 )}
               </TabsContent>

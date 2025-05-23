@@ -81,6 +81,9 @@ export const useAIContentGeneration = () => {
       const personaName = personaTypes.find(p => p.id === selectedPersona)?.name || "Generic User";
       const goalName = contentGoals.find(g => g.id === selectedGoal)?.name || "General Content";
       
+      console.log(`Sending content request to n8n for persona: ${personaName}, goal: ${goalName}`);
+      console.log(`Keywords: ${keywordsToSelect.join(", ")}`);
+      
       // This is the exact payload that gets sent to the webhook
       await sendToN8n({
         keywords: keywordsToSelect.length > 0 

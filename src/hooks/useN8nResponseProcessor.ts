@@ -37,6 +37,7 @@ export const useN8nResponseProcessor = () => {
     if (isAIContentSuggestionsFormat(data)) {
       console.log("Detected AI Content Suggestions format directly");
       const formattedContent = formatAIContentSuggestions(data);
+      console.log("Formatted AI content suggestions:", formattedContent);
       
       return {
         suggestions: [],
@@ -159,22 +160,49 @@ export const useN8nResponseProcessor = () => {
       const firstItem = data[0];
       return Boolean(firstItem && 
         (firstItem.pillarContent || firstItem.supportContent || 
-         firstItem.socialMediaPosts || firstItem.emailSeries));
+         firstItem.socialMediaPosts || firstItem.emailSeries || 
+         firstItem.reasoning));
     }
     
     // Check single object format
     return Boolean(data && 
       (data.pillarContent !== undefined || data.supportContent !== undefined || 
-       data.socialMediaPosts !== undefined || data.emailSeries !== undefined));
+       data.socialMediaPosts !== undefined || data.emailSeries !== undefined || 
+       data.reasoning !== undefined));
   };
   
   // Helper function to format AI Content Suggestions consistently
   const formatAIContentSuggestions = (data: any): any[] => {
     if (Array.isArray(data)) {
-      return data;
+      return data.map(item => normalizeContentItem(item));
     } else {
-      return [data];
+      return [normalizeContentItem(data)];
     }
+  };
+  
+  // Normalize content item structure for consistent processing
+  const normalizeContentItem = (item: any): any => {
+    // Clone the item to avoid mutation
+    const normalizedItem = { ...item };
+    
+    // Handle nested pillarContent structure
+    if (normalizedItem.pillarContent && typeof normalizedItem.pillarContent === 'object') {
+      if (normalizedItem.pillarContent.content) {
+        normalizedItem.pillarContent = normalizedItem.pillarContent.content;
+      } else if (normalizedItem.pillarContent.title && !normalizedItem.title) {
+        // Use pillarContent title as item title if no title exists
+        normalizedItem.title = normalizedItem.pillarContent.title;
+      }
+    }
+    
+    // Handle nested supportContent structure
+    if (normalizedItem.supportContent && typeof normalizedItem.supportContent === 'object') {
+      if (normalizedItem.supportContent.content) {
+        normalizedItem.supportContent = normalizedItem.supportContent.content;
+      }
+    }
+    
+    return normalizedItem;
   };
   
   return {

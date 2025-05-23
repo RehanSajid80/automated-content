@@ -3,6 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 interface ContentPreviewProps {
   generatedContent: any[];
@@ -20,20 +21,52 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
   }
 
   const renderContentItem = (content: any) => {
-    // Check if this is a structured content item with pillar content or other sections
+    // Check if this is a structured AI content suggestion
+    const isAIContentSuggestion = content.pillarContent !== undefined || 
+                                 content.supportContent !== undefined || 
+                                 content.socialMediaPosts !== undefined ||
+                                 content.emailSeries !== undefined;
+    
     const hasPillarContent = content.pillarContent !== undefined;
     const hasOutput = content.output !== undefined;
     
-    if (hasPillarContent) {
-      // Render structured content with tabs
+    // Format specifically for AI content suggestions
+    if (isAIContentSuggestion) {
+      // Create display-friendly format for reasoning
+      const reasoning = content.reasoning;
+      let reasoningContent;
+      
+      if (reasoning) {
+        if (typeof reasoning === 'object') {
+          reasoningContent = (
+            <div className="space-y-3">
+              {Object.entries(reasoning).map(([key, value]) => (
+                <div key={key} className="pb-2">
+                  <h4 className="font-medium text-sm capitalize">{key} Strategy:</h4>
+                  <p className="text-sm text-muted-foreground">{String(value)}</p>
+                </div>
+              ))}
+            </div>
+          );
+        } else {
+          reasoningContent = <p className="text-sm">{String(reasoning)}</p>;
+        }
+      }
+      
+      // Format social media posts
+      const socialPosts = content.socialMediaPosts || [];
+      
+      // Format email series with subject/body structure
+      const emailSeries = content.emailSeries || [];
+      
       return (
         <Tabs defaultValue="pillar" className="w-full">
           <TabsList className="mb-4">
             {content.pillarContent && <TabsTrigger value="pillar">Pillar Content</TabsTrigger>}
             {content.supportContent && <TabsTrigger value="support">Support Content</TabsTrigger>}
-            {content.socialMediaPosts && content.socialMediaPosts.length > 0 && <TabsTrigger value="social">Social Posts</TabsTrigger>}
-            {content.emailSeries && content.emailSeries.length > 0 && <TabsTrigger value="email">Emails</TabsTrigger>}
-            {content.metaTags && <TabsTrigger value="meta">Meta Tags</TabsTrigger>}
+            {socialPosts && socialPosts.length > 0 && <TabsTrigger value="social">Social Posts</TabsTrigger>}
+            {emailSeries && emailSeries.length > 0 && <TabsTrigger value="email">Emails</TabsTrigger>}
+            {reasoning && <TabsTrigger value="reasoning">Reasoning</TabsTrigger>}
           </TabsList>
           
           {content.pillarContent && (
@@ -45,15 +78,26 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
                 <CardContent>
                   <ScrollArea className="h-[300px] rounded-md border p-4">
                     <div className="prose max-w-none dark:prose-invert">
-                      {Array.isArray(content.pillarContent) 
-                        ? content.pillarContent.map((item: string, i: number) => (
-                            <div key={i} className="mb-6">
-                              <p>{item}</p>
-                              {i < content.pillarContent.length - 1 && <hr className="my-4" />}
-                            </div>
-                          ))
-                        : <p>{content.pillarContent}</p>
-                      }
+                      {typeof content.pillarContent === 'object' && content.pillarContent.content ? (
+                        <div className="mb-6">
+                          <h3 className="text-xl font-bold mb-2">{content.pillarContent.title || "Pillar Content"}</h3>
+                          <p>{content.pillarContent.content}</p>
+                        </div>
+                      ) : typeof content.pillarContent === 'object' && content.pillarContent.title ? (
+                        <div className="mb-6">
+                          <h3 className="text-xl font-bold mb-2">{content.pillarContent.title}</h3>
+                          <p>{content.pillarContent.outline || JSON.stringify(content.pillarContent)}</p>
+                        </div>
+                      ) : Array.isArray(content.pillarContent) ? (
+                        content.pillarContent.map((item: string, i: number) => (
+                          <div key={i} className="mb-6">
+                            <p className="whitespace-pre-wrap">{item}</p>
+                            {i < content.pillarContent.length - 1 && <hr className="my-4" />}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="whitespace-pre-wrap">{String(content.pillarContent)}</p>
+                      )}
                     </div>
                   </ScrollArea>
                 </CardContent>
@@ -70,15 +114,21 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
                 <CardContent>
                   <ScrollArea className="h-[300px] rounded-md border p-4">
                     <div className="prose max-w-none dark:prose-invert">
-                      {Array.isArray(content.supportContent) 
-                        ? content.supportContent.map((item: string, i: number) => (
-                            <div key={i} className="mb-6">
-                              <p>{item}</p>
-                              {i < content.supportContent.length - 1 && <hr className="my-4" />}
-                            </div>
-                          ))
-                        : <p>{content.supportContent}</p>
-                      }
+                      {typeof content.supportContent === 'object' && content.supportContent.content ? (
+                        <div className="mb-6">
+                          <h3 className="text-xl font-bold mb-2">{content.supportContent.title || "Support Content"}</h3>
+                          <p className="whitespace-pre-wrap">{content.supportContent.content}</p>
+                        </div>
+                      ) : Array.isArray(content.supportContent) ? (
+                        content.supportContent.map((item: string, i: number) => (
+                          <div key={i} className="mb-6">
+                            <p className="whitespace-pre-wrap">{item}</p>
+                            {i < content.supportContent.length - 1 && <hr className="my-4" />}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="whitespace-pre-wrap">{String(content.supportContent)}</p>
+                      )}
                     </div>
                   </ScrollArea>
                 </CardContent>
@@ -86,7 +136,7 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
             </TabsContent>
           )}
           
-          {content.socialMediaPosts && content.socialMediaPosts.length > 0 && (
+          {socialPosts && socialPosts.length > 0 && (
             <TabsContent value="social" className="mt-0">
               <Card>
                 <CardHeader className="pb-3">
@@ -95,11 +145,24 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
                 <CardContent>
                   <ScrollArea className="h-[300px] rounded-md border p-4">
                     <div className="space-y-4">
-                      {content.socialMediaPosts.map((post: any, i: number) => (
-                        <div key={i} className="p-3 border rounded-md">
-                          <p className="whitespace-pre-wrap">{typeof post === 'string' ? post : JSON.stringify(post)}</p>
-                        </div>
-                      ))}
+                      {socialPosts.map((post: any, i: number) => {
+                        let platform = "Social Post";
+                        
+                        if (i === 0 || (typeof post === 'string' && post.toLowerCase().includes("linkedin"))) {
+                          platform = "LinkedIn";
+                        } else if (i === 1 || (typeof post === 'string' && (post.toLowerCase().includes("twitter") || post.toLowerCase().includes("x style")))) {
+                          platform = "Twitter/X";
+                        } else if (i === 2 || (typeof post === 'string' && (post.toLowerCase().includes("instagram") || post.toLowerCase().includes("facebook")))) {
+                          platform = "Instagram/Facebook";
+                        }
+                        
+                        return (
+                          <div key={i} className="p-3 border rounded-md">
+                            <Badge variant="outline" className="mb-2">{platform}</Badge>
+                            <p className="whitespace-pre-wrap">{typeof post === 'string' ? post : JSON.stringify(post)}</p>
+                          </div>
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                 </CardContent>
@@ -107,7 +170,7 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
             </TabsContent>
           )}
           
-          {content.emailSeries && content.emailSeries.length > 0 && (
+          {emailSeries && emailSeries.length > 0 && (
             <TabsContent value="email" className="mt-0">
               <Card>
                 <CardHeader className="pb-3">
@@ -116,12 +179,33 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
                 <CardContent>
                   <ScrollArea className="h-[300px] rounded-md border p-4">
                     <div className="space-y-4">
-                      {content.emailSeries.map((email: any, i: number) => (
-                        <div key={i} className="p-3 border rounded-md">
-                          <p className="font-medium">Subject: {email.subject}</p>
-                          <p className="whitespace-pre-wrap mt-2">{email.body}</p>
-                        </div>
-                      ))}
+                      {emailSeries.map((email: any, i: number) => {
+                        // Handle various email formats
+                        let subject = "";
+                        let body = "";
+                        
+                        if (typeof email === 'object' && email.subject && email.body) {
+                          subject = email.subject;
+                          body = email.body;
+                        } else if (typeof email === 'string') {
+                          // Try to parse subject from string format
+                          const subjectMatch = email.match(/^Subject:\s*(.*?)(?:\n|$)/i);
+                          subject = subjectMatch ? subjectMatch[1] : `Email ${i + 1}`;
+                          
+                          // Get body by removing subject line
+                          body = email.replace(/^Subject:\s*.*?(?:\n|$)/i, '').trim();
+                        } else {
+                          subject = `Email ${i + 1}`;
+                          body = typeof email === 'string' ? email : JSON.stringify(email);
+                        }
+                        
+                        return (
+                          <div key={i} className="p-3 border rounded-md">
+                            <p className="font-medium">Subject: {subject}</p>
+                            <p className="whitespace-pre-wrap mt-2">{body}</p>
+                          </div>
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                 </CardContent>
@@ -129,38 +213,15 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
             </TabsContent>
           )}
           
-          {content.metaTags && (
-            <TabsContent value="meta" className="mt-0">
+          {reasoning && (
+            <TabsContent value="reasoning" className="mt-0">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Meta Tags</CardTitle>
+                  <CardTitle className="text-lg">Content Strategy Reasoning</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4 p-4 border rounded-md">
-                    {typeof content.metaTags === 'object' ? (
-                      <>
-                        {content.metaTags.metaTitle && (
-                          <div>
-                            <p className="font-medium">Meta Title:</p>
-                            <p>{content.metaTags.metaTitle}</p>
-                          </div>
-                        )}
-                        {content.metaTags.metaDescription && (
-                          <div className="mt-2">
-                            <p className="font-medium">Meta Description:</p>
-                            <p>{content.metaTags.metaDescription}</p>
-                          </div>
-                        )}
-                      </>
-                    ) : Array.isArray(content.metaTags) ? (
-                      content.metaTags.map((tag: any, i: number) => (
-                        <div key={i}>
-                          <p className="whitespace-pre-wrap">{tag}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <p>{content.metaTags.toString()}</p>
-                    )}
+                  <div className="p-4 border rounded-md">
+                    {reasoningContent}
                   </div>
                 </CardContent>
               </Card>

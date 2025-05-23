@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
@@ -24,7 +25,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
 }) => {
   const [forceRerender, setForceRerender] = useState(0);
   const [isForceProcessing, setIsForceProcessing] = useState(false);
-  const [debugMode, setDebugMode] = useState(true); // Always show debug mode initially
+  const [debugMode, setDebugMode] = useState(false); // Hide debug mode by default
   
   const { 
     selectedKeywords,
@@ -83,20 +84,24 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         return;
       }
       
-      // Handle array content directly
-      if (Array.isArray(rawResponse) && rawResponse.length > 0) {
-        processedContent = rawResponse;
+      // If rawResponse is directly usable, use it
+      if (rawResponse && (
+        rawResponse.pillarContent !== undefined ||
+        rawResponse.supportContent !== undefined ||
+        rawResponse.socialMediaPosts !== undefined ||
+        rawResponse.emailSeries !== undefined
+      )) {
+        // Wrap single object in array for consistent handling
+        processedContent = [rawResponse];
         setGeneratedContent(processedContent);
         toast.success("Content processed successfully");
         setIsForceProcessing(false);
         return;
       }
-
-      // Special handling for pillarContent/supportContent objects (common format)
-      if (rawResponse && (rawResponse.pillarContent || rawResponse.supportContent || 
-          rawResponse.socialMediaPosts || rawResponse.emailSeries)) {
-        // Wrap single object in array for consistent handling
-        processedContent = [rawResponse];
+      
+      // Handle array content directly
+      if (Array.isArray(rawResponse) && rawResponse.length > 0) {
+        processedContent = rawResponse;
         setGeneratedContent(processedContent);
         toast.success("Content processed successfully");
         setIsForceProcessing(false);
@@ -109,8 +114,12 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           processedContent = JSON.parse(rawResponse);
           
           // Check if parsed content is properly formatted
-          if (processedContent && (processedContent.pillarContent || 
-              processedContent.supportContent || processedContent.socialMediaPosts)) {
+          if (processedContent && (
+            processedContent.pillarContent !== undefined || 
+            processedContent.supportContent !== undefined || 
+            processedContent.socialMediaPosts !== undefined || 
+            processedContent.emailSeries !== undefined
+          )) {
             setGeneratedContent([processedContent]);
           } else if (Array.isArray(processedContent)) {
             setGeneratedContent(processedContent);
@@ -148,42 +157,113 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     }
   };
   
+  // Convert generatedContent to the format expected by StructuredContentSuggestions
+  const processContentForDisplay = (contentArray: any[]) => {
+    if (!contentArray || contentArray.length === 0) return [];
+    
+    return contentArray.map(item => {
+      // Initialize with default values
+      const structuredItem: any = {
+        topicArea: item.topicArea || item.title || topicArea || "Content Suggestions",
+        pillarContent: [],
+        supportPages: [],
+        metaTags: [],
+        socialMedia: [],
+        email: [],
+        reasoning: item.reasoning || {}
+      };
+      
+      // Process pillar content
+      if (item.pillarContent) {
+        if (typeof item.pillarContent === 'string') {
+          structuredItem.pillarContent = [item.pillarContent];
+        } else if (Array.isArray(item.pillarContent)) {
+          structuredItem.pillarContent = item.pillarContent;
+        } else if (typeof item.pillarContent === 'object') {
+          if (item.pillarContent.content) {
+            structuredItem.pillarContent = [item.pillarContent.content];
+          } else if (item.pillarContent.title) {
+            structuredItem.pillarContent = [item.pillarContent.title];
+          } else {
+            structuredItem.pillarContent = [JSON.stringify(item.pillarContent)];
+          }
+        }
+      }
+      
+      // Process support content
+      if (item.supportContent) {
+        if (typeof item.supportContent === 'string') {
+          structuredItem.supportPages = [item.supportContent];
+        } else if (Array.isArray(item.supportContent)) {
+          structuredItem.supportPages = item.supportContent;
+        } else if (typeof item.supportContent === 'object') {
+          if (item.supportContent.content) {
+            structuredItem.supportPages = [item.supportContent.content];
+          } else if (item.supportContent.title) {
+            structuredItem.supportPages = [item.supportContent.title];
+          } else {
+            structuredItem.supportPages = [JSON.stringify(item.supportContent)];
+          }
+        }
+      } else if (item.supportPages) {
+        structuredItem.supportPages = Array.isArray(item.supportPages) ? 
+          item.supportPages : [item.supportPages];
+      }
+      
+      // Process meta tags
+      if (item.metaTags) {
+        structuredItem.metaTags = Array.isArray(item.metaTags) ? 
+          item.metaTags : [item.metaTags];
+      }
+      
+      // Process social media posts
+      if (item.socialMediaPosts) {
+        structuredItem.socialMedia = Array.isArray(item.socialMediaPosts) ? 
+          item.socialMediaPosts : [item.socialMediaPosts];
+      } else if (item.socialMedia) {
+        structuredItem.socialMedia = Array.isArray(item.socialMedia) ? 
+          item.socialMedia : [item.socialMedia];
+      } else if (item.socialPosts) {
+        structuredItem.socialMedia = Array.isArray(item.socialPosts) ? 
+          item.socialPosts : [item.socialPosts];
+      }
+      
+      // Process email series
+      if (item.emailSeries) {
+        // Could be array of objects with subject/body or array of strings
+        structuredItem.email = item.emailSeries;
+      } else if (item.email) {
+        structuredItem.email = Array.isArray(item.email) ? item.email : [item.email];
+      } else if (item.emailCampaign) {
+        structuredItem.email = Array.isArray(item.emailCampaign) ? 
+          item.emailCampaign : [item.emailCampaign];
+      }
+      
+      return structuredItem;
+    });
+  };
+  
   // Force showing suggestions if content is available, regardless of isAISuggestionMode
   const hasContent = generatedContent && generatedContent.length > 0 && 
                     Object.keys(generatedContent[0] || {}).length > 0;
                     
   console.log("HasContent check:", hasContent, "Generated content:", generatedContent);
   
-  // Convert generatedContent to the format expected by StructuredContentSuggestions
-  const structuredSuggestions = hasContent ? 
-    generatedContent.map(item => ({
-      topicArea: item.topicArea || item.title || topicArea || "Content Suggestions",
-      pillarContent: Array.isArray(item.pillarContent) ? item.pillarContent : [item.pillarContent].filter(Boolean),
-      supportPages: Array.isArray(item.supportPages) ? item.supportPages : 
-                   Array.isArray(item.supportContent) ? item.supportContent : 
-                   [item.supportContent || item.supportPages].filter(Boolean),
-      metaTags: item.metaTags || [],
-      socialMedia: item.socialMedia || item.socialMediaPosts || [],
-      email: item.email || (item.emailSeries ? 
-        item.emailSeries.map((email: any) => 
-          `Subject: ${email.subject}\n\n${email.body}`
-        ) : []),
-      reasoning: item.reasoning || ""
-    })) : [];
-    
+  const structuredSuggestions = hasContent ? processContentForDisplay(generatedContent) : [];
+  
   console.log("Structured suggestions:", structuredSuggestions);
-    
-  const handleForceRefresh = () => {
-    setForceRerender(prev => prev + 1);
-    processRawResponse();
-  };
-
-  // Immediate content processing on first render if we have raw response but no processed content
+  
+  // Auto process raw response on first render if needed
   useEffect(() => {
     if (rawResponse && (!generatedContent || generatedContent.length === 0)) {
       processRawResponse();
     }
   }, [rawResponse]);
+  
+  const handleForceRefresh = () => {
+    setForceRerender(prev => prev + 1);
+    processRawResponse();
+  };
 
   return (
     <TabsContent value="ai-suggestions" className="m-0">
@@ -233,7 +313,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             </div>
           )}
 
-          {/* Debug tool - always show initially for troubleshooting */}
+          {/* Debug tool */}
           {(debugMode || (rawResponse && !hasContent)) && !isN8nLoading && !isAgentLoading && !isForceProcessing && (
             <Card className="mb-6 border-amber-500">
               <div className="p-4">
