@@ -12,13 +12,24 @@ export const useN8nResponseProcessor = () => {
     
     let data;
     try {
-      data = JSON.parse(responseText);
+      // Try to parse as JSON first
+      data = typeof responseText === 'string' ? JSON.parse(responseText) : responseText;
       console.log("Parsed webhook response data:", data);
     } catch (parseError) {
       console.log("Response is not valid JSON, treating as raw content");
       // If the response is not JSON, create a structured object with the raw text
       data = {
         content: [{ output: responseText }]
+      };
+    }
+    
+    // Handle empty array responses
+    if (Array.isArray(data) && data.length === 0) {
+      console.log("Received empty array response");
+      return {
+        suggestions: [],
+        content: [],
+        title: ""
       };
     }
     
@@ -43,16 +54,6 @@ export const useN8nResponseProcessor = () => {
     if (Array.isArray(data) && data.length > 0) {
       console.log("Processing array of content items:", data.length);
       
-      // Check if array is empty
-      if (data.length === 0) {
-        console.log("Array is empty, returning empty content");
-        return {
-          suggestions: [],
-          content: [],
-          title: ""
-        };
-      }
-      
       contentArray = data.map(item => {
         // Check if this is the AI Content Suggestions format
         if (item.pillarContent || item.supportContent || item.socialMediaPosts || item.emailSeries) {
@@ -69,7 +70,7 @@ export const useN8nResponseProcessor = () => {
             reasoning: item.reasoning || null
           };
         } else {
-          // Generic object in array
+          // Generic object in array - pass through
           return item;
         }
       });
@@ -95,23 +96,20 @@ export const useN8nResponseProcessor = () => {
       
       console.log("Processed AI Content Suggestions object:", contentArray);
     }
-    // Check for new format with specific content sections (legacy)
+    // Check for new format with specific content sections
     else if (data && (data.pillarContent || data.supportContent || data.metaTags || data.socialPosts || data.emailCampaign)) {
       console.log("Found structured content with specific sections");
       
       // Combine sections into a single output
-      const combinedOutput = JSON.stringify({
+      const combinedOutput = {
         pillarContent: data.pillarContent || "",
         supportContent: data.supportContent || "",
-        metaTags: data.metaTags || "",
-        socialPosts: data.socialPosts || "",
-        emailCampaign: data.emailCampaign || ""
-      });
+        metaTags: data.metaTags || [],
+        socialMedia: data.socialPosts || [],
+        email: data.emailCampaign || []
+      };
       
-      contentArray = [{ 
-        output: combinedOutput,
-        title: data.title || "Generated Content" 
-      }];
+      contentArray = [combinedOutput];
     }
     // Handle standard content formats
     else if (data) {
@@ -139,7 +137,7 @@ export const useN8nResponseProcessor = () => {
         const content = typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
         contentArray = [{ output: content, title: data.title || "" }];
       } else if (Object.keys(data).length > 0) {
-        // As a last resort, stringify the whole response
+        // As a last resort, use the entire response
         console.log("No standard content structure found, using entire response");
         contentArray = [{ 
           output: JSON.stringify(data),
