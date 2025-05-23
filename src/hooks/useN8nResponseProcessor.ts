@@ -1,3 +1,4 @@
+
 /**
  * This hook handles processing of n8n webhook responses
  */
@@ -42,6 +43,16 @@ export const useN8nResponseProcessor = () => {
     if (Array.isArray(data) && data.length > 0) {
       console.log("Processing array of content items:", data.length);
       
+      // Check if array is empty
+      if (data.length === 0) {
+        console.log("Array is empty, returning empty content");
+        return {
+          suggestions: [],
+          content: [],
+          title: ""
+        };
+      }
+      
       contentArray = data.map(item => {
         // Check if this is the AI Content Suggestions format
         if (item.pillarContent || item.supportContent || item.socialMediaPosts || item.emailSeries) {
@@ -74,7 +85,7 @@ export const useN8nResponseProcessor = () => {
         topicArea: data.title || "Content Suggestions",
         pillarContent: typeof data.pillarContent === 'string' ? [data.pillarContent] : data.pillarContent || [],
         supportPages: typeof data.supportContent === 'string' ? [data.supportContent] : data.supportContent || [],
-        metaTags: [],
+        metaTags: data.metaTags || [],
         socialMedia: data.socialMediaPosts || [],
         email: data.emailSeries ? data.emailSeries.map((email: any) => 
           `Subject: ${email.subject}\n\n${email.body}`
@@ -127,17 +138,25 @@ export const useN8nResponseProcessor = () => {
         console.log("Found data property in response");
         const content = typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
         contentArray = [{ output: content, title: data.title || "" }];
-      } else {
+      } else if (Object.keys(data).length > 0) {
         // As a last resort, stringify the whole response
         console.log("No standard content structure found, using entire response");
-        contentArray = [{ output: JSON.stringify(data), title: "" }];
+        contentArray = [{ 
+          output: JSON.stringify(data),
+          pillarContent: data.pillarContent || "", 
+          supportPages: data.supportPages || data.supportContent || "",
+          title: data.title || "" 
+        }];
+      } else {
+        console.log("Empty data object, returning empty content");
+        contentArray = [];
       }
       
       // Ensure every item has an output property
       contentArray = contentArray.map(item => {
         if (!item.output && item.content) {
           return { ...item, output: item.content, title: item.title || "" };
-        } else if (!item.output) {
+        } else if (!item.output && !item.pillarContent) {
           return { ...item, output: JSON.stringify(item), title: item.title || "" };
         }
         return { ...item, title: item.title || "" };

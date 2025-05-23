@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -125,40 +126,68 @@ export const useN8nAgent = () => {
         
         // Direct processing for AI Content Suggestions format
         try {
+          let directParsingSuccessful = false;
           let parsedResponse = JSON.parse(responseText);
           
-          // Check if it's an array or single object with the expected properties
-          if (Array.isArray(parsedResponse) && parsedResponse.length > 0 && 
-             (parsedResponse[0].pillarContent || parsedResponse[0].supportContent || 
-              parsedResponse[0].socialMediaPosts || parsedResponse[0].emailSeries)) {
-            console.log("Detected AI Content Suggestions array format");
+          // Handle empty array case
+          if (Array.isArray(parsedResponse) && parsedResponse.length === 0) {
+            console.log("Received an empty array response");
+            setGeneratedContent([]);
             
-            const processedContent = parsedResponse.map(item => ({
-              topicArea: item.title || payload.topicArea || "Content Suggestions",
-              pillarContent: typeof item.pillarContent === 'string' ? [item.pillarContent] : item.pillarContent || [],
-              supportPages: typeof item.supportContent === 'string' ? [item.supportContent] : item.supportContent || [],
-              metaTags: [],
-              socialMedia: item.socialMediaPosts || [],
-              email: item.emailSeries ? 
-                item.emailSeries.map((email: any) => 
-                  `Subject: ${email.subject}\n\n${email.body}`
-                ) : [],
-              reasoning: item.reasoning || null
-            }));
-            
-            setGeneratedContent(processedContent);
-            
-            toast.success("Content Generated", {
-              description: "Successfully received AI content suggestions"
+            toast.error("Empty Response", {
+              description: "The content generation API returned an empty response. Please try again."
             });
             
             return {
               suggestions: [],
-              content: processedContent,
+              content: [],
               title: '',
               rawResponse: responseText
             };
           }
+          
+          // Check if it's an array or single object with the expected properties
+          if (Array.isArray(parsedResponse) && parsedResponse.length > 0) {
+            console.log("Examining array response of length:", parsedResponse.length);
+            
+            // Check the first item for expected format
+            const firstItem = parsedResponse[0];
+            if (firstItem && 
+               (firstItem.pillarContent || firstItem.supportContent || 
+                firstItem.socialMediaPosts || firstItem.emailSeries)) {
+              console.log("Detected AI Content Suggestions array format");
+              
+              const processedContent = parsedResponse.map(item => ({
+                topicArea: item.title || payload.topicArea || "Content Suggestions",
+                pillarContent: typeof item.pillarContent === 'string' ? [item.pillarContent] : item.pillarContent || [],
+                supportPages: typeof item.supportContent === 'string' ? [item.supportContent] : item.supportContent || [],
+                metaTags: [],
+                socialMedia: item.socialMediaPosts || [],
+                email: item.emailSeries ? 
+                  item.emailSeries.map((email: any) => 
+                    `Subject: ${email.subject}\n\n${email.body}`
+                  ) : [],
+                reasoning: item.reasoning || null
+              }));
+              
+              setGeneratedContent(processedContent);
+              directParsingSuccessful = true;
+              
+              toast.success("Content Generated", {
+                description: "Successfully received AI content suggestions"
+              });
+              
+              return {
+                suggestions: [],
+                content: processedContent,
+                title: '',
+                rawResponse: responseText
+              };
+            } else {
+              console.log("Array response doesn't match expected AI Content Suggestions format");
+            }
+          }
+          // Try single object format
           else if (parsedResponse && 
                  (parsedResponse.pillarContent || 
                   parsedResponse.supportContent || 
@@ -180,6 +209,7 @@ export const useN8nAgent = () => {
             }];
             
             setGeneratedContent(processedContent);
+            directParsingSuccessful = true;
             
             toast.success("Content Generated", {
               description: "Successfully received AI content suggestions"
@@ -191,6 +221,11 @@ export const useN8nAgent = () => {
               title: parsedResponse.title || '',
               rawResponse: responseText
             };
+          }
+          
+          // If we got here and didn't directly parse, fall back to standard processing
+          if (!directParsingSuccessful) {
+            console.log("Direct parsing not successful, falling back to standard processor");
           }
         } catch (parseError) {
           console.log("Error directly parsing response:", parseError);
@@ -206,6 +241,11 @@ export const useN8nAgent = () => {
           
           toast.success("Content Generated", {
             description: "Successfully received content from webhook"
+          });
+        } else {
+          // If no content was processed, show an error
+          toast.error("Processing Error", {
+            description: "Received a response but couldn't extract content"
           });
         }
         
