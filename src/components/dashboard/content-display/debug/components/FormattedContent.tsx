@@ -16,11 +16,14 @@ export const FormattedContent: React.FC<FormattedContentProps> = ({ processedCon
   return (
     <div className="space-y-6">
       {processedContent.map((item, index) => {
-        // Check if it's in AI Content Suggestions format
-        const isAIContent = item.pillarContent !== undefined || 
-                           item.supportContent !== undefined || 
-                           item.socialMediaPosts !== undefined || 
-                           item.emailSeries !== undefined;
+        // More robust check for AI content format
+        const isAIContent = item && (
+          item.pillarContent !== undefined || 
+          item.supportContent !== undefined || 
+          item.socialMediaPosts !== undefined || 
+          item.emailSeries !== undefined ||
+          item.reasoning !== undefined
+        );
         
         return isAIContent ? 
           <AIContentItem key={index} item={item} index={index} /> : 

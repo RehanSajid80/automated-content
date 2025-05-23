@@ -14,7 +14,11 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
   rawResponse, 
   processedContent 
 }) => {
-  if (!rawResponse) {
+  // Handle direct processing for display
+  const contentToDisplay = processedContent?.length > 0 ? processedContent : 
+    rawResponse ? (Array.isArray(rawResponse) ? rawResponse : [rawResponse]) : [];
+
+  if (!rawResponse && (!processedContent || processedContent.length === 0)) {
     return <EmptyContentState />;
   }
 
@@ -26,7 +30,7 @@ export const DebugContentViewer: React.FC<DebugContentViewerProps> = ({
       </TabsList>
       
       <TabsContent value="formatted" className="space-y-4">
-        <FormattedContent processedContent={processedContent} />
+        <FormattedContent processedContent={contentToDisplay} />
       </TabsContent>
       
       <TabsContent value="raw">

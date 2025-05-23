@@ -1,12 +1,17 @@
 
 import React from "react";
-import { AlertCircle, Bug } from "lucide-react";
+import { AlertCircle, Bug, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface NoContentWarningProps {
   errorMessage?: string | null;
+  onRefresh?: () => void;
 }
 
-export const NoContentWarning: React.FC<NoContentWarningProps> = ({ errorMessage }) => {
+export const NoContentWarning: React.FC<NoContentWarningProps> = ({ 
+  errorMessage,
+  onRefresh 
+}) => {
   return (
     <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md space-y-3">
       <div className="flex items-center gap-2">
@@ -33,8 +38,24 @@ export const NoContentWarning: React.FC<NoContentWarningProps> = ({ errorMessage
           <li>Verify webhook URLs are correct</li>
           <li>Try a different persona or goal</li>
           <li>Use the debug tools to view raw responses</li>
+          <li>Check for circular references in the response</li>
+          <li>Try the "Process Raw Response" button in the debug tools</li>
         </ul>
       </div>
+      
+      {onRefresh && (
+        <div className="pt-3">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={onRefresh}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Try Again
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

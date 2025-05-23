@@ -19,10 +19,31 @@ export const RawResponseView: React.FC<RawResponseViewProps> = ({ rawResponse })
     ))
   );
   
-  // Format content for display
-  const formattedContent = typeof rawResponse === 'string' 
-    ? rawResponse 
-    : JSON.stringify(rawResponse, null, 2);
+  // Format content for display, handling circular references
+  let formattedContent = "";
+  try {
+    // Try to stringify the response, with a custom replacer to handle circular references
+    formattedContent = typeof rawResponse === 'string' 
+      ? rawResponse 
+      : JSON.stringify(rawResponse, (key, value) => {
+          if (key && typeof value === 'object' && value !== null) {
+            // Check for circular references
+            try {
+              JSON.stringify(value);
+            } catch (err) {
+              return `[Circular Reference to ${key}]`;
+            }
+          }
+          return value;
+        }, 2);
+  } catch (err) {
+    // If JSON.stringify fails, provide a readable error
+    formattedContent = `Unable to display raw response due to: ${err.message}`;
+    console.error("Error formatting raw response:", err);
+  }
+  
+  // Check if the content appears to be AI content but with circular references
+  const containsCircularReferences = formattedContent.includes('[Circular Reference');
   
   return (
     <Card className={hasError ? "border-red-300" : ""}>
@@ -48,6 +69,15 @@ export const RawResponseView: React.FC<RawResponseViewProps> = ({ rawResponse })
         {!rawResponse && (
           <div className="text-center p-4 text-muted-foreground">
             No response data available
+          </div>
+        )}
+        
+        {containsCircularReferences && (
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-800 rounded-md">
+            <p className="text-sm text-amber-800 dark:text-amber-400">
+              This response contains circular references which can't be fully displayed. 
+              The content is still usable but may not appear correctly in this raw view.
+            </p>
           </div>
         )}
         
