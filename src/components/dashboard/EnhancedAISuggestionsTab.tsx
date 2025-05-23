@@ -32,7 +32,9 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     selectedPersona,
     setSelectedPersona,
     selectedGoal,
-    setSelectedGoal
+    setSelectedGoal,
+    customKeywords,
+    addCustomKeyword
   } = useEnhancedContentSuggestions(keywordData);
   
   const { generatedContent, isLoading: isAgentLoading } = useN8nAgent();
@@ -73,6 +75,8 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             setSelectedPersona={setSelectedPersona}
             selectedGoal={selectedGoal}
             setSelectedGoal={setSelectedGoal}
+            customKeywords={customKeywords}
+            addCustomKeyword={addCustomKeyword}
           />
           
           {isAISuggestionMode && (

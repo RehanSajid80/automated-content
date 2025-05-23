@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { KeywordData } from "@/utils/excelUtils";
-import { toast } from "sonner";  // Updated from @/components/ui/use-toast
+import { toast } from "sonner";
 import { useN8nConfig } from './useN8nConfig';
 import { useN8nResponseProcessor } from './useN8nResponseProcessor';
 
@@ -10,13 +9,14 @@ interface N8nAgentPayload {
   topicArea?: string;
   targetUrl?: string;
   url?: string;
-  requestType?: 'contentSuggestions' | 'keywordAnalysis';
+  requestType?: 'contentSuggestions' | 'keywordAnalysis' | 'customKeywords';
   contentType?: string;
   chatHistory?: any[];
   currentInstruction?: string;
   currentImageUrl?: string;
   customPayload?: any;
   output_format?: any;
+  customKeywords?: string[];
 }
 
 export const useN8nAgent = () => {
@@ -27,7 +27,7 @@ export const useN8nAgent = () => {
   const [contentTitle, setContentTitle] = useState<string>('');
   const [rawResponse, setRawResponse] = useState<any>(null);
   
-  const { getWebhookUrl, getContentWebhookUrl } = useN8nConfig();
+  const { getWebhookUrl, getContentWebhookUrl, getCustomKeywordsWebhookUrl } = useN8nConfig();
   const { processResponse } = useN8nResponseProcessor();
 
   /**
@@ -63,6 +63,15 @@ export const useN8nAgent = () => {
       } else {
         // Default to keyword webhook
         webhookUrl = getWebhookUrl();
+      }
+      
+      // Check if this is a custom keywords request
+      if (payload.requestType === 'customKeywords' || (payload.customPayload && payload.customPayload.custom_keywords)) {
+        const customKeywordsWebhook = getCustomKeywordsWebhookUrl();
+        if (customKeywordsWebhook) {
+          webhookUrl = customKeywordsWebhook;
+          console.log("Using custom keywords webhook:", webhookUrl);
+        }
       }
       
       if (!webhookUrl) {

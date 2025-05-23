@@ -23,6 +23,8 @@ interface EnhancedTopicSuggestionFormProps {
   setSelectedPersona: (persona: string) => void;
   selectedGoal: string;
   setSelectedGoal: (goal: string) => void;
+  customKeywords?: string[];
+  addCustomKeyword?: (keyword: string) => void;
 }
 
 export const EnhancedTopicSuggestionForm: React.FC<EnhancedTopicSuggestionFormProps> = ({
@@ -39,7 +41,9 @@ export const EnhancedTopicSuggestionForm: React.FC<EnhancedTopicSuggestionFormPr
   selectedPersona,
   setSelectedPersona,
   selectedGoal,
-  setSelectedGoal
+  setSelectedGoal,
+  customKeywords = [],
+  addCustomKeyword
 }) => {
   return (
     <div className="space-y-6 w-full">
@@ -52,6 +56,8 @@ export const EnhancedTopicSuggestionForm: React.FC<EnhancedTopicSuggestionFormPr
         toggleKeywordSelection={toggleKeywordSelection}
         autoSelectTrendingKeywords={autoSelectTrendingKeywords}
         isAISuggestionMode={isAISuggestionMode}
+        customKeywords={customKeywords}
+        addCustomKeyword={addCustomKeyword}
       />
 
       <Card>

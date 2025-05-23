@@ -1,10 +1,14 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { TopicAreaSelector } from "../TopicAreaSelector";
 import SemrushIntegration from "../SemrushIntegration";
 import { KeywordSelector } from "../KeywordSelector";
 import { KeywordData } from "@/utils/excelUtils";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface KeywordSearchSectionProps {
   topicArea: string;
@@ -15,6 +19,8 @@ interface KeywordSearchSectionProps {
   toggleKeywordSelection: (keyword: string) => void;
   autoSelectTrendingKeywords: () => void;
   isAISuggestionMode: boolean;
+  customKeywords?: string[];
+  addCustomKeyword?: (keyword: string) => void;
 }
 
 export const KeywordSearchSection: React.FC<KeywordSearchSectionProps> = ({
@@ -26,8 +32,11 @@ export const KeywordSearchSection: React.FC<KeywordSearchSectionProps> = ({
   toggleKeywordSelection,
   autoSelectTrendingKeywords,
   isAISuggestionMode,
+  customKeywords = [],
+  addCustomKeyword = () => {}
 }) => {
   const { toast } = useToast();
+  const [customKeyword, setCustomKeyword] = useState("");
 
   const handleKeywordsReceived = (keywords: KeywordData[]) => {
     if (keywords && keywords.length > 0) {
@@ -39,6 +48,25 @@ export const KeywordSearchSection: React.FC<KeywordSearchSectionProps> = ({
       });
     } else {
       console.warn("Received empty keywords array");
+    }
+  };
+
+  const handleAddCustomKeyword = () => {
+    if (!customKeyword.trim()) return;
+    
+    addCustomKeyword(customKeyword.trim());
+    setCustomKeyword("");
+    
+    toast({
+      title: "Custom Keyword Added",
+      description: `Added "${customKeyword}" to your keywords list`,
+    });
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddCustomKeyword();
     }
   };
 
@@ -57,6 +85,38 @@ export const KeywordSearchSection: React.FC<KeywordSearchSectionProps> = ({
           topicArea={topicArea}
           disabled={isAISuggestionMode}
         />
+        
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Add Custom Keywords</label>
+          <div className="flex gap-2">
+            <Input
+              value={customKeyword}
+              onChange={(e) => setCustomKeyword(e.target.value)}
+              placeholder="Enter your own keyword..."
+              onKeyPress={handleKeyPress}
+              disabled={isAISuggestionMode}
+            />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleAddCustomKeyword}
+              disabled={!customKeyword.trim() || isAISuggestionMode}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+          
+          {customKeywords.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {customKeywords.map((keyword, index) => (
+                <Badge key={`custom-${index}`} variant="secondary">
+                  {keyword}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
         
         <KeywordSelector
           keywords={localKeywords}

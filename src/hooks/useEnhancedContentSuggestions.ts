@@ -15,6 +15,7 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
   const [isAISuggestionMode, setIsAISuggestionMode] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<string>("facility-manager");
   const [selectedGoal, setSelectedGoal] = useState<string>("increase-seo");
+  const [customKeywords, setCustomKeywords] = useState<string[]>([]);
   
   const { sendToN8n } = useN8nAgent();
   const { targetUrl } = useUrlSuggestions();
@@ -26,6 +27,18 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
         ? prev.filter(k => k !== keyword)
         : [...prev, keyword]
     );
+  };
+  
+  const addCustomKeyword = (keyword: string) => {
+    if (isAISuggestionMode) return;
+    
+    if (!customKeywords.includes(keyword)) {
+      setCustomKeywords(prev => [...prev, keyword]);
+      // Also add to selected keywords
+      if (!selectedKeywords.includes(keyword)) {
+        setSelectedKeywords(prev => [...prev, keyword]);
+      }
+    }
   };
   
   const autoSelectTrendingKeywords = () => {
@@ -90,7 +103,7 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
     let keywordsToProcess = localKeywords;
     let keywordsToSelect = selectedKeywords;
     
-    if (selectedKeywords.length === 0) {
+    if (selectedKeywords.length === 0 && customKeywords.length === 0) {
       // If no specific keywords are selected, generate dummy keywords for the topic
       const dummyKeywords: KeywordData[] = [
         {
@@ -109,6 +122,26 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
       setLocalKeywords(keywordsToProcess);
       keywordsToSelect = [topicArea];
       setSelectedKeywords([topicArea]);
+    }
+    
+    // Add custom keywords to the keywords to process
+    if (customKeywords.length > 0) {
+      const customKeywordsData: KeywordData[] = customKeywords.map((keyword, index) => ({
+        keyword,
+        volume: 500,
+        difficulty: 45,
+        cpc: 1.0,
+        trend: "neutral",
+        isCustom: true
+      }));
+      
+      keywordsToProcess = [...keywordsToProcess, ...customKeywordsData];
+      // Make sure all custom keywords are selected
+      customKeywords.forEach(keyword => {
+        if (!keywordsToSelect.includes(keyword)) {
+          keywordsToSelect.push(keyword);
+        }
+      });
     }
     
     setIsN8nLoading(true);
@@ -130,7 +163,8 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
           target_persona: selectedPersona,
           persona_name: personaName,
           content_goal: selectedGoal,
-          goal_name: goalName
+          goal_name: goalName,
+          custom_keywords: customKeywords
         }
       }, true);
       
@@ -161,6 +195,8 @@ export const useEnhancedContentSuggestions = (initialKeywords: KeywordData[]) =>
     selectedPersona,
     setSelectedPersona,
     selectedGoal,
-    setSelectedGoal
+    setSelectedGoal,
+    customKeywords,
+    addCustomKeyword
   };
 };

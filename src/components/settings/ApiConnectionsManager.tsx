@@ -15,7 +15,7 @@ const ApiConnectionsManager = () => {
   const [openaiStatus, setOpenaiStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   // Webhook state
-  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content'>('keywords');
+  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords'>('keywords');
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   const { toast } = useToast();
@@ -27,6 +27,7 @@ const ApiConnectionsManager = () => {
       localStorage.removeItem("n8n-webhook-url");
       localStorage.removeItem("semrush-webhook-url");
       localStorage.removeItem("n8n-content-webhook-url");
+      localStorage.removeItem("n8n-custom-keywords-webhook-url");
       setOpenaiApiKey("");
       setOpenaiStatus('checking');
       setWebhookStatus('checking');
@@ -81,8 +82,10 @@ const ApiConnectionsManager = () => {
   useEffect(() => {
     if (activeWebhookType === 'keywords') {
       setWebhookStatus(webhooks.keywordWebhook ? 'connected' : 'disconnected');
-    } else {
+    } else if (activeWebhookType === 'content') {
       setWebhookStatus(webhooks.contentWebhook ? 'connected' : 'disconnected');
+    } else {
+      setWebhookStatus(webhooks.customKeywordsWebhook ? 'connected' : 'disconnected');
     }
   }, [activeWebhookType, webhooks]);
 
@@ -109,7 +112,7 @@ const ApiConnectionsManager = () => {
     }
   };
 
-  const handleWebhookTypeChange = (type: 'keywords' | 'content') => {
+  const handleWebhookTypeChange = (type: 'keywords' | 'content' | 'custom-keywords') => {
     setActiveWebhookType(type);
   };
 

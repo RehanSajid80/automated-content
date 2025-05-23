@@ -12,8 +12,8 @@ import { toast } from "sonner";
 
 interface WebhookConnectionProps {
   onSaveWebhook?: () => void;
-  activeWebhookType?: 'keywords' | 'content';
-  onWebhookTypeChange?: (type: 'keywords' | 'content') => void;
+  activeWebhookType?: 'keywords' | 'content' | 'custom-keywords';
+  onWebhookTypeChange?: (type: 'keywords' | 'content' | 'custom-keywords') => void;
 }
 
 const WebhookConnection: React.FC<WebhookConnectionProps> = ({
@@ -23,7 +23,8 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
 }) => {
   const { 
     getWebhookUrl, 
-    getContentWebhookUrl, 
+    getContentWebhookUrl,
+    getCustomKeywordsWebhookUrl,
     saveWebhookUrl, 
     isLoading, 
     fetchWebhookUrls 
@@ -31,6 +32,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   
   const [webhookUrl, setWebhookUrl] = React.useState("");
   const [contentWebhookUrl, setContentWebhookUrl] = React.useState("");
+  const [customKeywordsWebhookUrl, setCustomKeywordsWebhookUrl] = React.useState("");
   const [status, setStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   // Load webhook URLs on mount and when activeWebhookType changes
@@ -41,15 +43,19 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   const loadWebhookUrls = () => {
     const keywordWebhookUrl = getWebhookUrl();
     const contentGenUrl = getContentWebhookUrl();
+    const customKeywordsUrl = getCustomKeywordsWebhookUrl();
     
     setWebhookUrl(keywordWebhookUrl);
     setContentWebhookUrl(contentGenUrl);
+    setCustomKeywordsWebhookUrl(customKeywordsUrl);
     
     // Set status based on active webhook type
     if (activeWebhookType === 'keywords') {
       setStatus(keywordWebhookUrl ? 'connected' : 'disconnected');
-    } else {
+    } else if (activeWebhookType === 'content') {
       setStatus(contentGenUrl ? 'connected' : 'disconnected');
+    } else {
+      setStatus(customKeywordsUrl ? 'connected' : 'disconnected');
     }
   };
 
@@ -68,6 +74,9 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
       setStatus('connected');
     } else if (activeWebhookType === 'content' && contentWebhookUrl) {
       await saveWebhookUrl(contentWebhookUrl, 'content');
+      setStatus('connected');
+    } else if (activeWebhookType === 'custom-keywords' && customKeywordsWebhookUrl) {
+      await saveWebhookUrl(customKeywordsWebhookUrl, 'custom-keywords');
       setStatus('connected');
     } else {
       toast.error("Please enter a valid webhook URL");
@@ -121,7 +130,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
         {onWebhookTypeChange && (
           <RadioGroup 
             value={activeWebhookType} 
-            onValueChange={(value) => onWebhookTypeChange(value as 'keywords' | 'content')}
+            onValueChange={(value) => onWebhookTypeChange(value as 'keywords' | 'content' | 'custom-keywords')}
             className="flex flex-col space-y-1 mb-4"
           >
             <div className="flex items-center space-x-2">
@@ -131,6 +140,10 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="content" id="content" />
               <Label htmlFor="content">Content Generation Webhook</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="custom-keywords" id="custom-keywords" />
+              <Label htmlFor="custom-keywords">Custom Keywords Webhook</Label>
             </div>
           </RadioGroup>
         )}
@@ -149,6 +162,22 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
             />
             <p className="text-xs text-muted-foreground">
               This webhook will be used for AI content generation
+            </p>
+          </div>
+        ) : activeWebhookType === 'custom-keywords' ? (
+          <div className="space-y-2">
+            <label htmlFor="custom-keywords-webhook-url" className="text-sm font-medium">
+              Custom Keywords Webhook URL
+            </label>
+            <Input
+              id="custom-keywords-webhook-url"
+              placeholder="Enter your custom keywords webhook URL"
+              value={customKeywordsWebhookUrl || ''}
+              onChange={(e) => setCustomKeywordsWebhookUrl(e.target.value)}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              This webhook will be used to process user-entered custom keywords
             </p>
           </div>
         ) : (
