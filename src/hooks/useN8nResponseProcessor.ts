@@ -29,7 +29,8 @@ export const useN8nResponseProcessor = () => {
       return {
         suggestions: [],
         content: [],
-        title: ""
+        title: "",
+        rawResponse: responseText
       };
     }
     
@@ -42,7 +43,8 @@ export const useN8nResponseProcessor = () => {
       return {
         suggestions: [],
         content: formattedContent,
-        title: Array.isArray(data) && data[0]?.title || data?.title || ""
+        title: Array.isArray(data) && data[0]?.title || data?.title || "",
+        rawResponse: responseText
       };
     }
     
@@ -76,7 +78,8 @@ export const useN8nResponseProcessor = () => {
         return {
           suggestions,
           content: contentArray,
-          title
+          title,
+          rawResponse: responseText
         };
       }
       
@@ -93,7 +96,8 @@ export const useN8nResponseProcessor = () => {
     }
     // Check for AI Content Suggestions specific format (single object)
     else if (data && (data.pillarContent || data.supportContent || 
-                     data.socialMediaPosts || data.emailSeries)) {
+                     data.socialMediaPosts || data.emailSeries || 
+                     data.reasoning)) {
       console.log("Found AI Content Suggestions format as single object");
       
       // Just pass through the content directly
@@ -147,7 +151,8 @@ export const useN8nResponseProcessor = () => {
     return {
       suggestions,
       content: contentArray,
-      title
+      title,
+      rawResponse: responseText
     };
   };
   

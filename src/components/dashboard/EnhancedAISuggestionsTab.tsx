@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
@@ -9,10 +8,12 @@ import { StructuredContentSuggestions } from "./content-suggestions/StructuredCo
 import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ContentDebugger } from "./content-display/ContentDebugger";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DebugContentViewer } from "./content-display/debug/DebugContentViewer";
 
 interface EnhancedAISuggestionsTabProps {
   keywordData: KeywordData[];
@@ -26,6 +27,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   const [forceRerender, setForceRerender] = useState(0);
   const [isForceProcessing, setIsForceProcessing] = useState(false);
   const [debugMode, setDebugMode] = useState(false); // Hide debug mode by default
+  const [showContentDialog, setShowContentDialog] = useState(false);
   
   const { 
     selectedKeywords,
@@ -289,6 +291,11 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     processRawResponse();
   };
 
+  // Show content in dialog
+  const openContentDialog = () => {
+    setShowContentDialog(true);
+  };
+
   return (
     <TabsContent value="ai-suggestions" className="m-0">
       <div className="container py-8 px-4 md:px-6 lg:px-8 w-full max-w-full">
@@ -298,7 +305,16 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         />
         
         <div className="rounded-xl border border-border bg-card p-6 w-full max-w-full">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end space-x-2 mb-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={openContentDialog}
+              className="flex items-center gap-1"
+            >
+              <FileText className="h-4 w-4" />
+              View Content in New Tab
+            </Button>
             <Button 
               variant="outline" 
               size="sm"
@@ -388,6 +404,21 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           )}
         </div>
       </div>
+      
+      {/* Dialog for viewing content in a new "tab" */}
+      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
+        <DialogContent className="max-w-4xl w-full h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>AI Content Suggestions</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-auto flex-1 h-full">
+            <DebugContentViewer 
+              rawResponse={rawResponse}
+              processedContent={generatedContent}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </TabsContent>
   );
 };

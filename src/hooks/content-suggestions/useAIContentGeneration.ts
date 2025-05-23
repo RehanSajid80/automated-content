@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -84,7 +83,7 @@ export const useAIContentGeneration = () => {
       console.log(`Sending content request to n8n for persona: ${personaName}, goal: ${goalName}`);
       console.log(`Keywords: ${keywordsToSelect.join(", ")}`);
       
-      // Define expected output format
+      // Define expected output format - explicitly matching the format we're receiving
       const outputFormat = {
         pillarContent: "A headline or detailed title for the main article",
         supportContent: "A headline or detailed title for supporting content",

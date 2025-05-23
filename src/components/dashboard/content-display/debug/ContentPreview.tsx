@@ -63,10 +63,10 @@ export const ContentPreview: React.FC<ContentPreviewProps> = ({ generatedContent
       }
       
       // Format social media posts
-      const socialPosts = content.socialMediaPosts || [];
+      const socialPosts = Array.isArray(content.socialMediaPosts) ? content.socialMediaPosts : [];
       
       // Format email series with subject/body structure
-      const emailSeries = content.emailSeries || [];
+      const emailSeries = Array.isArray(content.emailSeries) ? content.emailSeries : [];
       
       return (
         <Tabs defaultValue="pillar" className="w-full">
