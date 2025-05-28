@@ -38,33 +38,28 @@ serve(async (req) => {
 
       // Check for existing data first
       const existingKeywords = await getExistingKeywords(cleanDomain, topicArea);
-      if (existingKeywords && existingKeywords.length > 0) {
+      if (existingKeywords && existingKeywords.length >= limit) {
         console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain} and topic: ${topicArea}`);
         
-        // If we have cached keywords but less than the requested limit, fetch new ones
-        if (existingKeywords.length >= limit) {
-          return new Response(
-            JSON.stringify({ 
-              keywords: existingKeywords.slice(0, limit), // Respect the limit parameter
-              remaining: 100 - existingKeywords.length,
-              fromCache: true
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        } else {
-          console.log(`Cached keywords (${existingKeywords.length}) less than requested limit (${limit}), fetching new ones`);
-        }
+        return new Response(
+          JSON.stringify({ 
+            keywords: existingKeywords.slice(0, limit), // Respect the limit parameter
+            remaining: 100 - existingKeywords.length,
+            fromCache: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
-      // Fetch and process new keywords
+      // Fetch and process new keywords from SEMrush
       const parsedLimit = parseInt(String(limit), 10);
       const actualLimit = isNaN(parsedLimit) ? 100 : Math.max(30, Math.min(500, parsedLimit));
-      console.log(`Using limit for SEMrush API: ${actualLimit}`);
+      console.log(`Fetching ${actualLimit} keywords from SEMrush API`);
       
       const semrushResponse = await fetchSemrushKeywords(cleanDomain, actualLimit);
-      const keywords = processKeywords(semrushResponse, cleanDomain, topicArea);
+      const allKeywords = processKeywords(semrushResponse, cleanDomain, topicArea);
 
-      if (keywords.length === 0) {
+      if (allKeywords.length === 0) {
         console.log("No keywords returned from SEMrush API");
         return new Response(
           JSON.stringify({ 
@@ -76,17 +71,21 @@ serve(async (req) => {
         );
       }
 
-      // Update database
-      await deleteExistingKeywords(cleanDomain, topicArea);
-      const insertedKeywords = await insertKeywords(keywords);
+      console.log(`Processed ${allKeywords.length} keywords from SEMrush`);
 
-      console.log(`Successfully inserted ${insertedKeywords.length} of ${keywords.length} keywords`);
+      // Clear existing data and insert new keywords
+      await deleteExistingKeywords(cleanDomain, topicArea);
+      const insertedKeywords = await insertKeywords(allKeywords);
+
+      console.log(`Successfully inserted ${insertedKeywords.length} of ${allKeywords.length} keywords`);
       
+      // Return all keywords from SEMrush (not just inserted ones)
       return new Response(
         JSON.stringify({ 
-          keywords: insertedKeywords.length > 0 ? insertedKeywords : keywords,
-          remaining: 100 - keywords.length,
-          insertedCount: insertedKeywords.length
+          keywords: allKeywords.slice(0, limit), // Return the full set up to the limit
+          remaining: 100 - allKeywords.length,
+          insertedCount: insertedKeywords.length,
+          totalFetched: allKeywords.length
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

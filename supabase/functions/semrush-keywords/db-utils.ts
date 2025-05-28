@@ -24,11 +24,16 @@ export const getExistingKeywords = async (domain: string, topicArea: string) => 
 // Delete existing keywords for a domain and topic
 export const deleteExistingKeywords = async (domain: string, topicArea: string) => {
   try {
-    await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('semrush_keywords')
       .delete()
       .eq('domain', domain)
       .eq('topic_area', topicArea);
+    
+    if (error) {
+      console.error('Error during deletion of existing keywords:', error);
+      throw error;
+    }
     
     console.log(`Successfully deleted existing keywords for domain: ${domain} and topic: ${topicArea}`);
   } catch (deleteError) {
@@ -37,9 +42,26 @@ export const deleteExistingKeywords = async (domain: string, topicArea: string) 
   }
 };
 
-// Insert new keywords into database
+// Insert new keywords into database with better error handling
 export const insertKeywords = async (keywords: any[]) => {
   const insertedKeywords = [];
+  
+  // Try batch insert first
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('semrush_keywords')
+      .insert(keywords)
+      .select();
+
+    if (!error && data) {
+      console.log(`Successfully batch inserted ${data.length} keywords`);
+      return data;
+    }
+  } catch (batchError) {
+    console.log('Batch insert failed, falling back to individual inserts');
+  }
+  
+  // Fall back to individual inserts if batch fails
   for (const keyword of keywords) {
     try {
       const { data, error: insertError } = await supabaseAdmin
@@ -47,14 +69,17 @@ export const insertKeywords = async (keywords: any[]) => {
         .insert([keyword])
         .select();
 
-      if (insertError) {
-        console.error(`Error inserting keyword "${keyword.keyword}":`, insertError);
-      } else if (data) {
+      if (!insertError && data) {
         insertedKeywords.push(data[0]);
+      } else if (insertError && !insertError.message.includes('duplicate key')) {
+        console.error(`Error inserting keyword "${keyword.keyword}":`, insertError);
       }
     } catch (err) {
-      console.error(`Exception inserting keyword "${keyword.keyword}":`, err);
+      if (!err.message?.includes('duplicate key')) {
+        console.error(`Exception inserting keyword "${keyword.keyword}":`, err);
+      }
     }
   }
+  
   return insertedKeywords;
 };
