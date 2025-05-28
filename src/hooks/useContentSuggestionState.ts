@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { useAIContentGeneration } from "./content-suggestions/useAIContentGeneration";
+import { useN8nAgent } from "./useN8nAgent";
 
 export const useContentSuggestionState = (keywords: KeywordData[]) => {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
@@ -17,6 +18,8 @@ export const useContentSuggestionState = (keywords: KeywordData[]) => {
     processKeywordsForAI,
     sendContentToN8n
   } = useAIContentGeneration();
+
+  const { sendToN8n } = useN8nAgent();
 
   // Update local keywords when keywords prop changes
   useEffect(() => {
@@ -79,15 +82,55 @@ export const useContentSuggestionState = (keywords: KeywordData[]) => {
         customKeywords: customKeywords.length
       });
 
-      // Send to N8N for processing
-      const response = await sendContentToN8n(
+      // Call the N8n agent directly with the content webhook
+      const payload = {
+        keywords: keywordsToSelect.length > 0 
+          ? keywordsToProcess.filter(kw => keywordsToSelect.includes(kw.keyword)) 
+          : keywordsToProcess,
         topicArea,
-        keywordsToProcess,
-        keywordsToSelect,
-        selectedPersona,
-        selectedGoal,
-        customKeywords
-      );
+        targetUrl: "https://www.officespacesoftware.com",
+        url: "https://www.officespacesoftware.com",
+        requestType: 'contentSuggestions',
+        output_format: {
+          pillarContent: "A headline or detailed title for the main article",
+          supportContent: "A headline or detailed title for supporting content",
+          socialMediaPosts: [
+            "LinkedIn style post with hashtags",
+            "Twitter/X style post with hashtags",
+            "Instagram/Facebook style post with emojis"
+          ],
+          emailSeries: [
+            {
+              subject: "Compelling email subject line 1",
+              body: "Brief email body text"
+            },
+            {
+              subject: "Compelling email subject line 2",
+              body: "Brief email body text"
+            },
+            {
+              subject: "Compelling email subject line 3", 
+              body: "Brief email body text"
+            }
+          ],
+          reasoning: {
+            pillarContent: "Strategic reasoning behind pillar content",
+            supportContent: "Strategic reasoning behind support content",
+            socialMediaPosts: "Strategic reasoning behind social media approach",
+            emailSeries: "Strategic reasoning behind email series approach"
+          }
+        },
+        customPayload: {
+          target_persona: selectedPersona,
+          content_goal: selectedGoal,
+          custom_keywords: customKeywords
+        }
+      };
+
+      console.log("Sending payload to N8N webhook:", payload);
+
+      // Send directly to N8N using the content webhook
+      const response = await sendToN8n(payload, 'content');
 
       console.log("AI suggestions response received:", response);
       

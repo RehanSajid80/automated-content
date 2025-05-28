@@ -55,8 +55,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     suggestions 
   } = useContentSuggestions();
 
-  // Get generated content from N8N agent
-  const { generatedContent, rawResponse } = useN8nAgent();
+  // Get generated content from N8N agent - this will receive the webhook response
+  const { generatedContent, rawResponse, isLoading: isAgentLoading } = useN8nAgent();
 
   const handleSuggestionSelect = (suggestion: AISuggestion) => {
     toast({
@@ -199,7 +199,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
               autoSelectTrendingKeywords={autoSelectTrendingKeywords}
               isAISuggestionMode={isAISuggestionMode}
               handleAISuggestions={handleAISuggestions}
-              isLoading={isN8nLoading || isLoading}
+              isLoading={isN8nLoading || isLoading || isAgentLoading}
             />
 
             {/* Show structured content suggestions when available */}
@@ -219,7 +219,7 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
                   keywords={localKeywords}
                   topicArea={topicArea}
                   onSuggestionSelect={handleSuggestionSelect}
-                  isLoading={isN8nLoading || isLoading}
+                  isLoading={isN8nLoading || isLoading || isAgentLoading}
                   suggestions={paginatedSuggestions}
                 />
                 
