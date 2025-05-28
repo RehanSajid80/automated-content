@@ -41,11 +41,19 @@ serve(async (req) => {
       
       console.log('SEMrush API key is configured and available');
 
-      // Check for existing data first - use keyword + domain combination for caching
-      const cacheKey = searchKeyword ? `${searchKeyword}-${targetDomain}` : `domain-${targetDomain}`;
+      // Create different cache keys for different search types
+      let cacheKey: string;
+      if (searchKeyword && targetDomain) {
+        cacheKey = `phrase-this-${searchKeyword}-${targetDomain}`;
+      } else if (searchKeyword) {
+        cacheKey = `phrase-related-${searchKeyword}`;
+      } else {
+        cacheKey = `domain-${targetDomain}`;
+      }
+      
       const existingKeywords = await getExistingKeywords(cacheKey, topicArea);
       if (existingKeywords && existingKeywords.length >= limit) {
-        console.log(`Found ${existingKeywords.length} existing keywords for ${searchKeyword ? `keyword: "${searchKeyword}" and ` : ''}domain: ${targetDomain}`);
+        console.log(`Found ${existingKeywords.length} existing keywords for search: ${cacheKey}`);
         
         return new Response(
           JSON.stringify({ 
@@ -61,15 +69,17 @@ serve(async (req) => {
       // Fetch and process new keywords from SEMrush
       const parsedLimit = parseInt(String(limit), 10);
       const actualLimit = isNaN(parsedLimit) ? 100 : Math.max(30, Math.min(500, parsedLimit));
-      console.log(`Fetching ${actualLimit} keywords from SEMrush API for ${searchKeyword ? `keyword: "${searchKeyword}" with ` : ''}domain: ${targetDomain} with key: ${semrushApiKey.substring(0, 8)}...`);
+      console.log(`Fetching ${actualLimit} keywords from SEMrush API for search: ${cacheKey} with key: ${semrushApiKey.substring(0, 8)}...`);
       
       const semrushResponse = await fetchSemrushKeywords(searchKeyword, actualLimit, targetDomain);
       const allKeywords = processKeywords(semrushResponse, cacheKey, topicArea);
 
       if (allKeywords.length === 0) {
-        const noDataMessage = searchKeyword 
-          ? `No keywords found for "${searchKeyword}" related to ${targetDomain} - check API key or try different keywords`
-          : `No organic keywords found for ${targetDomain} - domain may not have sufficient organic visibility`;
+        const noDataMessage = searchKeyword && targetDomain
+          ? `No ranking data found for "${searchKeyword}" on ${targetDomain}. The domain may not rank for this keyword.`
+          : searchKeyword 
+            ? `No keywords found related to "${searchKeyword}"`
+            : `No organic keywords found for ${targetDomain} - domain may not have sufficient organic visibility`;
         
         console.log("No keywords returned from SEMrush API - " + noDataMessage);
         return new Response(

@@ -9,13 +9,18 @@ export const fetchSemrushKeywords = async (keyword: string, limit: number, domai
   
   let semrushUrl: string;
   
-  if (keyword && keyword.trim()) {
-    // Use keyword research API to find related keywords
+  if (keyword && keyword.trim() && domain) {
+    // When both keyword and domain are provided, use domain_organic to find keywords 
+    // the domain ranks for, then filter or use phrase_this to see domain's performance for the keyword
+    semrushUrl = `https://api.semrush.com/?type=phrase_this&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr,Ur,Tg&phrase=${encodeURIComponent(keyword)}&domain=${encodeURIComponent(domain)}&database=us&display_limit=${limit}`;
+    console.log(`Searching for how domain "${domain}" performs for keyword "${keyword}"`);
+  } else if (keyword && keyword.trim()) {
+    // Use keyword research API to find related keywords (general search)
     semrushUrl = `https://api.semrush.com/?type=phrase_related&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&phrase=${encodeURIComponent(keyword)}&database=us&display_limit=${limit}`;
-    console.log(`Searching for keywords related to "${keyword}"${domain ? ` with domain context: ${domain}` : ''}`);
+    console.log(`Searching for keywords related to "${keyword}"`);
   } else if (domain) {
     // Use domain overview API to get organic keywords for the domain
-    semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&domain=${encodeURIComponent(domain)}&database=us&display_limit=${limit}`;
+    semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr,Ur,Tg&domain=${encodeURIComponent(domain)}&database=us&display_limit=${limit}`;
     console.log(`Fetching organic keywords for domain: ${domain}`);
   } else {
     throw new Error('Either keyword or domain must be provided');
@@ -50,8 +55,12 @@ export const fetchSemrushKeywords = async (keyword: string, limit: number, domai
   if (responseText.includes('ERROR')) {
     console.error('SEMrush API returned an error:', responseText);
     if (responseText.includes('NOTHING FOUND')) {
-      const searchType = keyword ? `keyword: "${keyword}"` : `domain: "${domain}"`;
-      throw new Error(`No data found for ${searchType}. Try a different ${keyword ? 'keyword' : 'domain'} or check if it has sufficient search data.`);
+      const searchType = keyword && domain 
+        ? `keyword "${keyword}" for domain "${domain}"` 
+        : keyword 
+          ? `keyword: "${keyword}"` 
+          : `domain: "${domain}"`;
+      throw new Error(`No data found for ${searchType}. The domain may not rank for this keyword, or try different search terms.`);
     }
     throw new Error(`SEMrush API error: ${responseText}`);
   }
