@@ -32,9 +32,13 @@ serve(async (req) => {
       console.log(`Using domain for SEMrush API: ${cleanDomain}, Topic Area: ${topicArea}`);
       
       // Check for API key
-      if (!Deno.env.get('SEMRUSH_API_KEY')) {
+      const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY');
+      if (!semrushApiKey) {
+        console.error('SEMrush API key is not configured');
         throw new Error('SEMrush API key is not configured');
       }
+      
+      console.log('SEMrush API key is configured and available');
 
       // Check for existing data first
       const existingKeywords = await getExistingKeywords(cleanDomain, topicArea);
@@ -45,7 +49,8 @@ serve(async (req) => {
           JSON.stringify({ 
             keywords: existingKeywords.slice(0, limit), // Respect the limit parameter
             remaining: 100 - existingKeywords.length,
-            fromCache: true
+            fromCache: true,
+            apiKeyStatus: 'configured'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -54,18 +59,19 @@ serve(async (req) => {
       // Fetch and process new keywords from SEMrush
       const parsedLimit = parseInt(String(limit), 10);
       const actualLimit = isNaN(parsedLimit) ? 100 : Math.max(30, Math.min(500, parsedLimit));
-      console.log(`Fetching ${actualLimit} keywords from SEMrush API`);
+      console.log(`Fetching ${actualLimit} keywords from SEMrush API with key: ${semrushApiKey.substring(0, 8)}...`);
       
       const semrushResponse = await fetchSemrushKeywords(cleanDomain, actualLimit);
       const allKeywords = processKeywords(semrushResponse, cleanDomain, topicArea);
 
       if (allKeywords.length === 0) {
-        console.log("No keywords returned from SEMrush API");
+        console.log("No keywords returned from SEMrush API - this could indicate API key issues");
         return new Response(
           JSON.stringify({ 
             keywords: [], 
             remaining: 100,
-            error: "No keywords found for this domain"
+            error: "No keywords found for this domain - check API key or domain validity",
+            apiKeyStatus: 'configured_but_no_data'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -85,7 +91,9 @@ serve(async (req) => {
           keywords: allKeywords.slice(0, limit), // Return the full set up to the limit
           remaining: 100 - allKeywords.length,
           insertedCount: insertedKeywords.length,
-          totalFetched: allKeywords.length
+          totalFetched: allKeywords.length,
+          duplicatesIgnored: allKeywords.length - insertedKeywords.length,
+          apiKeyStatus: 'working'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -93,14 +101,20 @@ serve(async (req) => {
     } catch (domainError) {
       console.error('Domain validation error:', domainError);
       return new Response(
-        JSON.stringify({ error: domainError.message || 'Invalid domain format' }),
+        JSON.stringify({ 
+          error: domainError.message || 'Invalid domain format',
+          apiKeyStatus: Deno.env.get('SEMRUSH_API_KEY') ? 'configured' : 'missing'
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
   } catch (error) {
     console.error('Error in semrush-keywords function:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Unknown error occurred' }),
+      JSON.stringify({ 
+        error: error.message || 'Unknown error occurred',
+        apiKeyStatus: Deno.env.get('SEMRUSH_API_KEY') ? 'configured' : 'missing'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Database, AlertCircle } from "lucide-react";
+import { Search, Database, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KeywordData } from "@/utils/excelUtils";
@@ -43,6 +43,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
   const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [apiStatus, setApiStatus] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Extract domain from URL if full URL is pasted
@@ -93,6 +94,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
 
     setIsLoading(true);
     setErrorMsg(null);
+    setApiStatus(null);
 
     try {
       const cleanDomain = extractDomain(domain);
@@ -114,6 +116,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         console.error('Function error:', error);
         updateSemrushMetrics(false);
         setErrorMsg(`Function error: ${error.message || "Unknown error"}`);
+        setApiStatus('error');
         throw new Error(error.message || "Failed to fetch keywords");
       }
 
@@ -121,8 +124,12 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         console.error('API error:', data.error);
         updateSemrushMetrics(false);
         setErrorMsg(`API error: ${data.error}`);
+        setApiStatus(data.apiKeyStatus || 'error');
         throw new Error(data.error);
       }
+
+      // Set API status based on response
+      setApiStatus(data.apiKeyStatus || 'working');
 
       // Process response - handle both formats where keywords might be directly in data or in data.keywords
       let keywordsArray = data.keywords || data;
@@ -159,9 +166,12 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       // We only want to pass the data without manipulating state directly
       onKeywordsReceived(formattedKeywords);
       
+      const statusMessage = data.fromCache ? "Loaded from cache" : "Success";
+      const duplicatesInfo = data.duplicatesIgnored > 0 ? ` (${data.duplicatesIgnored} duplicates ignored)` : '';
+      
       toast({
-        title: data.fromCache ? "Loaded from cache" : "Success",
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords (limit: ${keywordLimit}) for ${topicArea || "general search"}. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''} ${data.remaining} API calls remaining today.`,
+        title: statusMessage,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords (limit: ${keywordLimit}) for ${topicArea || "general search"}. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
       });
       
     } catch (error) {
@@ -178,6 +188,35 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
   };
 
   const keywordLimit = getKeywordLimit();
+
+  const renderApiStatus = () => {
+    if (!apiStatus) return null;
+    
+    if (apiStatus === 'working') {
+      return (
+        <Alert className="mt-2">
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>SEMrush API key is working correctly</AlertDescription>
+        </Alert>
+      );
+    } else if (apiStatus === 'configured') {
+      return (
+        <Alert className="mt-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>SEMrush API key is configured but check domain validity</AlertDescription>
+        </Alert>
+      );
+    } else if (apiStatus === 'missing') {
+      return (
+        <Alert variant="destructive" className="mt-2">
+          <XCircle className="h-4 w-4" />
+          <AlertDescription>SEMrush API key is not configured in Supabase secrets</AlertDescription>
+        </Alert>
+      );
+    }
+    
+    return null;
+  };
 
   return (
     <div className="space-y-2">
@@ -199,7 +238,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
           {isLoading ? (
             <>
               <Database className="w-4 h-4 mr-2 animate-spin" />
-              Loading...
+              Testing API...
             </>
           ) : (
             <>
@@ -210,14 +249,11 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         </Button>
       </div>
       
+      {renderApiStatus()}
+      
       {errorMsg && (
         <Alert variant="destructive" className="mt-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{errorMsg}</AlertDescription>
         </Alert>
-      )}
-    </div>
-  );
-};
-
-export default SemrushIntegration;
+      );
