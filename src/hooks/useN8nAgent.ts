@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from "sonner";
 import { useN8nConfig } from './useN8nConfig';
@@ -35,14 +34,14 @@ export const useN8nAgent = () => {
     try {
       const webhookUrl = resolveWebhookUrl(
         payload, 
-        webhookOption, 
-        customWebhookUrl, 
         {
           getWebhookUrl,
           getContentWebhookUrl,
           getCustomKeywordsWebhookUrl,
           getContentAdjustmentWebhookUrl
-        }
+        },
+        webhookOption, 
+        customWebhookUrl
       );
       
       if (!webhookUrl) {
