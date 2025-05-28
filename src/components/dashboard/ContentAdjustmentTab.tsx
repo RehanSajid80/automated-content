@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pencil, Target, TrendingUp, Clock, Building2, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { useN8nAgent } from "@/hooks/useN8nAgent";
 import DashboardHeader from "./DashboardHeader";
 
 interface ContentItem {
@@ -29,8 +29,9 @@ const ContentAdjustmentTab = () => {
   const [selectedTone, setSelectedTone] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdjusting, setIsAdjusting] = useState(false);
   const [activeContentType, setActiveContentType] = useState("pillar");
+
+  const { sendToN8n, isLoading: n8nLoading } = useN8nAgent();
 
   const contentTypes = [
     { id: "pillar", label: "Pillar Content", icon: <Pencil className="h-4 w-4" /> },
@@ -114,17 +115,53 @@ const ContentAdjustmentTab = () => {
       return;
     }
 
-    setIsAdjusting(true);
-    
     try {
-      // Here you would typically call your AI service to adjust the content
-      // For now, we'll simulate the process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create the payload that will be sent to the webhook
+      const webhookPayload = {
+        requestType: 'contentAdjustment',
+        contentId: selectedContent.id,
+        originalContent: {
+          title: selectedContent.title,
+          content: selectedContent.content,
+          contentType: selectedContent.content_type,
+          topicArea: selectedContent.topic_area,
+          keywords: selectedContent.keywords
+        },
+        adjustmentInstructions: {
+          prompt: adjustmentPrompt,
+          targetPersona: selectedTone,
+          targetFormat: selectedFormat
+        },
+        context: {
+          source: "content-adjustment-panel",
+          timestamp: new Date().toISOString(),
+          userId: "user-123" // You might want to get this from auth context
+        }
+      };
+
+      console.log("Content Adjustment Webhook Payload:", JSON.stringify(webhookPayload, null, 2));
       
       toast({
-        title: "Content Adjusted",
-        description: "Your content has been successfully adjusted based on your instructions",
+        title: "Adjusting Content",
+        description: "Sending content to AI for adjustment..."
       });
+      
+      const result = await sendToN8n(webhookPayload, 'content-adjustment');
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      // Handle successful response
+      if (result.content && result.content.length > 0) {
+        toast({
+          title: "Content Adjusted Successfully",
+          description: "Your content has been enhanced based on your instructions"
+        });
+        
+        // Optionally update the content in the database or state
+        // You might want to save the adjusted content back to the database
+      }
       
       setAdjustmentPrompt("");
       setSelectedTone("");
@@ -136,8 +173,6 @@ const ContentAdjustmentTab = () => {
         description: "Failed to adjust content. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsAdjusting(false);
     }
   };
 
@@ -283,10 +318,10 @@ const ContentAdjustmentTab = () => {
 
                 <Button 
                   onClick={handleAdjustContent}
-                  disabled={!selectedContent || !adjustmentPrompt.trim() || isAdjusting}
+                  disabled={!selectedContent || !adjustmentPrompt.trim() || n8nLoading}
                   className="w-full"
                 >
-                  {isAdjusting ? "Adjusting Content..." : "✨ Adjust Content"}
+                  {n8nLoading ? "Adjusting Content..." : "✨ Adjust Content"}
                 </Button>
               </CardContent>
             </Card>
@@ -334,6 +369,41 @@ const ContentAdjustmentTab = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Webhook Payload Preview */}
+          <Card className="bg-slate-50 border-dashed">
+            <CardHeader>
+              <CardTitle className="text-sm">🔧 Webhook Payload Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs font-mono bg-white p-3 rounded border">
+                <pre>{JSON.stringify({
+                  requestType: 'contentAdjustment',
+                  contentId: selectedContent?.id || 'content-id-123',
+                  originalContent: {
+                    title: selectedContent?.title || 'Content Title',
+                    content: '(full content text)',
+                    contentType: selectedContent?.content_type || 'pillar',
+                    topicArea: selectedContent?.topic_area || 'workspace-management',
+                    keywords: selectedContent?.keywords || ['keyword1', 'keyword2']
+                  },
+                  adjustmentInstructions: {
+                    prompt: adjustmentPrompt || 'Adjustment instructions...',
+                    targetPersona: selectedTone || 'facility-manager',
+                    targetFormat: selectedFormat || 'email'
+                  },
+                  context: {
+                    source: 'content-adjustment-panel',
+                    timestamp: new Date().toISOString(),
+                    userId: 'user-123'
+                  }
+                }, null, 2)}</pre>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                This is the exact data structure that will be sent to your n8n webhook when you click "Adjust Content"
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </TabsContent>

@@ -8,7 +8,8 @@ export const useN8nConfig = () => {
   const [webhooks, setWebhooks] = useState({
     keywordWebhook: '',
     contentWebhook: '',
-    customKeywordsWebhook: ''
+    customKeywordsWebhook: '',
+    contentAdjustmentWebhook: ''
   });
 
   useEffect(() => {
@@ -21,11 +22,13 @@ export const useN8nConfig = () => {
       const keywordWebhook = localStorage.getItem('n8n-webhook-url') || '';
       const contentWebhook = localStorage.getItem('n8n-content-webhook-url') || '';
       const customKeywordsWebhook = localStorage.getItem('n8n-custom-keywords-webhook-url') || '';
+      const contentAdjustmentWebhook = localStorage.getItem('n8n-content-adjustment-webhook-url') || '';
       
       setWebhooks({
         keywordWebhook,
         contentWebhook,
-        customKeywordsWebhook
+        customKeywordsWebhook,
+        contentAdjustmentWebhook
       });
       
     } catch (error) {
@@ -47,7 +50,11 @@ export const useN8nConfig = () => {
     return webhooks.customKeywordsWebhook;
   };
 
-  const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' = 'keywords') => {
+  const getContentAdjustmentWebhookUrl = () => {
+    return webhooks.contentAdjustmentWebhook;
+  };
+
+  const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'keywords') => {
     setIsLoading(true);
     try {
       if (type === 'content') {
@@ -56,6 +63,9 @@ export const useN8nConfig = () => {
       } else if (type === 'custom-keywords') {
         localStorage.setItem('n8n-custom-keywords-webhook-url', url);
         setWebhooks(prev => ({ ...prev, customKeywordsWebhook: url }));
+      } else if (type === 'content-adjustment') {
+        localStorage.setItem('n8n-content-adjustment-webhook-url', url);
+        setWebhooks(prev => ({ ...prev, contentAdjustmentWebhook: url }));
       } else {
         localStorage.setItem('n8n-webhook-url', url);
         setWebhooks(prev => ({ ...prev, keywordWebhook: url }));
@@ -76,6 +86,7 @@ export const useN8nConfig = () => {
     getWebhookUrl,
     getContentWebhookUrl,
     getCustomKeywordsWebhookUrl,
+    getContentAdjustmentWebhookUrl,
     saveWebhookUrl
   };
 };

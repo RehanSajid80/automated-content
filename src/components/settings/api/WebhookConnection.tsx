@@ -11,19 +11,20 @@ import { WebhookActions } from "./webhook/WebhookActions";
 
 interface WebhookConnectionProps {
   onSaveWebhook?: () => void;
-  activeWebhookType?: 'keywords' | 'content' | 'custom-keywords';
-  onWebhookTypeChange?: (type: 'keywords' | 'content' | 'custom-keywords') => void;
+  activeWebhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment';
+  onWebhookTypeChange?: (type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment') => void;
 }
 
 const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   onSaveWebhook,
   onWebhookTypeChange,
-  activeWebhookType = 'keywords' // Default back to keywords
+  activeWebhookType = 'keywords'
 }) => {
   const { 
     getWebhookUrl, 
     getContentWebhookUrl,
     getCustomKeywordsWebhookUrl,
+    getContentAdjustmentWebhookUrl,
     saveWebhookUrl, 
     isLoading, 
     fetchWebhookUrls 
@@ -32,6 +33,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   const [webhookUrl, setWebhookUrl] = React.useState("");
   const [contentWebhookUrl, setContentWebhookUrl] = React.useState("");
   const [customKeywordsWebhookUrl, setCustomKeywordsWebhookUrl] = React.useState("");
+  const [contentAdjustmentWebhookUrl, setContentAdjustmentWebhookUrl] = React.useState("");
   const [status, setStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   // Load webhook URLs on mount and when activeWebhookType changes
@@ -43,16 +45,20 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
     const keywordWebhookUrl = getWebhookUrl();
     const contentGenUrl = getContentWebhookUrl();
     const customKeywordsUrl = getCustomKeywordsWebhookUrl();
+    const contentAdjustmentUrl = getContentAdjustmentWebhookUrl();
     
     setWebhookUrl(keywordWebhookUrl);
     setContentWebhookUrl(contentGenUrl);
     setCustomKeywordsWebhookUrl(customKeywordsUrl);
+    setContentAdjustmentWebhookUrl(contentAdjustmentUrl);
     
     // Set status based on active webhook type
     if (activeWebhookType === 'keywords') {
       setStatus(keywordWebhookUrl ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'content') {
       setStatus(contentGenUrl ? 'connected' : 'disconnected');
+    } else if (activeWebhookType === 'content-adjustment') {
+      setStatus(contentAdjustmentUrl ? 'connected' : 'disconnected');
     } else {
       setStatus(customKeywordsUrl ? 'connected' : 'disconnected');
     }
@@ -76,6 +82,9 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
       setStatus('connected');
     } else if (activeWebhookType === 'custom-keywords' && customKeywordsWebhookUrl) {
       await saveWebhookUrl(customKeywordsWebhookUrl, 'custom-keywords');
+      setStatus('connected');
+    } else if (activeWebhookType === 'content-adjustment' && contentAdjustmentWebhookUrl) {
+      await saveWebhookUrl(contentAdjustmentWebhookUrl, 'content-adjustment');
       setStatus('connected');
     } else {
       toast.error("Please enter a valid webhook URL");
@@ -119,6 +128,12 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
             type="custom-keywords"
             value={customKeywordsWebhookUrl || ''}
             onChange={setCustomKeywordsWebhookUrl}
+          />
+        ) : activeWebhookType === 'content-adjustment' ? (
+          <WebhookUrlInput
+            type="content-adjustment"
+            value={contentAdjustmentWebhookUrl || ''}
+            onChange={setContentAdjustmentWebhookUrl}
           />
         ) : (
           <WebhookUrlInput

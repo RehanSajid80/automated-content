@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface WebhookUrlInputProps {
-  type: 'keywords' | 'content' | 'custom-keywords';
+  type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment';
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
@@ -51,6 +51,25 @@ export const WebhookUrlInput: React.FC<WebhookUrlInputProps> = ({
         />
         <p className="text-xs text-muted-foreground">
           This webhook will be used for AI content generation
+        </p>
+      </div>
+    );
+  } else if (type === 'content-adjustment') {
+    return (
+      <div className="space-y-2">
+        <Label htmlFor="content-adjustment-webhook-url" className="text-sm font-medium">
+          Content Adjustment Webhook URL
+        </Label>
+        <Input
+          id="content-adjustment-webhook-url"
+          placeholder="Enter your content adjustment webhook URL"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="font-mono text-sm"
+          disabled={disabled}
+        />
+        <p className="text-xs text-muted-foreground">
+          This webhook will receive content for AI-powered adjustments and return enhanced content
         </p>
       </div>
     );

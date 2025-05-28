@@ -4,8 +4,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
 interface WebhookTypeSelectorProps {
-  activeWebhookType: 'keywords' | 'content' | 'custom-keywords';
-  onWebhookTypeChange: (type: 'keywords' | 'content' | 'custom-keywords') => void;
+  activeWebhookType: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment';
+  onWebhookTypeChange: (type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment') => void;
 }
 
 export const WebhookTypeSelector: React.FC<WebhookTypeSelectorProps> = ({
@@ -15,7 +15,7 @@ export const WebhookTypeSelector: React.FC<WebhookTypeSelectorProps> = ({
   return (
     <RadioGroup 
       value={activeWebhookType} 
-      onValueChange={(value) => onWebhookTypeChange(value as 'keywords' | 'content' | 'custom-keywords')}
+      onValueChange={(value) => onWebhookTypeChange(value as 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment')}
       className="flex flex-col space-y-1 mb-4"
     >
       <div className="flex items-center space-x-2">
@@ -29,6 +29,10 @@ export const WebhookTypeSelector: React.FC<WebhookTypeSelectorProps> = ({
       <div className="flex items-center space-x-2">
         <RadioGroupItem value="custom-keywords" id="custom-keywords" />
         <Label htmlFor="custom-keywords">AI Content Suggestions Webhook</Label>
+      </div>
+      <div className="flex items-center space-x-2">
+        <RadioGroupItem value="content-adjustment" id="content-adjustment" />
+        <Label htmlFor="content-adjustment">Content Adjustment Webhook</Label>
       </div>
     </RadioGroup>
   );

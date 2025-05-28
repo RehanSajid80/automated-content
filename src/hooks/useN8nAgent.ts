@@ -28,7 +28,12 @@ export const useN8nAgent = () => {
   const [contentTitle, setContentTitle] = useState<string>('');
   const [rawResponse, setRawResponse] = useState<any>(null);
   
-  const { getWebhookUrl, getContentWebhookUrl, getCustomKeywordsWebhookUrl } = useN8nConfig();
+  const { 
+    getWebhookUrl, 
+    getContentWebhookUrl, 
+    getCustomKeywordsWebhookUrl,
+    getContentAdjustmentWebhookUrl 
+  } = useN8nConfig();
   const { processResponse } = useN8nResponseProcessor();
 
   const sendToN8n = async (
@@ -50,12 +55,16 @@ export const useN8nAgent = () => {
         webhookUrl = getCustomKeywordsWebhookUrl();
       } else if (payload.requestType === 'contentSuggestions') {
         webhookUrl = getContentWebhookUrl();
+      } else if (payload.requestType === 'contentAdjustment') {
+        webhookUrl = getContentAdjustmentWebhookUrl();
       } else if (typeof webhookOption === 'string') {
         // Use specific webhook type
         if (webhookOption === 'content') {
           webhookUrl = getContentWebhookUrl();
         } else if (webhookOption === 'custom-keywords') {
           webhookUrl = getCustomKeywordsWebhookUrl();
+        } else if (webhookOption === 'content-adjustment') {
+          webhookUrl = getContentAdjustmentWebhookUrl();
         } else {
           webhookUrl = getWebhookUrl();
         }
