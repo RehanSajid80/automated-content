@@ -80,7 +80,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               activeTab === "analytics" ? "bg-secondary" : ""
             )}
           >
-            Analytics
+            Content Adjustment
           </a>
           <a 
             href="#library" 

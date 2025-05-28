@@ -1,11 +1,10 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import DashboardTab from "@/components/dashboard/DashboardTab";
 import ContentManagementTab from "@/components/dashboard/ContentManagementTab";
-import ContentAnalytics from "@/components/dashboard/ContentAnalytics";
+import ContentAdjustmentTab from "@/components/dashboard/ContentAdjustmentTab";
 import KeywordResearch from "@/components/dashboard/KeywordResearch";
 import EnhancedAISuggestionsTab from "@/components/dashboard/EnhancedAISuggestionsTab";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -99,16 +98,7 @@ const Index = () => {
         onBack={() => setContentViewMode("selection")}
       />
       
-      <TabsContent value="analytics" className="m-0">
-        <div className="container py-8 px-4 md:px-6 lg:px-8">
-          <DashboardHeader 
-            title="Content Analytics"
-            description="Track performance metrics for your office space management content"
-          />
-          
-          <ContentAnalytics />
-        </div>
-      </TabsContent>
+      <ContentAdjustmentTab />
       
       <EnhancedAISuggestionsTab keywordData={keywordData} />
     </DashboardLayout>

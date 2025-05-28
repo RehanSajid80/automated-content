@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   LayoutDashboard,
@@ -9,7 +8,8 @@ import {
   Share2,
   TrendingUp,
   BrainCircuit,
-  Library
+  Library,
+  Pencil
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -49,8 +49,8 @@ export const navigationItems: NavigationSection[] = [
         href: "/?tab=keywords"
       },
       {
-        title: "Analytics",
-        icon: <TrendingUp className="h-5 w-5" />,
+        title: "Content Adjustment",
+        icon: <Pencil className="h-5 w-5" />,
         href: "/?tab=analytics"
       },
       {

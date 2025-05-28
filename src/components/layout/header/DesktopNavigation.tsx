@@ -38,7 +38,7 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ activeTab, onTabC
         onClick={handleTabClick("analytics")}
         isActive={activeTab === "analytics"}
       >
-        Analytics
+        Content Adjustment
       </NavigationItem>
       <NavigationItem
         href="#library" 
