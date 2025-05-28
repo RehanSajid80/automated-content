@@ -7,6 +7,7 @@ import { API_KEYS, getApiKey, saveApiKey, removeApiKey } from "@/utils/apiKeyUti
 import ConnectionHeader from "./api/ConnectionHeader";
 import OpenAIConnection from "./api/OpenAIConnection";
 import WebhookConnection from "./api/WebhookConnection";
+import SemrushConnection from "./api/SemrushConnection";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
 
 const ApiConnectionsManager = () => {
@@ -15,7 +16,7 @@ const ApiConnectionsManager = () => {
   const [openaiStatus, setOpenaiStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   // Webhook state
-  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords'>('keywords');
+  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords'>('custom-keywords'); // TESTING: Default to AI Content Suggestions
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   const { toast } = useToast();
@@ -28,6 +29,7 @@ const ApiConnectionsManager = () => {
       localStorage.removeItem("semrush-webhook-url");
       localStorage.removeItem("n8n-content-webhook-url");
       localStorage.removeItem("n8n-custom-keywords-webhook-url");
+      localStorage.removeItem("semrush-keyword-limit"); // Also clear SEMrush settings
       setOpenaiApiKey("");
       setOpenaiStatus('checking');
       setWebhookStatus('checking');
@@ -116,6 +118,13 @@ const ApiConnectionsManager = () => {
     setActiveWebhookType(type);
   };
 
+  const handleSemrushConfigSave = () => {
+    toast({
+      title: "SEMrush Configuration Saved",
+      description: "Your SEMrush settings have been updated",
+    });
+  };
+
   return (
     <div className="min-h-screen flex w-full">
       <SidebarProvider>
@@ -130,6 +139,7 @@ const ApiConnectionsManager = () => {
               onSaveKey={handleSaveOpenaiKey}
               onKeyChange={setOpenaiApiKey}
             />
+            <SemrushConnection onSaveConfig={handleSemrushConfigSave} />
             <WebhookConnection
               activeWebhookType={activeWebhookType}
               onWebhookTypeChange={handleWebhookTypeChange}

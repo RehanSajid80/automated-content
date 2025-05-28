@@ -68,6 +68,11 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
     }
   };
 
+  const getKeywordLimit = (): number => {
+    const savedLimit = localStorage.getItem('semrush-keyword-limit');
+    return savedLimit ? parseInt(savedLimit, 10) : 100;
+  };
+
   const fetchKeywords = async () => {
     if (!domain) {
       toast({
@@ -91,14 +96,16 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
 
     try {
       const cleanDomain = extractDomain(domain);
+      const keywordLimit = getKeywordLimit();
+      
       console.log(`Fetching keywords for domain: ${cleanDomain} and topic: ${topicArea || "general"}`);
-      console.log(`Requesting 100 keywords from SEMrush API`);
+      console.log(`Requesting ${keywordLimit} keywords from SEMrush API (from settings)`);
 
-      // Call SEMrush API through edge function with explicit limit of 100
+      // Call SEMrush API through edge function with user-configured limit
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { 
           keyword: cleanDomain, 
-          limit: 100,  // Explicitly set to 100
+          limit: keywordLimit,  // Use the configured limit
           topicArea: topicArea || '' 
         }
       });
@@ -154,7 +161,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       
       toast({
         title: data.fromCache ? "Loaded from cache" : "Success",
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords for ${topicArea || "general search"}. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''} ${data.remaining} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords (limit: ${keywordLimit}) for ${topicArea || "general search"}. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''} ${data.remaining} API calls remaining today.`,
       });
       
     } catch (error) {
@@ -169,6 +176,8 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       setIsLoading(false);
     }
   };
+
+  const keywordLimit = getKeywordLimit();
 
   return (
     <div className="space-y-2">
@@ -185,6 +194,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
           onClick={fetchKeywords} 
           disabled={isLoading || disabled}
           variant="outline"
+          title={`Will fetch ${keywordLimit} keywords`}
         >
           {isLoading ? (
             <>
@@ -194,7 +204,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
           ) : (
             <>
               <Search className="w-4 h-4 mr-2" />
-              Fetch Keywords
+              Fetch Keywords ({keywordLimit})
             </>
           )}
         </Button>
