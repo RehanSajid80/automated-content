@@ -18,18 +18,18 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body
-    const { keyword, limit = 100, topicArea } = await req.json();
-    console.log(`Request received for domain: ${keyword}, topic: ${topicArea}, limit: ${limit}`);
+    // Parse request body - now expecting both keyword and domain
+    const { keyword, domain, limit = 100, topicArea } = await req.json();
+    console.log(`Request received for keyword: ${keyword}, domain: ${domain}, topic: ${topicArea}, limit: ${limit}`);
 
     if (!keyword) {
       throw new Error("Missing required parameter: keyword");
     }
 
     try {
-      // Extract and validate domain
-      const cleanDomain = extractDomain(keyword);
-      console.log(`Using domain for SEMrush API: ${cleanDomain}, Topic Area: ${topicArea}`);
+      // Use domain if provided, otherwise use keyword as domain (backward compatibility)
+      const targetDomain = domain ? extractDomain(domain) : extractDomain(keyword);
+      console.log(`Using keyword: "${keyword}" for domain: ${targetDomain}, Topic Area: ${topicArea}`);
       
       // Check for API key
       const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY');
@@ -40,10 +40,11 @@ serve(async (req) => {
       
       console.log('SEMrush API key is configured and available');
 
-      // Check for existing data first
-      const existingKeywords = await getExistingKeywords(cleanDomain, topicArea);
+      // Check for existing data first - use keyword + domain combination for caching
+      const cacheKey = `${keyword}-${targetDomain}`;
+      const existingKeywords = await getExistingKeywords(cacheKey, topicArea);
       if (existingKeywords && existingKeywords.length >= limit) {
-        console.log(`Found ${existingKeywords.length} existing keywords for domain: ${cleanDomain} and topic: ${topicArea}`);
+        console.log(`Found ${existingKeywords.length} existing keywords for keyword: "${keyword}" and domain: ${targetDomain}`);
         
         return new Response(
           JSON.stringify({ 
@@ -56,21 +57,21 @@ serve(async (req) => {
         );
       }
 
-      // Fetch and process new keywords from SEMrush
+      // Fetch and process new keywords from SEMrush using keyword research
       const parsedLimit = parseInt(String(limit), 10);
       const actualLimit = isNaN(parsedLimit) ? 100 : Math.max(30, Math.min(500, parsedLimit));
-      console.log(`Fetching ${actualLimit} keywords from SEMrush API with key: ${semrushApiKey.substring(0, 8)}...`);
+      console.log(`Fetching ${actualLimit} keywords from SEMrush API for keyword: "${keyword}" with key: ${semrushApiKey.substring(0, 8)}...`);
       
-      const semrushResponse = await fetchSemrushKeywords(cleanDomain, actualLimit);
-      const allKeywords = processKeywords(semrushResponse, cleanDomain, topicArea);
+      const semrushResponse = await fetchSemrushKeywords(keyword, actualLimit, targetDomain);
+      const allKeywords = processKeywords(semrushResponse, cacheKey, topicArea);
 
       if (allKeywords.length === 0) {
-        console.log("No keywords returned from SEMrush API - this could indicate API key issues");
+        console.log("No keywords returned from SEMrush API - this could indicate API key issues or no data for this keyword/domain combination");
         return new Response(
           JSON.stringify({ 
             keywords: [], 
             remaining: 100,
-            error: "No keywords found for this domain - check API key or domain validity",
+            error: `No keywords found for "${keyword}" related to ${targetDomain} - check API key or try different keywords`,
             apiKeyStatus: 'configured_but_no_data'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -79,8 +80,8 @@ serve(async (req) => {
 
       console.log(`Processed ${allKeywords.length} keywords from SEMrush`);
 
-      // Clear existing data and insert new keywords
-      await deleteExistingKeywords(cleanDomain, topicArea);
+      // Clear existing data and insert new keywords using the cache key
+      await deleteExistingKeywords(cacheKey, topicArea);
       const insertedKeywords = await insertKeywords(allKeywords);
 
       console.log(`Successfully inserted ${insertedKeywords.length} of ${allKeywords.length} keywords`);

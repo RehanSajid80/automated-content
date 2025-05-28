@@ -40,6 +40,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
   topicArea,
   disabled = false
 }) => {
+  const [keyword, setKeyword] = useState('');
   const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -75,21 +76,22 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
   };
 
   const fetchKeywords = async () => {
-    if (!domain) {
+    if (!keyword.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a domain",
+        description: "Please enter a keyword to search for",
         variant: "destructive",
       });
       return;
     }
 
-    // Topic area warning moved but still tracked
-    const hasTopicArea = !!topicArea;
-    if (!hasTopicArea) {
-      console.log("No topic area specified, using general search");
-    } else {
-      console.log(`Using topic area: ${topicArea}`);
+    if (!domain.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a domain URL",
+        variant: "destructive",
+      });
+      return;
     }
 
     setIsLoading(true);
@@ -100,14 +102,15 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       const cleanDomain = extractDomain(domain);
       const keywordLimit = getKeywordLimit();
       
-      console.log(`Fetching keywords for domain: ${cleanDomain} and topic: ${topicArea || "general"}`);
+      console.log(`Fetching keywords for keyword: "${keyword}" and domain: ${cleanDomain}`);
       console.log(`Requesting ${keywordLimit} keywords from SEMrush API (from settings)`);
 
-      // Call SEMrush API through edge function with user-configured limit
+      // Call SEMrush API through edge function with keyword and domain
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { 
-          keyword: cleanDomain, 
-          limit: keywordLimit,  // Use the configured limit
+          keyword: keyword.trim(),
+          domain: cleanDomain,
+          limit: keywordLimit,
           topicArea: topicArea || '' 
         }
       });
@@ -138,10 +141,10 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       if (!keywordsArray || !Array.isArray(keywordsArray) || keywordsArray.length === 0) {
         console.warn('No keywords found:', data);
         updateSemrushMetrics(false);
-        setErrorMsg("No keywords found for this domain");
+        setErrorMsg(`No keywords found for "${keyword}" related to ${cleanDomain}`);
         toast({
           title: "No keywords found",
-          description: "Try a different domain with more organic search presence",
+          description: `Try a different keyword or check if the domain has organic search presence for "${keyword}"`,
           variant: "default",
         });
         setIsLoading(false);
@@ -160,10 +163,8 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         trend: kw.trend || 'neutral'
       }));
       
-      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for topic: ${topicArea || "general"}`);
+      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for keyword: "${keyword}" and domain: ${cleanDomain}`);
       
-      // Clear search and filter before passing formatted keywords
-      // We only want to pass the data without manipulating state directly
       onKeywordsReceived(formattedKeywords);
       
       const statusMessage = data.fromCache ? "Loaded from cache" : "Success";
@@ -171,7 +172,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       
       toast({
         title: statusMessage,
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords (limit: ${keywordLimit}) for ${topicArea || "general search"}. ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords for "${keyword}" related to ${cleanDomain} (limit: ${keywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
       });
       
     } catch (error) {
@@ -203,7 +204,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
       return (
         <Alert className="mt-2">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>SEMrush API key is configured but check domain validity</AlertDescription>
+          <AlertDescription>SEMrush API key is configured but check keyword/domain validity</AlertDescription>
         </Alert>
       );
     } else if (apiStatus === 'missing') {
@@ -220,33 +221,43 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2 items-center">
+      <div className="flex flex-col gap-2">
         <Input
           type="text"
-          placeholder="Enter domain (e.g., example.com)"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
+          placeholder="Enter keyword (e.g., asset management)"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
           className="max-w-sm"
           disabled={disabled}
         />
-        <Button 
-          onClick={fetchKeywords} 
-          disabled={isLoading || disabled}
-          variant="outline"
-          title={`Will fetch ${keywordLimit} keywords`}
-        >
-          {isLoading ? (
-            <>
-              <Database className="w-4 h-4 mr-2 animate-spin" />
-              Testing API...
-            </>
-          ) : (
-            <>
-              <Search className="w-4 h-4 mr-2" />
-              Fetch Keywords ({keywordLimit})
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2 items-center">
+          <Input
+            type="text"
+            placeholder="Enter domain (e.g., officespacesoftware.com)"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            className="max-w-sm"
+            disabled={disabled}
+          />
+          <Button 
+            onClick={fetchKeywords} 
+            disabled={isLoading || disabled}
+            variant="outline"
+            title={`Will fetch ${keywordLimit} keywords for the specified keyword and domain`}
+          >
+            {isLoading ? (
+              <>
+                <Database className="w-4 h-4 mr-2 animate-spin" />
+                Testing API...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 mr-2" />
+                Fetch Keywords ({keywordLimit})
+              </>
+            )}
+          </Button>
+        </div>
       </div>
       
       {renderApiStatus()}

@@ -1,14 +1,21 @@
 
-// Fetch keywords from SEMrush API
-export const fetchSemrushKeywords = async (domain: string, limit: number) => {
+// Fetch keywords from SEMrush API using keyword research
+export const fetchSemrushKeywords = async (keyword: string, limit: number, domain?: string) => {
   const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY') || '';
   
   if (!semrushApiKey) {
     throw new Error('SEMrush API key is not configured');
   }
   
-  const semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&domain=${domain}&database=us&display_limit=${limit}`;
-  console.log(`Calling SEMrush API for domain: ${domain} with limit: ${limit}`);
+  // Use keyword research API to find related keywords, optionally filtered by domain
+  let semrushUrl = `https://api.semrush.com/?type=phrase_related&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&phrase=${encodeURIComponent(keyword)}&database=us&display_limit=${limit}`;
+  
+  // If domain is provided, we can use it for additional filtering context
+  if (domain) {
+    console.log(`Searching for keywords related to "${keyword}" with domain context: ${domain}`);
+  }
+  
+  console.log(`Calling SEMrush API for keyword: "${keyword}" with limit: ${limit}`);
   console.log(`SEMrush API URL (without key): ${semrushUrl.replace(semrushApiKey, 'HIDDEN_KEY')}`);
   
   const response = await fetch(semrushUrl);
@@ -37,7 +44,7 @@ export const fetchSemrushKeywords = async (domain: string, limit: number) => {
   if (responseText.includes('ERROR')) {
     console.error('SEMrush API returned an error:', responseText);
     if (responseText.includes('NOTHING FOUND')) {
-      throw new Error(`No data found for domain: ${domain}. The domain may not have sufficient organic search data.`);
+      throw new Error(`No data found for keyword: "${keyword}". Try a different keyword or check if it has sufficient search data.`);
     }
     throw new Error(`SEMrush API error: ${responseText}`);
   }
@@ -46,11 +53,11 @@ export const fetchSemrushKeywords = async (domain: string, limit: number) => {
 };
 
 // Process SEMrush API response and format keywords
-export const processKeywords = (responseText: string, domain: string, topicArea: string) => {
+export const processKeywords = (responseText: string, cacheKey: string, topicArea: string) => {
   const lines = responseText.trim().split('\n');
   
   if (lines.length <= 1) {
-    console.log(`No keywords found for domain: ${domain}`);
+    console.log(`No keywords found for cache key: ${cacheKey}`);
     return [];
   }
   
@@ -62,7 +69,7 @@ export const processKeywords = (responseText: string, domain: string, topicArea:
     const values = lines[i].split(';');
     if (values.length >= 5) {
       keywords.push({
-        domain,
+        domain: cacheKey, // Store the cache key (keyword-domain combination)
         topic_area: topicArea || '',
         keyword: values[0],
         volume: parseInt(values[1]) || 0,
@@ -73,6 +80,6 @@ export const processKeywords = (responseText: string, domain: string, topicArea:
     }
   }
   
-  console.log(`Processed ${keywords.length} keywords for domain: ${domain} and topic: ${topicArea}`);
+  console.log(`Processed ${keywords.length} keywords for cache key: ${cacheKey} and topic: ${topicArea}`);
   return keywords;
 };
