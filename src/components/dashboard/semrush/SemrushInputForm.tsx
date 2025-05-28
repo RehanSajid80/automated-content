@@ -29,7 +29,7 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
     <div className="flex flex-col gap-2">
       <Input
         type="text"
-        placeholder="Enter keyword (e.g., asset management)"
+        placeholder="Enter keyword (optional, e.g., asset management)"
         value={keyword}
         onChange={(e) => onKeywordChange(e.target.value)}
         className="max-w-sm"
@@ -38,7 +38,7 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
       <div className="flex gap-2 items-center">
         <Input
           type="text"
-          placeholder="Enter domain (e.g., officespacesoftware.com)"
+          placeholder="Enter domain (required, e.g., officespacesoftware.com)"
           value={domain}
           onChange={(e) => onDomainChange(e.target.value)}
           className="max-w-sm"
@@ -46,19 +46,22 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
         />
         <Button 
           onClick={onFetchKeywords} 
-          disabled={isLoading || disabled}
+          disabled={isLoading || disabled || !domain.trim()}
           variant="outline"
-          title={`Will fetch ${keywordLimit} keywords for the specified keyword and domain`}
+          title={keyword.trim() 
+            ? `Will fetch ${keywordLimit} keywords related to "${keyword}" for the domain`
+            : `Will fetch ${keywordLimit} keywords for the domain using Domain Overview`
+          }
         >
           {isLoading ? (
             <>
               <Database className="w-4 h-4 mr-2 animate-spin" />
-              Testing API...
+              Analyzing...
             </>
           ) : (
             <>
               <Search className="w-4 h-4 mr-2" />
-              Fetch Keywords ({keywordLimit})
+              {keyword.trim() ? `Fetch Keywords (${keywordLimit})` : `Analyze Domain (${keywordLimit})`}
             </>
           )}
         </Button>

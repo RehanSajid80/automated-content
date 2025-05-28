@@ -65,15 +65,6 @@ export const useSemrushApi = (
   const { toast } = useToast();
 
   const fetchKeywords = async () => {
-    if (!keyword.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a keyword to search for",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!domain.trim()) {
       toast({
         title: "Error",
@@ -91,13 +82,16 @@ export const useSemrushApi = (
       const cleanDomain = extractDomain(domain);
       const keywordLimit = getKeywordLimit();
       
-      console.log(`Fetching keywords for keyword: "${keyword}" and domain: ${cleanDomain}`);
+      // Use keyword if provided, otherwise empty string for domain analysis
+      const searchKeyword = keyword.trim();
+      
+      console.log(`Fetching ${searchKeyword ? 'keyword-specific' : 'domain overview'} data for domain: ${cleanDomain}${searchKeyword ? ` with keyword: "${searchKeyword}"` : ''}`);
       console.log(`Requesting ${keywordLimit} keywords from SEMrush API (from settings)`);
 
       // Call SEMrush API through edge function with keyword and domain
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { 
-          keyword: keyword.trim(),
+          keyword: searchKeyword,
           domain: cleanDomain,
           limit: keywordLimit,
           topicArea: topicArea || '' 
@@ -130,10 +124,15 @@ export const useSemrushApi = (
       if (!keywordsArray || !Array.isArray(keywordsArray) || keywordsArray.length === 0) {
         console.warn('No keywords found:', data);
         updateSemrushMetrics(false);
-        setErrorMsg(`No keywords found for "${keyword}" related to ${cleanDomain}`);
+        const noResultsMessage = searchKeyword 
+          ? `No keywords found for "${searchKeyword}" related to ${cleanDomain}` 
+          : `No organic keywords found for ${cleanDomain}`;
+        setErrorMsg(noResultsMessage);
         toast({
           title: "No keywords found",
-          description: `Try a different keyword or check if the domain has organic search presence for "${keyword}"`,
+          description: searchKeyword 
+            ? `Try a different keyword or check if the domain has organic search presence for "${searchKeyword}"`
+            : `The domain may not have sufficient organic visibility or try adding a specific keyword`,
           variant: "default",
         });
         setIsLoading(false);
@@ -152,16 +151,17 @@ export const useSemrushApi = (
         trend: kw.trend || 'neutral'
       }));
       
-      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for keyword: "${keyword}" and domain: ${cleanDomain}`);
+      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for ${searchKeyword ? `keyword: "${searchKeyword}" and ` : ''}domain: ${cleanDomain}`);
       
       onKeywordsReceived(formattedKeywords);
       
       const statusMessage = data.fromCache ? "Loaded from cache" : "Success";
       const duplicatesInfo = data.duplicatesIgnored > 0 ? ` (${data.duplicatesIgnored} duplicates ignored)` : '';
+      const analysisType = searchKeyword ? `keyword "${searchKeyword}"` : 'domain overview';
       
       toast({
         title: statusMessage,
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords for "${keyword}" related to ${cleanDomain} (limit: ${keywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords for ${analysisType} related to ${cleanDomain} (limit: ${keywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
       });
       
     } catch (error) {

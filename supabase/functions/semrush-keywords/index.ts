@@ -18,18 +18,19 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body - now expecting both keyword and domain
+    // Parse request body - now expecting both keyword (optional) and domain
     const { keyword, domain, limit = 100, topicArea } = await req.json();
-    console.log(`Request received for keyword: ${keyword}, domain: ${domain}, topic: ${topicArea}, limit: ${limit}`);
+    console.log(`Request received for keyword: ${keyword || '(none)'}, domain: ${domain}, topic: ${topicArea}, limit: ${limit}`);
 
-    if (!keyword) {
-      throw new Error("Missing required parameter: keyword");
+    if (!domain) {
+      throw new Error("Missing required parameter: domain");
     }
 
     try {
-      // Use domain if provided, otherwise use keyword as domain (backward compatibility)
-      const targetDomain = domain ? extractDomain(domain) : extractDomain(keyword);
-      console.log(`Using keyword: "${keyword}" for domain: ${targetDomain}, Topic Area: ${topicArea}`);
+      const targetDomain = extractDomain(domain);
+      const searchKeyword = keyword && keyword.trim() ? keyword.trim() : '';
+      
+      console.log(`Using ${searchKeyword ? `keyword: "${searchKeyword}" for ` : 'domain overview for '}domain: ${targetDomain}, Topic Area: ${topicArea}`);
       
       // Check for API key
       const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY');
@@ -41,10 +42,10 @@ serve(async (req) => {
       console.log('SEMrush API key is configured and available');
 
       // Check for existing data first - use keyword + domain combination for caching
-      const cacheKey = `${keyword}-${targetDomain}`;
+      const cacheKey = searchKeyword ? `${searchKeyword}-${targetDomain}` : `domain-${targetDomain}`;
       const existingKeywords = await getExistingKeywords(cacheKey, topicArea);
       if (existingKeywords && existingKeywords.length >= limit) {
-        console.log(`Found ${existingKeywords.length} existing keywords for keyword: "${keyword}" and domain: ${targetDomain}`);
+        console.log(`Found ${existingKeywords.length} existing keywords for ${searchKeyword ? `keyword: "${searchKeyword}" and ` : ''}domain: ${targetDomain}`);
         
         return new Response(
           JSON.stringify({ 
@@ -57,21 +58,25 @@ serve(async (req) => {
         );
       }
 
-      // Fetch and process new keywords from SEMrush using keyword research
+      // Fetch and process new keywords from SEMrush
       const parsedLimit = parseInt(String(limit), 10);
       const actualLimit = isNaN(parsedLimit) ? 100 : Math.max(30, Math.min(500, parsedLimit));
-      console.log(`Fetching ${actualLimit} keywords from SEMrush API for keyword: "${keyword}" with key: ${semrushApiKey.substring(0, 8)}...`);
+      console.log(`Fetching ${actualLimit} keywords from SEMrush API for ${searchKeyword ? `keyword: "${searchKeyword}" with ` : ''}domain: ${targetDomain} with key: ${semrushApiKey.substring(0, 8)}...`);
       
-      const semrushResponse = await fetchSemrushKeywords(keyword, actualLimit, targetDomain);
+      const semrushResponse = await fetchSemrushKeywords(searchKeyword, actualLimit, targetDomain);
       const allKeywords = processKeywords(semrushResponse, cacheKey, topicArea);
 
       if (allKeywords.length === 0) {
-        console.log("No keywords returned from SEMrush API - this could indicate API key issues or no data for this keyword/domain combination");
+        const noDataMessage = searchKeyword 
+          ? `No keywords found for "${searchKeyword}" related to ${targetDomain} - check API key or try different keywords`
+          : `No organic keywords found for ${targetDomain} - domain may not have sufficient organic visibility`;
+        
+        console.log("No keywords returned from SEMrush API - " + noDataMessage);
         return new Response(
           JSON.stringify({ 
             keywords: [], 
             remaining: 100,
-            error: `No keywords found for "${keyword}" related to ${targetDomain} - check API key or try different keywords`,
+            error: noDataMessage,
             apiKeyStatus: 'configured_but_no_data'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

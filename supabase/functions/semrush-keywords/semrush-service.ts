@@ -1,5 +1,5 @@
 
-// Fetch keywords from SEMrush API using keyword research
+// Fetch keywords from SEMrush API using keyword research or domain overview
 export const fetchSemrushKeywords = async (keyword: string, limit: number, domain?: string) => {
   const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY') || '';
   
@@ -7,15 +7,21 @@ export const fetchSemrushKeywords = async (keyword: string, limit: number, domai
     throw new Error('SEMrush API key is not configured');
   }
   
-  // Use keyword research API to find related keywords, optionally filtered by domain
-  let semrushUrl = `https://api.semrush.com/?type=phrase_related&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&phrase=${encodeURIComponent(keyword)}&database=us&display_limit=${limit}`;
+  let semrushUrl: string;
   
-  // If domain is provided, we can use it for additional filtering context
-  if (domain) {
-    console.log(`Searching for keywords related to "${keyword}" with domain context: ${domain}`);
+  if (keyword && keyword.trim()) {
+    // Use keyword research API to find related keywords
+    semrushUrl = `https://api.semrush.com/?type=phrase_related&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&phrase=${encodeURIComponent(keyword)}&database=us&display_limit=${limit}`;
+    console.log(`Searching for keywords related to "${keyword}"${domain ? ` with domain context: ${domain}` : ''}`);
+  } else if (domain) {
+    // Use domain overview API to get organic keywords for the domain
+    semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&domain=${encodeURIComponent(domain)}&database=us&display_limit=${limit}`;
+    console.log(`Fetching organic keywords for domain: ${domain}`);
+  } else {
+    throw new Error('Either keyword or domain must be provided');
   }
   
-  console.log(`Calling SEMrush API for keyword: "${keyword}" with limit: ${limit}`);
+  console.log(`Calling SEMrush API with limit: ${limit}`);
   console.log(`SEMrush API URL (without key): ${semrushUrl.replace(semrushApiKey, 'HIDDEN_KEY')}`);
   
   const response = await fetch(semrushUrl);
@@ -44,7 +50,8 @@ export const fetchSemrushKeywords = async (keyword: string, limit: number, domai
   if (responseText.includes('ERROR')) {
     console.error('SEMrush API returned an error:', responseText);
     if (responseText.includes('NOTHING FOUND')) {
-      throw new Error(`No data found for keyword: "${keyword}". Try a different keyword or check if it has sufficient search data.`);
+      const searchType = keyword ? `keyword: "${keyword}"` : `domain: "${domain}"`;
+      throw new Error(`No data found for ${searchType}. Try a different ${keyword ? 'keyword' : 'domain'} or check if it has sufficient search data.`);
     }
     throw new Error(`SEMrush API error: ${responseText}`);
   }
