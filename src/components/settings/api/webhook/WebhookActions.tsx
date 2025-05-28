@@ -21,7 +21,7 @@ export const WebhookActions: React.FC<WebhookActionsProps> = ({
       <Button 
         onClick={onSave} 
         className="w-full sm:w-auto" 
-        disabled={isLoading || activeWebhookType !== 'custom-keywords'}
+        disabled={isLoading}
       >
         <Globe className="mr-2 h-4 w-4" />
         Save Webhook URL

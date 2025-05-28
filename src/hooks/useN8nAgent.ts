@@ -31,7 +31,6 @@ export const useN8nAgent = () => {
   const { getWebhookUrl, getContentWebhookUrl, getCustomKeywordsWebhookUrl } = useN8nConfig();
   const { processResponse } = useN8nResponseProcessor();
 
-  // Modified to only use AI Content Suggestions webhook for testing
   const sendToN8n = async (
     payload: any, 
     webhookOption?: boolean | string,
@@ -42,15 +41,34 @@ export const useN8nAgent = () => {
     setRawResponse(null);
     
     try {
-      // ALWAYS use the custom keywords webhook (AI Content Suggestions) for testing
-      const customKeywordsWebhook = getCustomKeywordsWebhookUrl();
-      let webhookUrl = customKeywordsWebhook;
+      // Determine which webhook to use based on request type or explicit option
+      let webhookUrl = '';
+      
+      if (customWebhookUrl) {
+        webhookUrl = customWebhookUrl;
+      } else if (payload.requestType === 'customKeywords') {
+        webhookUrl = getCustomKeywordsWebhookUrl();
+      } else if (payload.requestType === 'contentSuggestions') {
+        webhookUrl = getContentWebhookUrl();
+      } else if (typeof webhookOption === 'string') {
+        // Use specific webhook type
+        if (webhookOption === 'content') {
+          webhookUrl = getContentWebhookUrl();
+        } else if (webhookOption === 'custom-keywords') {
+          webhookUrl = getCustomKeywordsWebhookUrl();
+        } else {
+          webhookUrl = getWebhookUrl();
+        }
+      } else {
+        // Default to keyword webhook
+        webhookUrl = getWebhookUrl();
+      }
       
       if (!webhookUrl) {
-        throw new Error("No AI Content Suggestions webhook URL configured. Please check API connections settings.");
+        throw new Error("No webhook URL configured. Please check API connections settings.");
       }
 
-      console.log(`TESTING - Using AI Content Suggestions webhook URL:`, webhookUrl);
+      console.log(`Using webhook URL for ${payload.requestType || 'default'}:`, webhookUrl);
       
       const defaultUrl = "https://www.officespacesoftware.com";
       const targetUrl = payload.targetUrl || defaultUrl;
@@ -61,12 +79,10 @@ export const useN8nAgent = () => {
         {
           ...payload,
           targetUrl,
-          url: targetUrl,
-          // Always force requestType to customKeywords for testing
-          requestType: 'customKeywords'
+          url: targetUrl
         };
       
-      console.log("Sending data to AI Content Suggestions webhook:", finalPayload);
+      console.log("Sending data to webhook:", finalPayload);
       
       const controller = new AbortController();
       // Increase timeout to 180 seconds (3 minutes)
@@ -94,18 +110,18 @@ export const useN8nAgent = () => {
         }
         
         const responseText = await response.text();
-        console.log("TESTING - Raw webhook response:", responseText);
+        console.log("Raw webhook response:", responseText);
         
         // Store the raw response for debugging
         try {
           // Try to parse as JSON first
           const jsonResponse = JSON.parse(responseText);
           setRawResponse(jsonResponse);
-          console.log("TESTING - Parsed JSON response:", jsonResponse);
+          console.log("Parsed JSON response:", jsonResponse);
           
           // Direct handling for AI Content Suggestions format
           if (isAIContentSuggestionsFormat(jsonResponse)) {
-            console.log("TESTING - Detected AI Content Suggestions format directly");
+            console.log("Detected AI Content Suggestions format directly");
             const formattedContent = formatAIContentSuggestions(jsonResponse);
             setGeneratedContent(formattedContent);
             toast.success("Content Generated", {
@@ -121,13 +137,13 @@ export const useN8nAgent = () => {
           }
         } catch (e) {
           // If it's not valid JSON, store as string
-          console.log("TESTING - Response is not valid JSON, storing as string");
+          console.log("Response is not valid JSON, storing as string");
           setRawResponse(responseText);
         }
         
         // Process the response using the standard processor
         const result = processResponse(responseText);
-        console.log("TESTING - Processed response result:", result);
+        console.log("Processed response result:", result);
         
         // Update state with processed results
         if (result.content && result.content.length > 0) {
@@ -138,7 +154,7 @@ export const useN8nAgent = () => {
           });
         } else {
           // If no content was processed, show an error
-          console.log("TESTING - No content processed from response");
+          console.log("No content processed from response");
           toast.error("Processing Error", {
             description: "Received a response but couldn't extract content"
           });
@@ -170,7 +186,7 @@ export const useN8nAgent = () => {
     } catch (err: any) {
       const errorMessage = err.message || "Failed to communicate with n8n webhook";
       setError(errorMessage);
-      console.error("TESTING - N8n webhook error:", err);
+      console.error("N8n webhook error:", err);
       
       toast.error("Webhook Error", {
         description: errorMessage
@@ -186,7 +202,7 @@ export const useN8nAgent = () => {
   const isAIContentSuggestionsFormat = (data: any): boolean => {
     if (!data) return false;
     
-    console.log("TESTING - Checking if response is in AI Content Suggestions format", data);
+    console.log("Checking if response is in AI Content Suggestions format", data);
     
     // Check array format
     if (Array.isArray(data) && data.length > 0) {
@@ -204,7 +220,7 @@ export const useN8nAgent = () => {
   
   // Helper function to format AI Content Suggestions consistently
   const formatAIContentSuggestions = (data: any): any[] => {
-    console.log("TESTING - Formatting AI Content Suggestions", data);
+    console.log("Formatting AI Content Suggestions", data);
     
     if (Array.isArray(data)) {
       return data.map(item => ({

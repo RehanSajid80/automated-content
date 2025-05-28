@@ -18,17 +18,17 @@ export const WebhookTypeSelector: React.FC<WebhookTypeSelectorProps> = ({
       onValueChange={(value) => onWebhookTypeChange(value as 'keywords' | 'content' | 'custom-keywords')}
       className="flex flex-col space-y-1 mb-4"
     >
-      <div className="flex items-center space-x-2 opacity-50">
-        <RadioGroupItem value="keywords" id="keywords" disabled />
-        <Label htmlFor="keywords">Keyword Sync Webhook (Disabled for Testing)</Label>
+      <div className="flex items-center space-x-2">
+        <RadioGroupItem value="keywords" id="keywords" />
+        <Label htmlFor="keywords">Keyword Sync Webhook</Label>
       </div>
-      <div className="flex items-center space-x-2 opacity-50">
-        <RadioGroupItem value="content" id="content" disabled />
-        <Label htmlFor="content">Content Generation Webhook (Disabled for Testing)</Label>
+      <div className="flex items-center space-x-2">
+        <RadioGroupItem value="content" id="content" />
+        <Label htmlFor="content">Content Generation Webhook</Label>
       </div>
       <div className="flex items-center space-x-2">
         <RadioGroupItem value="custom-keywords" id="custom-keywords" />
-        <Label htmlFor="custom-keywords" className="font-bold">Get AI Content Suggestions (ACTIVE)</Label>
+        <Label htmlFor="custom-keywords">AI Content Suggestions Webhook</Label>
       </div>
     </RadioGroup>
   );

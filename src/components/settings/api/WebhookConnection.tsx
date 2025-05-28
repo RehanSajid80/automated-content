@@ -18,7 +18,7 @@ interface WebhookConnectionProps {
 const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   onSaveWebhook,
   onWebhookTypeChange,
-  activeWebhookType = 'custom-keywords' // Default to custom-keywords (AI Content Suggestions)
+  activeWebhookType = 'keywords' // Default back to keywords
 }) => {
   const { 
     getWebhookUrl, 

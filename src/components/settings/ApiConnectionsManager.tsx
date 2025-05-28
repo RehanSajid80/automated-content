@@ -15,8 +15,8 @@ const ApiConnectionsManager = () => {
   const [openaiApiKey, setOpenaiApiKey] = React.useState("");
   const [openaiStatus, setOpenaiStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
-  // Webhook state
-  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords'>('custom-keywords'); // TESTING: Default to AI Content Suggestions
+  // Webhook state - default back to keywords
+  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords'>('keywords');
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   const { toast } = useToast();
