@@ -36,7 +36,7 @@ export const ContentGeneratorForm: React.FC<ContentGeneratorFormProps> = ({
   generatingProgress,
 }) => {
   if (isGenerating) {
-    return <LoadingState message={generatingProgress || "Generating content..."} />;
+    return <LoadingState message={generatingProgress || "Generating content via webhook..."} />;
   }
 
   return (

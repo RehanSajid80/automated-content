@@ -18,7 +18,7 @@ interface WebhookConnectionProps {
 const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   onSaveWebhook,
   onWebhookTypeChange,
-  activeWebhookType = 'keywords'
+  activeWebhookType = 'content' // Default to content for AI Content Suggestions
 }) => {
   const { 
     getWebhookUrl, 
@@ -80,6 +80,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
     } else if (activeWebhookType === 'content' && contentWebhookUrl) {
       await saveWebhookUrl(contentWebhookUrl, 'content');
       setStatus('connected');
+      toast.success("AI Content Suggestions webhook configured successfully");
     } else if (activeWebhookType === 'custom-keywords' && customKeywordsWebhookUrl) {
       await saveWebhookUrl(customKeywordsWebhookUrl, 'custom-keywords');
       setStatus('connected');
@@ -106,7 +107,8 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
           <WebhookStatusBadge status={status} />
         </CardTitle>
         <CardDescription>
-          Connect your content generation system to n8n.io workflows for automation
+          Connect your content generation system to n8n.io workflows for automation.
+          {activeWebhookType === 'content' && " Configure the AI Content Suggestions webhook here."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

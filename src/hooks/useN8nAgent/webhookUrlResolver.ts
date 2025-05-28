@@ -24,6 +24,7 @@ export const resolveWebhookUrl = (
   } else if (payload.requestType === 'customKeywords') {
     webhookUrl = webhookUrls.getCustomKeywordsWebhookUrl();
   } else if (payload.requestType === 'contentSuggestions') {
+    // Always use content webhook for AI content suggestions
     webhookUrl = webhookUrls.getContentWebhookUrl();
   } else if (payload.requestType === 'contentAdjustment') {
     webhookUrl = webhookUrls.getContentAdjustmentWebhookUrl();

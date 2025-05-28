@@ -23,12 +23,12 @@ export const AISuggestionsButton: React.FC<AISuggestionsButtonProps> = ({
       {isLoading ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Generating AI Suggestions... (TEST MODE)
+          Generating AI Suggestions...
         </>
       ) : (
         <>
           <Sparkles className="mr-2 h-4 w-4" />
-          Get AI Content Suggestions (TEST MODE)
+          Get AI Content Suggestions
         </>
       )}
     </Button>

@@ -115,7 +115,7 @@ export const useAIContentGeneration = () => {
         }
       };
       
-      // This is the exact payload that gets sent to the webhook
+      // This is the exact payload that gets sent to the webhook - using content webhook
       const response = await sendToN8n({
         keywords: keywordsToSelect.length > 0 
           ? keywordsToProcess.filter(kw => keywordsToSelect.includes(kw.keyword)) 
@@ -133,7 +133,7 @@ export const useAIContentGeneration = () => {
           custom_keywords: customKeywords,
           expected_format: JSON.stringify(outputFormat)
         }
-      }, true);
+      }, 'content'); // Explicitly specify content webhook
       
       console.log("N8N response received:", response);
       
