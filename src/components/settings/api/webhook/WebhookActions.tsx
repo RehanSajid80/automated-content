@@ -7,7 +7,7 @@ interface WebhookActionsProps {
   onSave: () => void;
   onRefresh: () => void;
   isLoading: boolean;
-  activeWebhookType: 'keywords' | 'content' | 'custom-keywords';
+  activeWebhookType: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment';
 }
 
 export const WebhookActions: React.FC<WebhookActionsProps> = ({

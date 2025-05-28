@@ -15,8 +15,8 @@ const ApiConnectionsManager = () => {
   const [openaiApiKey, setOpenaiApiKey] = React.useState("");
   const [openaiStatus, setOpenaiStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
-  // Webhook state - default back to keywords
-  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords'>('keywords');
+  // Webhook state - updated to include content-adjustment
+  const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords' | 'content-adjustment'>('keywords');
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   const { toast } = useToast();
@@ -29,6 +29,7 @@ const ApiConnectionsManager = () => {
       localStorage.removeItem("semrush-webhook-url");
       localStorage.removeItem("n8n-content-webhook-url");
       localStorage.removeItem("n8n-custom-keywords-webhook-url");
+      localStorage.removeItem("n8n-content-adjustment-webhook-url"); // Added this line
       localStorage.removeItem("semrush-keyword-limit"); // Also clear SEMrush settings
       setOpenaiApiKey("");
       setOpenaiStatus('checking');
@@ -86,6 +87,8 @@ const ApiConnectionsManager = () => {
       setWebhookStatus(webhooks.keywordWebhook ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'content') {
       setWebhookStatus(webhooks.contentWebhook ? 'connected' : 'disconnected');
+    } else if (activeWebhookType === 'content-adjustment') {
+      setWebhookStatus(webhooks.contentAdjustmentWebhook ? 'connected' : 'disconnected');
     } else {
       setWebhookStatus(webhooks.customKeywordsWebhook ? 'connected' : 'disconnected');
     }
@@ -114,7 +117,7 @@ const ApiConnectionsManager = () => {
     }
   };
 
-  const handleWebhookTypeChange = (type: 'keywords' | 'content' | 'custom-keywords') => {
+  const handleWebhookTypeChange = (type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment') => {
     setActiveWebhookType(type);
   };
 
