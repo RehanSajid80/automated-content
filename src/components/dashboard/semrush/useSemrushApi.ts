@@ -88,6 +88,12 @@ export const useSemrushApi = (
       console.log(`Fetching ${searchKeyword ? 'related keywords for' : 'domain overview'} data for domain: ${cleanDomain}${searchKeyword ? ` with keyword: "${searchKeyword}"` : ''}`);
       console.log(`Requesting ${keywordLimit} keywords from SEMrush API (from settings)`);
 
+      // Validate domain format before making the call
+      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
+      if (!domainRegex.test(cleanDomain)) {
+        throw new Error(`Invalid domain format: ${cleanDomain}. Please enter a valid domain like "example.com"`);
+      }
+
       // Call SEMrush API through edge function with keyword and domain
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { 
@@ -106,12 +112,35 @@ export const useSemrushApi = (
         throw new Error(error.message || "Failed to fetch keywords");
       }
 
+      console.log('SEMrush API response:', data);
+
       if (data.error) {
-        console.error('API error:', data.error);
+        console.error('API error from SEMrush:', data.error);
         updateSemrushMetrics(false);
-        setErrorMsg(`API error: ${data.error}`);
-        setApiStatus(data.apiKeyStatus || 'error');
-        throw new Error(data.error);
+        
+        // More specific error handling
+        let errorMessage = data.error;
+        if (data.error.includes('NOTHING FOUND')) {
+          errorMessage = searchKeyword 
+            ? `No related keywords found for "${searchKeyword}". Try different or broader search terms.`
+            : `No organic keywords found for ${cleanDomain}. The domain may not have sufficient organic visibility.`;
+        } else if (data.error.includes('Invalid API key')) {
+          errorMessage = 'SEMrush API key is invalid. Please check your API key configuration.';
+        } else if (data.error.includes('domain format')) {
+          errorMessage = `Invalid domain format. Please enter a valid domain like "example.com"`;
+        }
+        
+        setErrorMsg(errorMessage);
+        setApiStatus(data.apiKeyStatus || 'configured');
+        
+        toast({
+          title: "SEMrush API Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        setIsLoading(false);
+        return;
       }
 
       // Set API status based on response
@@ -122,11 +151,11 @@ export const useSemrushApi = (
       
       // Check if we got any keywords back
       if (!keywordsArray || !Array.isArray(keywordsArray) || keywordsArray.length === 0) {
-        console.warn('No keywords found:', data);
+        console.warn('No keywords found in response:', data);
         updateSemrushMetrics(false);
         const noResultsMessage = searchKeyword 
           ? `No related keywords found for "${searchKeyword}". Try broader or different terms.` 
-          : `No organic keywords found for ${cleanDomain}`;
+          : `No organic keywords found for ${cleanDomain}. The domain may not have sufficient organic visibility.`;
         setErrorMsg(noResultsMessage);
         toast({
           title: "No keywords found",
@@ -167,9 +196,16 @@ export const useSemrushApi = (
     } catch (error) {
       console.error('Error fetching keywords:', error);
       updateSemrushMetrics(false);
+      
+      let errorMessage = "Failed to fetch keywords";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setErrorMsg(errorMessage);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch keywords",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
