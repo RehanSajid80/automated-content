@@ -82,7 +82,7 @@ export const useContentSuggestionState = (keywords: KeywordData[]) => {
         customKeywords: customKeywords.length
       });
 
-      // Call the N8n agent directly with the content webhook
+      // Create the payload with explicit typing for requestType
       const payload = {
         keywords: keywordsToSelect.length > 0 
           ? keywordsToProcess.filter(kw => keywordsToSelect.includes(kw.keyword)) 
@@ -90,7 +90,7 @@ export const useContentSuggestionState = (keywords: KeywordData[]) => {
         topicArea,
         targetUrl: "https://www.officespacesoftware.com",
         url: "https://www.officespacesoftware.com",
-        requestType: 'contentSuggestions',
+        requestType: "contentSuggestions" as const, // Fix: Use 'as const' to make it a literal type
         output_format: {
           pillarContent: "A headline or detailed title for the main article",
           supportContent: "A headline or detailed title for supporting content",
