@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
 
 interface SemrushApiStatusProps {
   apiStatus: string | null;
@@ -15,18 +15,6 @@ const SemrushApiStatus: React.FC<SemrushApiStatusProps> = ({ apiStatus }) => {
       <Alert className="mt-2">
         <CheckCircle className="h-4 w-4" />
         <AlertDescription>SEMrush API key is working correctly</AlertDescription>
-      </Alert>
-    );
-  } else if (apiStatus === 'configured') {
-    return (
-      <Alert className="mt-2">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          SEMrush API key is configured. If you're seeing errors, check that:
-          <br />• The domain format is valid (e.g., "example.com")
-          <br />• The keyword exists in SEMrush database
-          <br />• The domain has organic search visibility
-        </AlertDescription>
       </Alert>
     );
   } else if (apiStatus === 'configured_but_no_data') {
@@ -57,6 +45,7 @@ const SemrushApiStatus: React.FC<SemrushApiStatusProps> = ({ apiStatus }) => {
     );
   }
   
+  // Remove the 'configured' status message completely
   return null;
 };
 
