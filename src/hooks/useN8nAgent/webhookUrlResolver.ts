@@ -12,9 +12,9 @@ interface WebhookUrls {
 
 export const resolveWebhookUrl = (
   payload: any,
+  webhookUrls: WebhookUrls,
   webhookOption?: boolean | string,
-  customWebhookUrl?: string,
-  webhookUrls: WebhookUrls
+  customWebhookUrl?: string
 ): string => {
   // Determine which webhook to use based on request type or explicit option
   let webhookUrl = '';

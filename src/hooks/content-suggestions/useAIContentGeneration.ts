@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { KeywordData } from "@/utils/excelUtils";
 import { toast } from "sonner";
@@ -123,7 +124,7 @@ export const useAIContentGeneration = () => {
         targetUrl: targetUrl || "https://www.officespacesoftware.com",
         url: targetUrl || "https://www.officespacesoftware.com",
         requestType: 'contentSuggestions',
-        outputFormat: outputFormat,
+        output_format: outputFormat,
         customPayload: {
           target_persona: selectedPersona,
           persona_name: personaName,
