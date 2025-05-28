@@ -30,7 +30,7 @@ serve(async (req) => {
       const targetDomain = extractDomain(domain);
       const searchKeyword = keyword && keyword.trim() ? keyword.trim() : '';
       
-      console.log(`Using ${searchKeyword ? `keyword: "${searchKeyword}" for ` : 'domain overview for '}domain: ${targetDomain}, Topic Area: ${topicArea}`);
+      console.log(`Using ${searchKeyword ? `keyword: "${searchKeyword}" for related keyword research` : 'domain overview for '}domain: ${targetDomain}, Topic Area: ${topicArea}`);
       
       // Check for API key
       const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY');
@@ -43,9 +43,8 @@ serve(async (req) => {
 
       // Create different cache keys for different search types
       let cacheKey: string;
-      if (searchKeyword && targetDomain) {
-        cacheKey = `phrase-this-${searchKeyword}-${targetDomain}`;
-      } else if (searchKeyword) {
+      if (searchKeyword) {
+        // Always use phrase-related for keyword searches to get related keywords
         cacheKey = `phrase-related-${searchKeyword}`;
       } else {
         cacheKey = `domain-${targetDomain}`;
@@ -75,11 +74,9 @@ serve(async (req) => {
       const allKeywords = processKeywords(semrushResponse, cacheKey, topicArea);
 
       if (allKeywords.length === 0) {
-        const noDataMessage = searchKeyword && targetDomain
-          ? `No ranking data found for "${searchKeyword}" on ${targetDomain}. The domain may not rank for this keyword.`
-          : searchKeyword 
-            ? `No keywords found related to "${searchKeyword}"`
-            : `No organic keywords found for ${targetDomain} - domain may not have sufficient organic visibility`;
+        const noDataMessage = searchKeyword 
+          ? `No keywords found related to "${searchKeyword}". Try different or broader search terms.`
+          : `No organic keywords found for ${targetDomain} - domain may not have sufficient organic visibility`;
         
         console.log("No keywords returned from SEMrush API - " + noDataMessage);
         return new Response(

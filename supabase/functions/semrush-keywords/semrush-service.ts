@@ -9,15 +9,11 @@ export const fetchSemrushKeywords = async (keyword: string, limit: number, domai
   
   let semrushUrl: string;
   
-  if (keyword && keyword.trim() && domain) {
-    // When both keyword and domain are provided, use domain_organic to find keywords 
-    // the domain ranks for, then filter or use phrase_this to see domain's performance for the keyword
-    semrushUrl = `https://api.semrush.com/?type=phrase_this&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr,Ur,Tg&phrase=${encodeURIComponent(keyword)}&domain=${encodeURIComponent(domain)}&database=us&display_limit=${limit}`;
-    console.log(`Searching for how domain "${domain}" performs for keyword "${keyword}"`);
-  } else if (keyword && keyword.trim()) {
-    // Use keyword research API to find related keywords (general search)
+  if (keyword && keyword.trim()) {
+    // Always use phrase_related for keyword research to get related keywords
+    // This ensures we get keywords related to the input keyword regardless of domain
     semrushUrl = `https://api.semrush.com/?type=phrase_related&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&phrase=${encodeURIComponent(keyword)}&database=us&display_limit=${limit}`;
-    console.log(`Searching for keywords related to "${keyword}"`);
+    console.log(`Searching for keywords related to "${keyword}"${domain ? ` (domain context: ${domain})` : ''}`);
   } else if (domain) {
     // Use domain overview API to get organic keywords for the domain
     semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr,Ur,Tg&domain=${encodeURIComponent(domain)}&database=us&display_limit=${limit}`;
@@ -55,12 +51,10 @@ export const fetchSemrushKeywords = async (keyword: string, limit: number, domai
   if (responseText.includes('ERROR')) {
     console.error('SEMrush API returned an error:', responseText);
     if (responseText.includes('NOTHING FOUND')) {
-      const searchType = keyword && domain 
-        ? `keyword "${keyword}" for domain "${domain}"` 
-        : keyword 
-          ? `keyword: "${keyword}"` 
-          : `domain: "${domain}"`;
-      throw new Error(`No data found for ${searchType}. The domain may not rank for this keyword, or try different search terms.`);
+      const searchType = keyword 
+        ? `keywords related to: "${keyword}"` 
+        : `domain: "${domain}"`;
+      throw new Error(`No data found for ${searchType}. Try different search terms or check if the domain has organic visibility.`);
     }
     throw new Error(`SEMrush API error: ${responseText}`);
   }

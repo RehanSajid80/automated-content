@@ -85,7 +85,7 @@ export const useSemrushApi = (
       // Use keyword if provided, otherwise empty string for domain analysis
       const searchKeyword = keyword.trim();
       
-      console.log(`Fetching ${searchKeyword ? 'keyword-specific' : 'domain overview'} data for domain: ${cleanDomain}${searchKeyword ? ` with keyword: "${searchKeyword}"` : ''}`);
+      console.log(`Fetching ${searchKeyword ? 'related keywords for' : 'domain overview'} data for domain: ${cleanDomain}${searchKeyword ? ` with keyword: "${searchKeyword}"` : ''}`);
       console.log(`Requesting ${keywordLimit} keywords from SEMrush API (from settings)`);
 
       // Call SEMrush API through edge function with keyword and domain
@@ -125,13 +125,13 @@ export const useSemrushApi = (
         console.warn('No keywords found:', data);
         updateSemrushMetrics(false);
         const noResultsMessage = searchKeyword 
-          ? `No keywords found for "${searchKeyword}" related to ${cleanDomain}` 
+          ? `No related keywords found for "${searchKeyword}". Try broader or different terms.` 
           : `No organic keywords found for ${cleanDomain}`;
         setErrorMsg(noResultsMessage);
         toast({
           title: "No keywords found",
           description: searchKeyword 
-            ? `Try a different keyword or check if the domain has organic search presence for "${searchKeyword}"`
+            ? `Try using broader terms, check spelling, or use different keywords related to "${searchKeyword}"`
             : `The domain may not have sufficient organic visibility or try adding a specific keyword`,
           variant: "default",
         });
@@ -151,17 +151,17 @@ export const useSemrushApi = (
         trend: kw.trend || 'neutral'
       }));
       
-      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for ${searchKeyword ? `keyword: "${searchKeyword}" and ` : ''}domain: ${cleanDomain}`);
+      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for ${searchKeyword ? `keyword: "${searchKeyword}"` : 'domain analysis'} and domain: ${cleanDomain}`);
       
       onKeywordsReceived(formattedKeywords);
       
       const statusMessage = data.fromCache ? "Loaded from cache" : "Success";
       const duplicatesInfo = data.duplicatesIgnored > 0 ? ` (${data.duplicatesIgnored} duplicates ignored)` : '';
-      const analysisType = searchKeyword ? `keyword "${searchKeyword}"` : 'domain overview';
+      const analysisType = searchKeyword ? `related keywords for "${searchKeyword}"` : 'domain overview';
       
       toast({
         title: statusMessage,
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} keywords for ${analysisType} related to ${cleanDomain} (limit: ${keywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} ${analysisType} keywords for ${cleanDomain} (limit: ${keywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
       });
       
     } catch (error) {

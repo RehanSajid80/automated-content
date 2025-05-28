@@ -49,7 +49,7 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
           disabled={isLoading || disabled || !domain.trim()}
           variant="outline"
           title={keyword.trim() 
-            ? `Will fetch ${keywordLimit} keywords related to "${keyword}" for the domain`
+            ? `Will fetch ${keywordLimit} keywords related to "${keyword}"`
             : `Will fetch ${keywordLimit} keywords for the domain using Domain Overview`
           }
         >
@@ -61,7 +61,7 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
           ) : (
             <>
               <Search className="w-4 h-4 mr-2" />
-              {keyword.trim() ? `Fetch Keywords (${keywordLimit})` : `Analyze Domain (${keywordLimit})`}
+              {keyword.trim() ? `Find Related Keywords (${keywordLimit})` : `Analyze Domain (${keywordLimit})`}
             </>
           )}
         </Button>
