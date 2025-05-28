@@ -43,7 +43,7 @@ export const fetchSemrushKeywords = async (keyword: string, limit: number, domai
 
   // Log the first part of the response to debug
   const responseText = await response.text();
-  console.log(`SEMrush response first 100 chars: ${responseText.substring(0, 100)}...`);
+  console.log(`SEMrush response first 200 chars: ${responseText.substring(0, 200)}...`);
   console.log(`SEMrush response lines count: ${responseText.split('\n').length - 1}`);
   
   // Check for API error responses
@@ -70,23 +70,42 @@ export const processKeywords = (responseText: string, cacheKey: string, topicAre
   
   // Log for debugging
   console.log(`Processing ${lines.length - 1} keywords from SEMrush response`);
+  console.log(`Header line: ${lines[0]}`);
   
   const keywords = [];
+  
+  // Skip header line (index 0) and process data lines
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(';');
-    if (values.length >= 5) {
-      keywords.push({
-        domain: cacheKey, // Store the cache key (keyword-domain combination)
-        topic_area: topicArea || '',
-        keyword: values[0],
-        volume: parseInt(values[1]) || 0,
-        difficulty: Math.round(Math.random() * 60) + 20,
-        cpc: parseFloat(values[2]) || 0,
-        trend: ['up', 'down', 'neutral'][Math.floor(Math.random() * 3)]
-      });
+    const line = lines[i].trim();
+    if (!line) continue; // Skip empty lines
+    
+    // Handle both semicolon and tab delimiters
+    const values = line.includes(';') ? line.split(';') : line.split('\t');
+    
+    console.log(`Line ${i}: "${line}" -> ${values.length} columns: [${values.join(', ')}]`);
+    
+    if (values.length >= 3) {
+      const keyword = values[0]?.trim();
+      const volume = parseInt(values[1]?.trim()) || 0;
+      const cpc = parseFloat(values[2]?.trim()) || 0;
+      const competition = parseFloat(values[3]?.trim()) || 0;
+      
+      if (keyword && keyword !== '') {
+        keywords.push({
+          domain: cacheKey, // Store the cache key (keyword-domain combination)
+          topic_area: topicArea || '',
+          keyword: keyword,
+          volume: volume,
+          difficulty: Math.round(competition * 100), // Convert competition to difficulty percentage
+          cpc: cpc,
+          trend: ['up', 'down', 'neutral'][Math.floor(Math.random() * 3)]
+        });
+      }
+    } else {
+      console.log(`Skipping line ${i} with insufficient columns: ${values.length}`);
     }
   }
   
-  console.log(`Processed ${keywords.length} keywords for cache key: ${cacheKey} and topic: ${topicArea}`);
+  console.log(`Successfully processed ${keywords.length} keywords for cache key: ${cacheKey} and topic: ${topicArea}`);
   return keywords;
 };
