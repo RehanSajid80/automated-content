@@ -256,4 +256,9 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{errorMsg}</AlertDescription>
         </Alert>
-      );
+      )}
+    </div>
+  );
+};
+
+export default SemrushIntegration;
