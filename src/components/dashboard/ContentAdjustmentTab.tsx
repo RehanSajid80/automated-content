@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Target, TrendingUp, Clock, Building2, Lightbulb } from "lucide-react";
+import { Pencil, Target, TrendingUp, Clock, Building2, Lightbulb, CheckCircle, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
@@ -30,8 +30,10 @@ const ContentAdjustmentTab = () => {
   const [selectedFormat, setSelectedFormat] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [activeContentType, setActiveContentType] = useState("pillar");
+  const [adjustedContent, setAdjustedContent] = useState<string>("");
+  const [showAdjustedContent, setShowAdjustedContent] = useState(false);
 
-  const { sendToN8n, isLoading: n8nLoading } = useN8nAgent();
+  const { sendToN8n, isLoading: n8nLoading, generatedContent, rawResponse } = useN8nAgent();
 
   const contentTypes = [
     { id: "pillar", label: "Pillar Content", icon: <Pencil className="h-4 w-4" /> },
@@ -71,6 +73,20 @@ const ContentAdjustmentTab = () => {
     fetchContentItems();
   }, []);
 
+  // Watch for changes in generated content or raw response
+  useEffect(() => {
+    if (generatedContent && generatedContent.length > 0) {
+      const content = generatedContent[0];
+      if (content.output) {
+        setAdjustedContent(content.output);
+        setShowAdjustedContent(true);
+      }
+    } else if (rawResponse && typeof rawResponse === 'object' && rawResponse.output) {
+      setAdjustedContent(rawResponse.output);
+      setShowAdjustedContent(true);
+    }
+  }, [generatedContent, rawResponse]);
+
   const fetchContentItems = async () => {
     try {
       setIsLoading(true);
@@ -82,7 +98,6 @@ const ContentAdjustmentTab = () => {
       if (error) throw error;
       setContentItems(data || []);
       
-      // Auto-select first item of the active content type
       const firstItemOfType = data?.find(item => item.content_type === activeContentType);
       if (firstItemOfType) {
         setSelectedContent(firstItemOfType);
@@ -115,10 +130,13 @@ const ContentAdjustmentTab = () => {
       return;
     }
 
+    // Clear previous results
+    setAdjustedContent("");
+    setShowAdjustedContent(false);
+
     try {
-      // Create the payload that will be sent to the webhook
       const webhookPayload = {
-        requestType: 'contentAdjustment',
+        requestType: 'contentAdjustment' as const,
         contentId: selectedContent.id,
         originalContent: {
           title: selectedContent.title,
@@ -135,7 +153,7 @@ const ContentAdjustmentTab = () => {
         context: {
           source: "content-adjustment-panel",
           timestamp: new Date().toISOString(),
-          userId: "user-123" // You might want to get this from auth context
+          userId: "user-123"
         }
       };
 
@@ -152,25 +170,33 @@ const ContentAdjustmentTab = () => {
         throw new Error(result.error);
       }
       
-      // Handle successful response
-      if (result.content && result.content.length > 0) {
-        toast({
-          title: "Content Adjusted Successfully",
-          description: "Your content has been enhanced based on your instructions"
-        });
-        
-        // Optionally update the content in the database or state
-        // You might want to save the adjusted content back to the database
-      }
+      toast({
+        title: "Content Adjusted Successfully",
+        description: "Your content has been enhanced based on your instructions"
+      });
       
-      setAdjustmentPrompt("");
-      setSelectedTone("");
-      setSelectedFormat("");
     } catch (error) {
       console.error("Error adjusting content:", error);
       toast({
         title: "Adjustment Failed",
         description: "Failed to adjust content. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: "Content copied to clipboard"
+      });
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy content to clipboard",
         variant: "destructive"
       });
     }
@@ -187,6 +213,66 @@ const ContentAdjustmentTab = () => {
         />
         
         <div className="space-y-6">
+          {/* Adjusted Content Results */}
+          {showAdjustedContent && adjustedContent && (
+            <Card className="border-green-200 bg-green-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  <CheckCircle className="h-5 w-5" />
+                  ✨ Adjusted Content Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-green-700 font-medium">
+                      Content has been successfully adjusted based on your instructions
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(adjustedContent)}
+                      className="flex items-center gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy Content
+                    </Button>
+                  </div>
+                  <div className="p-4 bg-white rounded-lg border border-green-200 max-h-[400px] overflow-y-auto">
+                    <pre className="text-sm whitespace-pre-wrap text-gray-800">
+                      {adjustedContent}
+                    </pre>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        // Save adjusted content logic here
+                        toast({
+                          title: "Save Feature",
+                          description: "Save functionality will be implemented soon"
+                        });
+                      }}
+                    >
+                      Save Adjusted Content
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowAdjustedContent(false);
+                        setAdjustedContent("");
+                      }}
+                    >
+                      Clear Results
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Content Type Tabs */}
           <Card>
             <CardHeader>
