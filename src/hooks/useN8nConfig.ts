@@ -28,7 +28,7 @@ export const useN8nConfig = () => {
 
       const { data: webhookConfigs, error } = await supabase
         .from('webhook_configs')
-        .select('webhook_type, webhook_url')
+        .select('type, url')
         .eq('user_id', user.id)
         .eq('is_active', true);
 
@@ -47,18 +47,18 @@ export const useN8nConfig = () => {
       };
 
       webhookConfigs?.forEach(config => {
-        switch (config.webhook_type) {
+        switch (config.type) {
           case 'keywords':
-            webhookMap.keywordWebhook = config.webhook_url;
+            webhookMap.keywordWebhook = config.url;
             break;
           case 'content':
-            webhookMap.contentWebhook = config.webhook_url;
+            webhookMap.contentWebhook = config.url;
             break;
           case 'custom-keywords':
-            webhookMap.customKeywordsWebhook = config.webhook_url;
+            webhookMap.customKeywordsWebhook = config.url;
             break;
           case 'content-adjustment':
-            webhookMap.contentAdjustmentWebhook = config.webhook_url;
+            webhookMap.contentAdjustmentWebhook = config.url;
             break;
         }
       });
@@ -99,17 +99,17 @@ export const useN8nConfig = () => {
         return false;
       }
 
-      // Upsert webhook configuration
+      // Upsert webhook configuration using correct column names
       const { error } = await supabase
         .from('webhook_configs')
         .upsert({
           user_id: user.id,
-          webhook_type: type,
-          webhook_url: url,
+          type: type,
+          url: url,
           name: `${type.charAt(0).toUpperCase() + type.slice(1)} Webhook`,
           is_active: true
         }, {
-          onConflict: 'user_id, webhook_type'
+          onConflict: 'user_id, type'
         });
 
       if (error) {

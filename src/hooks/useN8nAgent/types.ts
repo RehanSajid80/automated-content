@@ -14,8 +14,24 @@ export interface N8nAgentPayload {
   customKeywords?: string[];
 }
 
+export interface WebhookPayload {
+  keywords?: any[];
+  topicArea?: string;
+  targetUrl?: string;
+  url?: string;
+  requestType?: 'contentSuggestions' | 'keywordAnalysis' | 'customKeywords' | 'contentAdjustment';
+  contentType?: string;
+  chatHistory?: any[];
+  currentInstruction?: string;
+  currentImageUrl?: string;
+  customPayload?: any;
+  output_format?: any;
+  customKeywords?: string[];
+}
+
 export interface N8nAgentResponse {
-  suggestions: any[];
+  success?: boolean;
+  suggestions?: any[];
   content: any[];
   title: string;
   rawResponse?: any;

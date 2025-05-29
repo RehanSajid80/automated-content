@@ -14,9 +14,9 @@ export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | '
 
     const { data: webhookConfig, error } = await supabase
       .from('webhook_configs')
-      .select('webhook_url')
+      .select('url')
       .eq('user_id', user.id)
-      .eq('webhook_type', targetType)
+      .eq('type', targetType)
       .eq('is_active', true)
       .maybeSingle();
 
@@ -25,9 +25,9 @@ export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | '
       return getFallbackWebhook(targetType);
     }
 
-    if (webhookConfig?.webhook_url) {
-      console.log(`Using user's ${targetType} webhook:`, webhookConfig.webhook_url);
-      return webhookConfig.webhook_url;
+    if (webhookConfig?.url) {
+      console.log(`Using user's ${targetType} webhook:`, webhookConfig.url);
+      return webhookConfig.url;
     }
 
     console.warn(`No ${targetType} webhook found for user, using fallback`);

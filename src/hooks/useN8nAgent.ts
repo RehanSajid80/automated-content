@@ -10,6 +10,8 @@ export const useN8nAgent = () => {
   const [generatedContent, setGeneratedContent] = useState<any[]>([]);
   const [rawResponse, setRawResponse] = useState<any>(null);
   const [contentTitle, setContentTitle] = useState<string>("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Auto-load content from localStorage on mount
   useEffect(() => {
@@ -35,6 +37,7 @@ export const useN8nAgent = () => {
     webhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' | boolean
   ): Promise<N8nAgentResponse> => {
     setIsLoading(true);
+    setError(null);
     
     try {
       // Resolve webhook type
@@ -77,6 +80,7 @@ export const useN8nAgent = () => {
       
       if (processedContent && processedContent.length > 0) {
         setGeneratedContent(processedContent);
+        setSuggestions(processedContent);
         // Save to localStorage for persistence
         localStorage.setItem('n8n-generated-content', JSON.stringify(processedContent));
         
@@ -90,12 +94,14 @@ export const useN8nAgent = () => {
         success: true,
         content: processedContent,
         rawResponse: responseData,
-        title: contentTitle
+        title: contentTitle,
+        suggestions: processedContent
       };
 
     } catch (error) {
       console.error("Error sending to N8N:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      setError(errorMessage);
       
       toast.error(`Failed to connect to webhook: ${errorMessage}`);
       
@@ -103,7 +109,9 @@ export const useN8nAgent = () => {
         success: false,
         error: errorMessage,
         content: [],
-        rawResponse: null
+        rawResponse: null,
+        title: "",
+        suggestions: []
       };
     } finally {
       setIsLoading(false);
@@ -116,6 +124,8 @@ export const useN8nAgent = () => {
     generatedContent,
     rawResponse,
     contentTitle,
+    suggestions,
+    error,
     setGeneratedContent,
     setContentTitle
   };

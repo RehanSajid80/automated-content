@@ -61,3 +61,22 @@ export const formatAIContentSuggestions = (data: any): any[] => {
     }];
   }
 };
+
+// Main processing function
+export const processAIResponse = (responseData: any): any[] => {
+  if (!responseData) return [];
+  
+  console.log("Processing AI response:", responseData);
+  
+  // Check if it's AI Content Suggestions format
+  if (isAIContentSuggestionsFormat(responseData)) {
+    return formatAIContentSuggestions(responseData);
+  }
+  
+  // Fallback for other formats
+  if (Array.isArray(responseData)) {
+    return responseData;
+  }
+  
+  return [responseData];
+};

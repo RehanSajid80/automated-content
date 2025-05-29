@@ -153,7 +153,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
           <Webhook className="h-5 w-5" />
           Webhook Integration
           <WebhookStatusBadge status={status} />
-          <Shield className="h-4 w-4 text-green-500" title="Securely stored in database" />
+          <Shield className="h-4 w-4 text-green-500" />
         </CardTitle>
         <CardDescription>
           Connect your content generation system to n8n.io workflows for automation.
