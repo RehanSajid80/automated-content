@@ -2,18 +2,16 @@ import React, { useEffect, useState } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { useEnhancedContentSuggestions } from "@/hooks/content-suggestions";
-import { EnhancedTopicSuggestionForm } from "./content-suggestions/EnhancedTopicSuggestionForm";
+import { StrategicContentForm } from "./content-suggestions/StrategicContentForm";
 import { StructuredContentSuggestions } from "./content-suggestions/StructuredContentSuggestions";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { Card } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ContentDebugger } from "./content-display/ContentDebugger";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DebugContentViewer } from "./content-display/debug/DebugContentViewer";
+import { FileText } from "lucide-react";
 
 interface EnhancedAISuggestionsTabProps {
   keywordData: KeywordData[];
@@ -26,38 +24,17 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
 }) => {
   const [forceRerender, setForceRerender] = useState(0);
   const [isForceProcessing, setIsForceProcessing] = useState(false);
-  const [debugMode, setDebugMode] = useState(true); // Show debug mode by default now
+  const [debugMode, setDebugMode] = useState(false);
   const [showContentDialog, setShowContentDialog] = useState(false);
-  
-  const { 
-    selectedKeywords,
-    topicArea,
-    setTopicArea,
-    localKeywords,
-    isN8nLoading,
-    isAISuggestionMode,
-    toggleKeywordSelection,
-    autoSelectTrendingKeywords,
-    updateKeywords,
-    handleAISuggestions,
-    selectedPersona,
-    setSelectedPersona,
-    selectedGoal,
-    setSelectedGoal,
-    customKeywords,
-    addCustomKeyword
-  } = useEnhancedContentSuggestions(keywordData);
   
   const { generatedContent, isLoading: isAgentLoading, rawResponse, setGeneratedContent } = useN8nAgent();
   
   // Debug logs to track content state
   useEffect(() => {
     console.log("EnhancedAISuggestionsTab - generatedContent:", generatedContent);
-    console.log("EnhancedAISuggestionsTab - isN8nLoading:", isN8nLoading);
     console.log("EnhancedAISuggestionsTab - isAgentLoading:", isAgentLoading);
-    console.log("EnhancedAISuggestionsTab - isAISuggestionMode:", isAISuggestionMode);
     console.log("EnhancedAISuggestionsTab - rawResponse:", rawResponse);
-  }, [generatedContent, isN8nLoading, isAgentLoading, isAISuggestionMode, rawResponse]);
+  }, [generatedContent, isAgentLoading, rawResponse]);
   
   // Auto-process raw response if present
   useEffect(() => {
@@ -186,7 +163,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     return contentArray.map(item => {
       // Initialize with default values
       const structuredItem: any = {
-        topicArea: item.topicArea || item.title || topicArea || "Content Suggestions",
+        topicArea: item.topicArea || item.title || "Content Suggestions",
         pillarContent: [],
         supportPages: [],
         metaTags: [],
@@ -252,7 +229,6 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
       
       // Process email series
       if (item.emailSeries) {
-        // Could be array of objects with subject/body or array of strings
         structuredItem.email = item.emailSeries;
       } else if (item.email) {
         structuredItem.email = Array.isArray(item.email) ? item.email : [item.email];
@@ -268,7 +244,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   // Always show debug mode if there's raw content but no processed content
   const shouldAlwaysShowDebug = rawResponse && (!generatedContent || generatedContent.length === 0);
   
-  // Force showing suggestions if content is available, regardless of isAISuggestionMode
+  // Force showing suggestions if content is available
   const hasContent = Boolean(
     (rawResponse && typeof rawResponse === 'object') || 
     (generatedContent && generatedContent.length > 0)
@@ -304,63 +280,33 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           description="Get targeted content suggestions based on personas and business goals"
         />
         
-        <div className="rounded-xl border border-border bg-card p-6 w-full max-w-full">
-          <div className="flex justify-end space-x-2 mb-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={openContentDialog}
-              className="flex items-center gap-1"
-            >
-              <FileText className="h-4 w-4" />
-              View Content in New Tab
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setDebugMode(!debugMode)}
-            >
-              {debugMode ? "Hide Debug Tools" : "Show Debug Tools"}
-            </Button>
-          </div>
+        <div className="space-y-6">
+          <StrategicContentForm />
           
-          <EnhancedTopicSuggestionForm
-            topicArea={topicArea}
-            setTopicArea={setTopicArea}
-            updateKeywords={updateKeywords}
-            localKeywords={localKeywords}
-            selectedKeywords={selectedKeywords}
-            toggleKeywordSelection={toggleKeywordSelection}
-            autoSelectTrendingKeywords={autoSelectTrendingKeywords}
-            isAISuggestionMode={isAISuggestionMode}
-            handleAISuggestions={handleAISuggestions}
-            isLoading={isN8nLoading || isAgentLoading || isForceProcessing}
-            selectedPersona={selectedPersona}
-            setSelectedPersona={setSelectedPersona}
-            selectedGoal={selectedGoal}
-            setSelectedGoal={setSelectedGoal}
-            customKeywords={customKeywords}
-            addCustomKeyword={addCustomKeyword}
-          />
-          
-          {/* Show when data is loading */}
-          {(isN8nLoading || isAgentLoading || isForceProcessing) && (
-            <div className="p-8 flex justify-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-                <p className="text-muted-foreground">Generating content suggestions...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Debug tool - always show initially to help users diagnose issues */}
-          {(debugMode || shouldAlwaysShowDebug) && !isN8nLoading && !isAgentLoading && !isForceProcessing && (
-            <Card className="mb-6 border-amber-500">
+          {(debugMode || shouldAlwaysShowDebug) && !isAgentLoading && !isForceProcessing && (
+            <Card className="border-amber-500">
               <div className="p-4">
-                <h3 className="text-lg font-medium mb-2">Debug Tools</h3>
-                <p className="text-sm mb-4">
-                  If your content isn't displaying correctly, try using these debug tools to process and display the raw response.
-                </p>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Debug Tools</h3>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={openContentDialog}
+                      className="flex items-center gap-1"
+                    >
+                      <FileText className="h-4 w-4" />
+                      View Content
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setDebugMode(!debugMode)}
+                    >
+                      {debugMode ? "Hide Debug" : "Show Debug"}
+                    </Button>
+                  </div>
+                </div>
                 
                 <ContentDebugger 
                   generatedContent={generatedContent}
@@ -371,41 +317,30 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             </Card>
           )}
           
-          {/* Always display the structured suggestions when content is available */}
-          {!isN8nLoading && !isAgentLoading && !isForceProcessing && hasContent && structuredSuggestions.length > 0 && (
+          {/* Show generated content when available */}
+          {!isAgentLoading && !isForceProcessing && hasContent && structuredSuggestions.length > 0 && (
             <StructuredContentSuggestions
               key={`suggestions-${forceRerender}`}
               suggestions={structuredSuggestions}
-              persona={selectedPersona}
-              goal={selectedGoal}
+              persona="strategic-marketing"
+              goal="content-suggestions"
               isLoading={false}
             />
           )}
           
-          {/* Show error message when no content is displayed */}
-          {!isN8nLoading && !isAgentLoading && !isForceProcessing && isAISuggestionMode && 
-           (!hasContent || structuredSuggestions.length === 0) && rawResponse && (
-            <Alert className="mt-6" variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Content Processing Issue</AlertTitle>
-              <AlertDescription className="space-y-2">
-                <p>Content was generated but couldn't be properly formatted for display. Use the debug tools above to see and process the raw response.</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2 flex items-center gap-2"
-                  onClick={handleForceRefresh}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Process Raw Response
-                </Button>
-              </AlertDescription>
-            </Alert>
+          {/* Show loading state */}
+          {(isAgentLoading || isForceProcessing) && (
+            <div className="p-8 flex justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+                <p className="text-muted-foreground">Generating strategic content suggestions...</p>
+              </div>
+            </div>
           )}
         </div>
       </div>
       
-      {/* Dialog for viewing content in a new "tab" */}
+      {/* Dialog for viewing content */}
       <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
         <DialogContent className="max-w-4xl w-full h-[80vh]">
           <DialogHeader>
