@@ -1,13 +1,14 @@
 
 import React, { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Webhook } from "lucide-react";
+import { Webhook, Shield } from "lucide-react";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
 import { toast } from "sonner";
 import { WebhookTypeSelector } from "./webhook/WebhookTypeSelector";
 import { WebhookUrlInput } from "./webhook/WebhookUrlInput";
 import { WebhookStatusBadge } from "./webhook/WebhookStatusBadge";
 import { WebhookActions } from "./webhook/WebhookActions";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WebhookConnectionProps {
   onSaveWebhook?: () => void;
@@ -18,7 +19,7 @@ interface WebhookConnectionProps {
 const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   onSaveWebhook,
   onWebhookTypeChange,
-  activeWebhookType = 'content' // Default to content for AI Content Suggestions
+  activeWebhookType = 'content'
 }) => {
   const { 
     getWebhookUrl, 
@@ -35,11 +36,32 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   const [customKeywordsWebhookUrl, setCustomKeywordsWebhookUrl] = React.useState("");
   const [contentAdjustmentWebhookUrl, setContentAdjustmentWebhookUrl] = React.useState("");
   const [status, setStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user);
+      if (session?.user) {
+        fetchWebhookUrls();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchWebhookUrls]);
+
   // Load webhook URLs on mount and when activeWebhookType changes
   useEffect(() => {
-    loadWebhookUrls();
-  }, [activeWebhookType]);
+    if (isAuthenticated) {
+      loadWebhookUrls();
+    }
+  }, [activeWebhookType, isAuthenticated]);
   
   const loadWebhookUrls = () => {
     const keywordWebhookUrl = getWebhookUrl();
@@ -65,6 +87,11 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   };
 
   const handleRefreshWebhooks = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to refresh webhook configurations");
+      return;
+    }
+    
     setStatus('checking');
     await fetchWebhookUrls();
     loadWebhookUrls();
@@ -72,21 +99,25 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   };
 
   const handleSaveWebhook = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to save webhook configuration");
+      return;
+    }
+
     setStatus('checking');
     
     if (activeWebhookType === 'keywords' && webhookUrl) {
-      await saveWebhookUrl(webhookUrl);
-      setStatus('connected');
+      const success = await saveWebhookUrl(webhookUrl, 'keywords');
+      setStatus(success ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'content' && contentWebhookUrl) {
-      await saveWebhookUrl(contentWebhookUrl, 'content');
-      setStatus('connected');
-      toast.success("AI Content Suggestions webhook configured successfully");
+      const success = await saveWebhookUrl(contentWebhookUrl, 'content');
+      setStatus(success ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'custom-keywords' && customKeywordsWebhookUrl) {
-      await saveWebhookUrl(customKeywordsWebhookUrl, 'custom-keywords');
-      setStatus('connected');
+      const success = await saveWebhookUrl(customKeywordsWebhookUrl, 'custom-keywords');
+      setStatus(success ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'content-adjustment' && contentAdjustmentWebhookUrl) {
-      await saveWebhookUrl(contentAdjustmentWebhookUrl, 'content-adjustment');
-      setStatus('connected');
+      const success = await saveWebhookUrl(contentAdjustmentWebhookUrl, 'content-adjustment');
+      setStatus(success ? 'connected' : 'disconnected');
     } else {
       toast.error("Please enter a valid webhook URL");
       setStatus('disconnected');
@@ -98,6 +129,23 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Webhook className="h-5 w-5" />
+            Webhook Integration
+            <Shield className="h-4 w-4 text-amber-500" />
+          </CardTitle>
+          <CardDescription>
+            Please sign in to configure your webhook integrations. Each user has their own secure webhook configurations.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -105,9 +153,11 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
           <Webhook className="h-5 w-5" />
           Webhook Integration
           <WebhookStatusBadge status={status} />
+          <Shield className="h-4 w-4 text-green-500" title="Securely stored in database" />
         </CardTitle>
         <CardDescription>
           Connect your content generation system to n8n.io workflows for automation.
+          Your webhook configurations are securely stored and isolated per user.
           {activeWebhookType === 'content' && " Configure the AI Content Suggestions webhook here."}
         </CardDescription>
       </CardHeader>

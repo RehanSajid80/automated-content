@@ -1,62 +1,54 @@
 
-/**
- * Utility for resolving the correct webhook URL based on request type
- */
+import { supabase } from "@/integrations/supabase/client";
 
-interface WebhookUrls {
-  getWebhookUrl: () => string;
-  getContentWebhookUrl: () => string;
-  getCustomKeywordsWebhookUrl: () => string;
-  getContentAdjustmentWebhookUrl: () => string;
-}
-
-export const resolveWebhookUrl = (
-  payload: any,
-  webhookUrls: WebhookUrls,
-  webhookOption?: boolean | string,
-  customWebhookUrl?: string
-): string => {
-  // Determine which webhook to use based on request type or explicit option
-  let webhookUrl = '';
-  
-  console.log("Resolving webhook URL for payload:", payload);
-  console.log("Webhook option:", webhookOption);
-  console.log("Custom webhook URL:", customWebhookUrl);
-  
-  if (customWebhookUrl) {
-    webhookUrl = customWebhookUrl;
-    console.log("Using custom webhook URL:", webhookUrl);
-  } else if (payload.requestType === 'customKeywords') {
-    webhookUrl = webhookUrls.getCustomKeywordsWebhookUrl();
-    console.log("Using custom keywords webhook:", webhookUrl);
-  } else if (payload.requestType === 'contentSuggestions') {
-    // Always use content webhook for AI content suggestions
-    webhookUrl = webhookUrls.getContentWebhookUrl();
-    console.log("Using content webhook for content suggestions:", webhookUrl);
-  } else if (payload.requestType === 'contentAdjustment') {
-    webhookUrl = webhookUrls.getContentAdjustmentWebhookUrl();
-    console.log("Using content adjustment webhook:", webhookUrl);
-  } else if (typeof webhookOption === 'string') {
-    // Use specific webhook type
-    if (webhookOption === 'content') {
-      webhookUrl = webhookUrls.getContentWebhookUrl();
-      console.log("Using content webhook via option:", webhookUrl);
-    } else if (webhookOption === 'custom-keywords') {
-      webhookUrl = webhookUrls.getCustomKeywordsWebhookUrl();
-      console.log("Using custom keywords webhook via option:", webhookUrl);
-    } else if (webhookOption === 'content-adjustment') {
-      webhookUrl = webhookUrls.getContentAdjustmentWebhookUrl();
-      console.log("Using content adjustment webhook via option:", webhookUrl);
-    } else {
-      webhookUrl = webhookUrls.getWebhookUrl();
-      console.log("Using default keywords webhook via option:", webhookUrl);
+export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment'): Promise<string> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.warn("No authenticated user found, using fallback webhook");
+      return 'https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords';
     }
-  } else {
-    // Default to keyword webhook
-    webhookUrl = webhookUrls.getWebhookUrl();
-    console.log("Using default keywords webhook:", webhookUrl);
+
+    // Default to 'content' if no type specified
+    const targetType = webhookType || 'content';
+
+    const { data: webhookConfig, error } = await supabase
+      .from('webhook_configs')
+      .select('webhook_url')
+      .eq('user_id', user.id)
+      .eq('webhook_type', targetType)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.error(`Error fetching ${targetType} webhook:`, error);
+      return getFallbackWebhook(targetType);
+    }
+
+    if (webhookConfig?.webhook_url) {
+      console.log(`Using user's ${targetType} webhook:`, webhookConfig.webhook_url);
+      return webhookConfig.webhook_url;
+    }
+
+    console.warn(`No ${targetType} webhook found for user, using fallback`);
+    return getFallbackWebhook(targetType);
+
+  } catch (error) {
+    console.error("Error resolving webhook URL:", error);
+    return getFallbackWebhook(webhookType || 'content');
   }
-  
-  console.log("Final resolved webhook URL:", webhookUrl);
-  return webhookUrl;
+};
+
+const getFallbackWebhook = (type: string): string => {
+  switch (type) {
+    case 'content':
+      return 'https://officespacesoftware.app.n8n.cloud/webhook/AI-Content-Suggestions';
+    case 'custom-keywords':
+      return 'https://officespacesoftware.app.n8n.cloud/webhook/custom-keywords';
+    case 'content-adjustment':
+      return 'https://officespacesoftware.app.n8n.cloud/webhook/content-adjustment';
+    case 'keywords':
+    default:
+      return 'https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords';
+  }
 };

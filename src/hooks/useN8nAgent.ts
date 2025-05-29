@@ -1,191 +1,121 @@
-import { useState } from 'react';
+
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { useN8nConfig } from './useN8nConfig';
-import { useN8nResponseProcessor } from './useN8nResponseProcessor';
-import { isAIContentSuggestionsFormat, formatAIContentSuggestions } from './useN8nAgent/aiContentFormatUtils';
-import { resolveWebhookUrl } from './useN8nAgent/webhookUrlResolver';
-import { N8nAgentPayload, N8nAgentResponse, N8nAgentState } from './useN8nAgent/types';
+import { resolveWebhookUrl } from "./useN8nAgent/webhookUrlResolver";
+import { processAIResponse } from "./useN8nAgent/aiContentFormatUtils";
+import { N8nAgentResponse, WebhookPayload } from "./useN8nAgent/types";
 
 export const useN8nAgent = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [generatedContent, setGeneratedContent] = useState<any[]>([]);
-  const [contentTitle, setContentTitle] = useState<string>('');
   const [rawResponse, setRawResponse] = useState<any>(null);
-  
-  const { 
-    getWebhookUrl, 
-    getContentWebhookUrl, 
-    getCustomKeywordsWebhookUrl,
-    getContentAdjustmentWebhookUrl 
-  } = useN8nConfig();
-  const { processResponse } = useN8nResponseProcessor();
+  const [contentTitle, setContentTitle] = useState<string>("");
 
-  const sendToN8n = async (
-    payload: N8nAgentPayload, 
-    webhookOption?: boolean | string,
-    customWebhookUrl?: string
+  // Auto-load content from localStorage on mount
+  useEffect(() => {
+    const savedContent = localStorage.getItem('n8n-generated-content');
+    const savedTitle = localStorage.getItem('n8n-content-title');
+    
+    if (savedContent) {
+      try {
+        const parsedContent = JSON.parse(savedContent);
+        setGeneratedContent(parsedContent);
+      } catch (error) {
+        console.error("Error parsing saved content:", error);
+      }
+    }
+    
+    if (savedTitle) {
+      setContentTitle(savedTitle);
+    }
+  }, []);
+
+  const sendToN8n = useCallback(async (
+    payload: WebhookPayload | { customPayload?: any },
+    webhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' | boolean
   ): Promise<N8nAgentResponse> => {
     setIsLoading(true);
-    setError(null);
-    setRawResponse(null);
     
     try {
-      const webhookUrl = resolveWebhookUrl(
-        payload, 
-        {
-          getWebhookUrl,
-          getContentWebhookUrl,
-          getCustomKeywordsWebhookUrl,
-          getContentAdjustmentWebhookUrl
-        },
-        webhookOption, 
-        customWebhookUrl
-      );
+      // Resolve webhook type
+      let resolvedWebhookType: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'content';
       
-      if (!webhookUrl) {
-        throw new Error("No webhook URL configured. Please check API connections settings.");
+      if (typeof webhookType === 'string') {
+        resolvedWebhookType = webhookType;
+      } else if (webhookType === true) {
+        resolvedWebhookType = 'content';
       }
 
-      console.log(`Using webhook URL for ${payload.requestType || 'default'}:`, webhookUrl);
+      // Get the appropriate webhook URL from Supabase
+      const webhookUrl = await resolveWebhookUrl(resolvedWebhookType);
       
-      const defaultUrl = "https://www.officespacesoftware.com";
-      const targetUrl = payload.targetUrl || defaultUrl;
-      
-      // If customPayload is provided, use that directly
-      const finalPayload = payload.customPayload ? 
-        payload.customPayload : 
-        {
-          ...payload,
-          targetUrl,
-          url: targetUrl
-        };
-      
-      console.log("Sending data to webhook:", finalPayload);
-      
-      const controller = new AbortController();
-      // Increase timeout to 180 seconds (3 minutes)
-      const timeoutId = setTimeout(() => controller.abort(), 180000);
-      
-      try {
-        // This is the actual HTTP request sent to the webhook
-        const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...finalPayload,
-            source: "lovable",
-            timestamp: new Date().toISOString()
-          }),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          const responseText = await response.text();
-          console.log("Error response text:", responseText);
-          throw new Error(`HTTP error! status: ${response.status}. ${responseText || ''}`);
-        }
-        
-        const responseText = await response.text();
-        console.log("Raw webhook response:", responseText);
-        
-        // Store the raw response for debugging
-        try {
-          // Try to parse as JSON first
-          const jsonResponse = JSON.parse(responseText);
-          setRawResponse(jsonResponse);
-          console.log("Parsed JSON response:", jsonResponse);
-          
-          // Direct handling for AI Content Suggestions format
-          if (isAIContentSuggestionsFormat(jsonResponse)) {
-            console.log("Detected AI Content Suggestions format directly");
-            const formattedContent = formatAIContentSuggestions(jsonResponse);
-            setGeneratedContent(formattedContent);
-            toast.success("Content Generated", {
-              description: "Successfully received AI content suggestions"
-            });
-            
-            return {
-              suggestions: [],
-              content: formattedContent,
-              title: Array.isArray(jsonResponse) && jsonResponse[0]?.title || '',
-              rawResponse: jsonResponse
-            };
-          }
-        } catch (e) {
-          // If it's not valid JSON, store as string
-          console.log("Response is not valid JSON, storing as string");
-          setRawResponse(responseText);
-        }
-        
-        // Process the response using the standard processor
-        const result = processResponse(responseText);
-        console.log("Processed response result:", result);
-        
-        // Update state with processed results
-        if (result.content && result.content.length > 0) {
-          setGeneratedContent(result.content);
-          
-          toast.success("Content Generated", {
-            description: "Successfully received content from webhook"
-          });
-        } else {
-          // If no content was processed, show an error
-          console.log("No content processed from response");
-          toast.error("Processing Error", {
-            description: "Received a response but couldn't extract content"
-          });
-        }
-        
-        if (result.suggestions && result.suggestions.length > 0) {
-          setSuggestions(result.suggestions);
-        }
-        
-        if (result.title) {
-          setContentTitle(result.title);
-        }
-        
-        return {
-          suggestions: result.suggestions || [],
-          content: result.content || [],
-          title: result.title || '',
-          rawResponse: responseText
-        };
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId);
-        
-        if (fetchError.name === 'AbortError') {
-          throw new Error('Webhook request timed out after 180 seconds');
-        }
-        
-        throw fetchError;
-      }
-    } catch (err: any) {
-      const errorMessage = err.message || "Failed to communicate with n8n webhook";
-      setError(errorMessage);
-      console.error("N8n webhook error:", err);
-      
-      toast.error("Webhook Error", {
-        description: errorMessage
+      console.log(`Sending to ${resolvedWebhookType} webhook:`, webhookUrl);
+      console.log("Payload:", payload);
+
+      const requestPayload = 'customPayload' in payload ? payload.customPayload : payload;
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestPayload),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      console.log("N8N Response:", responseData);
+
+      // Store raw response
+      setRawResponse(responseData);
+
+      // Process the response for content generation
+      const processedContent = processAIResponse(responseData);
       
-      return { suggestions: [], content: [], title: '', error: errorMessage };
+      if (processedContent && processedContent.length > 0) {
+        setGeneratedContent(processedContent);
+        // Save to localStorage for persistence
+        localStorage.setItem('n8n-generated-content', JSON.stringify(processedContent));
+        
+        // Extract and save title if available
+        const title = processedContent[0]?.title || `Generated content - ${new Date().toLocaleDateString()}`;
+        setContentTitle(title);
+        localStorage.setItem('n8n-content-title', title);
+      }
+
+      return {
+        success: true,
+        content: processedContent,
+        rawResponse: responseData,
+        title: contentTitle
+      };
+
+    } catch (error) {
+      console.error("Error sending to N8N:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      
+      toast.error(`Failed to connect to webhook: ${errorMessage}`);
+      
+      return {
+        success: false,
+        error: errorMessage,
+        content: [],
+        rawResponse: null
+      };
     } finally {
       setIsLoading(false);
     }
-  };
-  
+  }, [contentTitle]);
+
   return {
-    isLoading,
-    error,
-    suggestions,
-    generatedContent,
-    contentTitle,
-    rawResponse,
     sendToN8n,
+    isLoading,
+    generatedContent,
+    rawResponse,
+    contentTitle,
     setGeneratedContent,
     setContentTitle
   };
