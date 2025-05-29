@@ -7,6 +7,7 @@ import { CustomKeywordsInput } from "./CustomKeywordsInput";
 import { MarketingPersonaSelector } from "./MarketingPersonaSelector";
 import { MarketingContentGoalSelector } from "./MarketingContentGoalSelector";
 import { ContextInput } from "./ContextInput";
+import { FileUploadInput } from "./FileUploadInput";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
 import { Loader2, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ export const StrategicContentForm: React.FC = () => {
   const [targetPersona, setTargetPersona] = useState("");
   const [contentGoal, setContentGoal] = useState("");
   const [context, setContext] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const { sendToN8n, isLoading } = useN8nAgent();
 
@@ -30,12 +32,43 @@ export const StrategicContentForm: React.FC = () => {
     try {
       console.log("Generating strategic content suggestions...");
 
+      let fileContent = null;
+      
+      // Process file if uploaded
+      if (selectedFile) {
+        try {
+          if (selectedFile.type === 'application/pdf') {
+            // For PDF files, we'll send file info but note that full text extraction 
+            // would require additional libraries
+            fileContent = {
+              fileName: selectedFile.name,
+              fileType: selectedFile.type,
+              fileSize: selectedFile.size,
+              note: "PDF file uploaded - content extraction may be limited"
+            };
+          } else {
+            // For text-based files, read the content
+            const text = await selectedFile.text();
+            fileContent = {
+              fileName: selectedFile.name,
+              fileType: selectedFile.type,
+              fileSize: selectedFile.size,
+              content: text
+            };
+          }
+        } catch (error) {
+          console.error("Error reading file:", error);
+          toast.error("Error reading uploaded file. Proceeding without file content.");
+        }
+      }
+
       const payload = {
         topicArea,
         customKeywords,
         targetPersona,
         contentGoal,
         context,
+        referenceDocument: fileContent,
         requestType: "contentSuggestions" as const
       };
 
@@ -97,6 +130,11 @@ export const StrategicContentForm: React.FC = () => {
         <ContextInput
           value={context}
           onChange={setContext}
+          disabled={isLoading}
+        />
+
+        <FileUploadInput
+          onFileSelect={setSelectedFile}
           disabled={isLoading}
         />
 
