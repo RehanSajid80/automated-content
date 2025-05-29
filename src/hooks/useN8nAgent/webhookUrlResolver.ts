@@ -3,34 +3,50 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment'): Promise<string> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.warn("No authenticated user found, using fallback webhook");
-      return 'https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords';
-    }
-
     // Default to 'content' if no type specified
     const targetType = webhookType || 'content';
 
-    const { data: webhookConfig, error } = await supabase
+    // First, try to get admin-controlled webhook (available to all users)
+    const { data: adminWebhook, error: adminError } = await supabase
       .from('webhook_configs')
       .select('url')
-      .eq('user_id', user.id)
       .eq('type', targetType)
+      .eq('admin_controlled', true)
       .eq('is_active', true)
       .maybeSingle();
 
-    if (error) {
-      console.error(`Error fetching ${targetType} webhook:`, error);
-      return getFallbackWebhook(targetType);
+    if (adminError) {
+      console.error(`Error fetching admin ${targetType} webhook:`, adminError);
     }
 
-    if (webhookConfig?.url) {
-      console.log(`Using user's ${targetType} webhook:`, webhookConfig.url);
-      return webhookConfig.url;
+    if (adminWebhook?.url) {
+      console.log(`Using admin-controlled ${targetType} webhook:`, adminWebhook.url);
+      return adminWebhook.url;
     }
 
-    console.warn(`No ${targetType} webhook found for user, using fallback`);
+    // If no admin webhook, try to get user's personal webhook
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: userWebhook, error: userError } = await supabase
+        .from('webhook_configs')
+        .select('url')
+        .eq('user_id', user.id)
+        .eq('type', targetType)
+        .eq('admin_controlled', false)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (userError) {
+        console.error(`Error fetching user ${targetType} webhook:`, userError);
+      }
+
+      if (userWebhook?.url) {
+        console.log(`Using user's ${targetType} webhook:`, userWebhook.url);
+        return userWebhook.url;
+      }
+    }
+
+    console.warn(`No ${targetType} webhook found, using fallback`);
     return getFallbackWebhook(targetType);
 
   } catch (error) {

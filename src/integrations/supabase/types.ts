@@ -172,28 +172,34 @@ export type Database = {
       }
       webhook_configs: {
         Row: {
+          admin_controlled: boolean
           created_at: string | null
           id: string
           is_active: boolean | null
           type: string
           updated_at: string | null
           url: string
+          user_id: string | null
         }
         Insert: {
+          admin_controlled?: boolean
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           type: string
           updated_at?: string | null
           url: string
+          user_id?: string | null
         }
         Update: {
+          admin_controlled?: boolean
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           type?: string
           updated_at?: string | null
           url?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -202,7 +208,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
