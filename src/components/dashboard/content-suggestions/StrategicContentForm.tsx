@@ -74,6 +74,7 @@ export const StrategicContentForm: React.FC = () => {
 
       console.log("Sending payload to AI Content Suggestions webhook:", payload);
 
+      // Explicitly use the content webhook by passing 'content' as the webhook option
       await sendToN8n(payload, 'content');
 
       toast.success("Content suggestions generated successfully!");
