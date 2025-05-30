@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Crown, Settings } from "lucide-react";
+import { Crown, Settings, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -13,6 +13,7 @@ const AdminSettings = () => {
   const [adminDomain, setAdminDomain] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [generatedSQL, setGeneratedSQL] = useState("");
 
   useEffect(() => {
     checkAdminStatus();
@@ -32,35 +33,35 @@ const AdminSettings = () => {
     }
   };
 
-  const updateAdminDomain = async () => {
+  const generateAdminSQL = () => {
     if (!adminDomain) {
       toast.error("Please enter a valid email domain");
       return;
     }
 
-    setIsLoading(true);
+    const sql = `CREATE OR REPLACE FUNCTION public.is_admin(user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM auth.users 
+    WHERE id = user_id 
+    AND email LIKE '%@${adminDomain}'
+  );
+$$;`;
+
+    setGeneratedSQL(sql);
+    toast.success("SQL generated! Copy and run it in the SQL Editor.");
+  };
+
+  const copyToClipboard = async () => {
     try {
-      // Update the is_admin function with the new domain
-      const { error } = await supabase.rpc('update_admin_domain', {
-        new_domain: `%@${adminDomain}`
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success("Admin domain updated successfully");
-      
-      // Re-check admin status after update
-      setTimeout(() => {
-        checkAdminStatus();
-      }, 1000);
-
+      await navigator.clipboard.writeText(generatedSQL);
+      toast.success("SQL copied to clipboard!");
     } catch (error) {
-      console.error("Error updating admin domain:", error);
-      toast.error("Failed to update admin domain. Please try using the SQL Editor.");
-    } finally {
-      setIsLoading(false);
+      toast.error("Failed to copy to clipboard");
     }
   };
 
@@ -99,10 +100,10 @@ const AdminSettings = () => {
               />
             </div>
             <Button 
-              onClick={updateAdminDomain} 
+              onClick={generateAdminSQL} 
               disabled={isLoading || !adminDomain}
             >
-              {isLoading ? "Updating..." : "Update"}
+              Generate SQL
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -110,10 +111,31 @@ const AdminSettings = () => {
           </p>
         </div>
 
+        {generatedSQL && (
+          <div className="space-y-2">
+            <Label>Generated SQL (Run this in the SQL Editor)</Label>
+            <div className="relative">
+              <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto whitespace-pre-wrap">
+                {generatedSQL}
+              </pre>
+              <Button
+                onClick={copyToClipboard}
+                size="sm"
+                variant="outline"
+                className="absolute top-2 right-2"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Copy this SQL and run it in the Supabase SQL Editor to update the admin domain.
+            </p>
+          </div>
+        )}
+
         <Alert>
           <AlertDescription>
-            <strong>Alternative Setup:</strong> You can also manually configure admin access using the SQL Editor.
-            Replace the domain in the <code>is_admin</code> function or add specific email addresses.
+            <strong>Next Steps:</strong> After running the SQL in the editor, refresh this page to see your admin status update.
           </AlertDescription>
         </Alert>
       </CardContent>
