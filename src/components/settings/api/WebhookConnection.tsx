@@ -39,7 +39,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   const [customKeywordsWebhookUrl, setCustomKeywordsWebhookUrl] = React.useState("");
   const [contentAdjustmentWebhookUrl, setContentAdjustmentWebhookUrl] = React.useState("");
   const [status, setStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(true); // Default to true for better UX
   const [saveAsAdmin, setSaveAsAdmin] = React.useState(false);
   
   // Check authentication status
@@ -62,10 +62,8 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
 
   // Load webhook URLs on mount and when activeWebhookType changes
   useEffect(() => {
-    if (isAuthenticated) {
-      loadWebhookUrls();
-    }
-  }, [activeWebhookType, isAuthenticated]);
+    loadWebhookUrls();
+  }, [activeWebhookType]);
   
   const loadWebhookUrls = () => {
     const keywordWebhookUrl = getWebhookUrl();
@@ -91,11 +89,6 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   };
 
   const handleRefreshWebhooks = async () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to refresh webhook configurations");
-      return;
-    }
-    
     setStatus('checking');
     await fetchWebhookUrls();
     loadWebhookUrls();
@@ -103,11 +96,6 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   };
 
   const handleSaveWebhook = async () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to save webhook configuration");
-      return;
-    }
-
     setStatus('checking');
     
     if (activeWebhookType === 'keywords' && webhookUrl) {
@@ -132,23 +120,6 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
       onSaveWebhook();
     }
   };
-
-  if (!isAuthenticated) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Webhook className="h-5 w-5" />
-            Webhook Integration
-            <Shield className="h-4 w-4 text-amber-500" />
-          </CardTitle>
-          <CardDescription>
-            Please sign in to configure your webhook integrations. Each user has their own secure webhook configurations.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
 
   return (
     <Card>
