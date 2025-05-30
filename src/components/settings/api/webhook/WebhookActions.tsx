@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Globe, RefreshCw } from "lucide-react";
+import { Globe, RefreshCw, Save } from "lucide-react";
 
 interface WebhookActionsProps {
   onSave: () => void;
@@ -23,8 +23,8 @@ export const WebhookActions: React.FC<WebhookActionsProps> = ({
         className="w-full sm:w-auto" 
         disabled={isLoading}
       >
-        <Globe className="mr-2 h-4 w-4" />
-        Save Webhook URL
+        <Save className="mr-2 h-4 w-4" />
+        Save Global Webhook
       </Button>
       <Button 
         onClick={onRefresh} 

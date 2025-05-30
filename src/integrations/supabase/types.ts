@@ -176,6 +176,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_global: boolean | null
           type: string
           updated_at: string | null
           url: string
@@ -186,6 +187,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
           type: string
           updated_at?: string | null
           url: string
@@ -196,6 +198,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
           type?: string
           updated_at?: string | null
           url?: string

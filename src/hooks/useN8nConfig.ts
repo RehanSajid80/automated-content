@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -40,34 +41,18 @@ export const useN8nConfig = () => {
   const fetchWebhookUrls = async () => {
     setIsLoading(true);
     try {
-      // Fetch admin-controlled webhooks (everyone can see these)
-      const { data: adminWebhooks, error: adminError } = await supabase
+      // Fetch global webhooks (available to everyone)
+      const { data: globalWebhooks, error } = await supabase
         .from('webhook_configs')
         .select('type, url')
-        .eq('admin_controlled', true)
+        .eq('is_global', true)
         .eq('is_active', true);
 
-      if (adminError) {
-        console.error("Error fetching admin webhook configs:", adminError);
-      }
-
-      // Fetch user's personal webhooks
-      const { data: { user } } = await supabase.auth.getUser();
-      let userWebhooks: any[] = [];
-      
-      if (user) {
-        const { data, error: userError } = await supabase
-          .from('webhook_configs')
-          .select('type, url')
-          .eq('user_id', user.id)
-          .eq('admin_controlled', false)
-          .eq('is_active', true);
-
-        if (userError) {
-          console.error("Error fetching user webhook configs:", userError);
-        } else {
-          userWebhooks = data || [];
-        }
+      if (error) {
+        console.error("Error fetching global webhook configs:", error);
+        // Fallback to localStorage if database fetch fails
+        loadFromLocalStorage();
+        return;
       }
 
       const webhookMap = {
@@ -77,33 +62,44 @@ export const useN8nConfig = () => {
         contentAdjustmentWebhook: ''
       };
 
-      // Prioritize admin webhooks, fallback to user webhooks
-      const allWebhooks = [...(adminWebhooks || []), ...userWebhooks];
-      
-      allWebhooks.forEach(config => {
+      globalWebhooks?.forEach(config => {
         switch (config.type) {
           case 'keywords':
-            if (!webhookMap.keywordWebhook) webhookMap.keywordWebhook = config.url;
+            webhookMap.keywordWebhook = config.url;
             break;
           case 'content':
-            if (!webhookMap.contentWebhook) webhookMap.contentWebhook = config.url;
+            webhookMap.contentWebhook = config.url;
             break;
           case 'custom-keywords':
-            if (!webhookMap.customKeywordsWebhook) webhookMap.customKeywordsWebhook = config.url;
+            webhookMap.customKeywordsWebhook = config.url;
             break;
           case 'content-adjustment':
-            if (!webhookMap.contentAdjustmentWebhook) webhookMap.contentAdjustmentWebhook = config.url;
+            webhookMap.contentAdjustmentWebhook = config.url;
             break;
         }
       });
 
       setWebhooks(webhookMap);
       
+      // Also save to localStorage for offline access
+      localStorage.setItem('webhook-configs', JSON.stringify(webhookMap));
+      
     } catch (error) {
       console.error("Error fetching webhook URLs:", error);
-      toast.error("Failed to load webhook configurations");
+      loadFromLocalStorage();
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadFromLocalStorage = () => {
+    try {
+      const saved = localStorage.getItem('webhook-configs');
+      if (saved) {
+        setWebhooks(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error("Error loading from localStorage:", error);
     }
   };
 
@@ -126,36 +122,19 @@ export const useN8nConfig = () => {
   const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'keywords', asAdmin = false) => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Please sign in to save webhook configuration");
-        setIsLoading(false);
-        return false;
-      }
-
-      // If saving as admin, check admin status
-      if (asAdmin && !isAdmin) {
-        toast.error("Admin privileges required to save admin-controlled webhooks");
-        setIsLoading(false);
-        return false;
-      }
-
       const webhookData = {
-        user_id: asAdmin ? null : user.id,
         type: type,
         url: url,
-        name: `${type.charAt(0).toUpperCase() + type.slice(1)} Webhook`,
+        is_global: true,
         is_active: true,
-        admin_controlled: asAdmin
+        admin_controlled: false // Since we're allowing anonymous access
       };
-
-      // For admin webhooks, use a different conflict resolution
-      const conflictColumns = asAdmin ? 'type, admin_controlled' : 'user_id, type, admin_controlled';
 
       const { error } = await supabase
         .from('webhook_configs')
         .upsert(webhookData, {
-          onConflict: conflictColumns
+          onConflict: 'type',
+          ignoreDuplicates: false
         });
 
       if (error) {
@@ -181,11 +160,13 @@ export const useN8nConfig = () => {
             updated.contentAdjustmentWebhook = url;
             break;
         }
+        
+        // Save to localStorage as backup
+        localStorage.setItem('webhook-configs', JSON.stringify(updated));
         return updated;
       });
 
-      const webhookScope = asAdmin ? "Admin" : "User";
-      toast.success(`${webhookScope} ${type.charAt(0).toUpperCase() + type.slice(1)} webhook saved successfully`);
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} webhook saved successfully`);
       return true;
     } catch (error) {
       console.error("Error saving webhook URL:", error);

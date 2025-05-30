@@ -6,44 +6,37 @@ export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | '
     // Default to 'content' if no type specified
     const targetType = webhookType || 'content';
 
-    // First, try to get admin-controlled webhook (available to all users)
-    const { data: adminWebhook, error: adminError } = await supabase
+    // Try to get global webhook from database first
+    const { data: globalWebhook, error } = await supabase
       .from('webhook_configs')
       .select('url')
       .eq('type', targetType)
-      .eq('admin_controlled', true)
+      .eq('is_global', true)
       .eq('is_active', true)
       .maybeSingle();
 
-    if (adminError) {
-      console.error(`Error fetching admin ${targetType} webhook:`, adminError);
+    if (error) {
+      console.error(`Error fetching global ${targetType} webhook:`, error);
     }
 
-    if (adminWebhook?.url) {
-      console.log(`Using admin-controlled ${targetType} webhook:`, adminWebhook.url);
-      return adminWebhook.url;
+    if (globalWebhook?.url) {
+      console.log(`Using global ${targetType} webhook:`, globalWebhook.url);
+      return globalWebhook.url;
     }
 
-    // If no admin webhook, try to get user's personal webhook
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: userWebhook, error: userError } = await supabase
-        .from('webhook_configs')
-        .select('url')
-        .eq('user_id', user.id)
-        .eq('type', targetType)
-        .eq('admin_controlled', false)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (userError) {
-        console.error(`Error fetching user ${targetType} webhook:`, userError);
+    // Fallback to localStorage if database is unavailable
+    try {
+      const saved = localStorage.getItem('webhook-configs');
+      if (saved) {
+        const webhooks = JSON.parse(saved);
+        const urlKey = getUrlKey(targetType);
+        if (webhooks[urlKey]) {
+          console.log(`Using localStorage ${targetType} webhook:`, webhooks[urlKey]);
+          return webhooks[urlKey];
+        }
       }
-
-      if (userWebhook?.url) {
-        console.log(`Using user's ${targetType} webhook:`, userWebhook.url);
-        return userWebhook.url;
-      }
+    } catch (localStorageError) {
+      console.error("Error reading from localStorage:", localStorageError);
     }
 
     console.warn(`No ${targetType} webhook found, using fallback`);
@@ -52,6 +45,20 @@ export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | '
   } catch (error) {
     console.error("Error resolving webhook URL:", error);
     return getFallbackWebhook(webhookType || 'content');
+  }
+};
+
+const getUrlKey = (type: string): string => {
+  switch (type) {
+    case 'content':
+      return 'contentWebhook';
+    case 'custom-keywords':
+      return 'customKeywordsWebhook';
+    case 'content-adjustment':
+      return 'contentAdjustmentWebhook';
+    case 'keywords':
+    default:
+      return 'keywordWebhook';
   }
 };
 

@@ -1,16 +1,14 @@
 
 import React, { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Webhook, Shield, Crown } from "lucide-react";
+import { Webhook, Shield, Crown, Globe } from "lucide-react";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
 import { toast } from "sonner";
 import { WebhookTypeSelector } from "./webhook/WebhookTypeSelector";
 import { WebhookUrlInput } from "./webhook/WebhookUrlInput";
 import { WebhookStatusBadge } from "./webhook/WebhookStatusBadge";
 import { WebhookActions } from "./webhook/WebhookActions";
-import { supabase } from "@/integrations/supabase/client";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface WebhookConnectionProps {
   onSaveWebhook?: () => void;
@@ -39,26 +37,6 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   const [customKeywordsWebhookUrl, setCustomKeywordsWebhookUrl] = React.useState("");
   const [contentAdjustmentWebhookUrl, setContentAdjustmentWebhookUrl] = React.useState("");
   const [status, setStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
-  const [isAuthenticated, setIsAuthenticated] = React.useState(true); // Default to true for better UX
-  const [saveAsAdmin, setSaveAsAdmin] = React.useState(false);
-  
-  // Check authentication status
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
-    };
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session?.user);
-      if (session?.user) {
-        fetchWebhookUrls();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchWebhookUrls]);
 
   // Load webhook URLs on mount and when activeWebhookType changes
   useEffect(() => {
@@ -99,16 +77,16 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
     setStatus('checking');
     
     if (activeWebhookType === 'keywords' && webhookUrl) {
-      const success = await saveWebhookUrl(webhookUrl, 'keywords', saveAsAdmin);
+      const success = await saveWebhookUrl(webhookUrl, 'keywords');
       setStatus(success ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'content' && contentWebhookUrl) {
-      const success = await saveWebhookUrl(contentWebhookUrl, 'content', saveAsAdmin);
+      const success = await saveWebhookUrl(contentWebhookUrl, 'content');
       setStatus(success ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'custom-keywords' && customKeywordsWebhookUrl) {
-      const success = await saveWebhookUrl(customKeywordsWebhookUrl, 'custom-keywords', saveAsAdmin);
+      const success = await saveWebhookUrl(customKeywordsWebhookUrl, 'custom-keywords');
       setStatus(success ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'content-adjustment' && contentAdjustmentWebhookUrl) {
-      const success = await saveWebhookUrl(contentAdjustmentWebhookUrl, 'content-adjustment', saveAsAdmin);
+      const success = await saveWebhookUrl(contentAdjustmentWebhookUrl, 'content-adjustment');
       setStatus(success ? 'connected' : 'disconnected');
     } else {
       toast.error("Please enter a valid webhook URL");
@@ -126,37 +104,30 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Webhook className="h-5 w-5" />
-          Webhook Integration
+          Global Webhook Integration
           <WebhookStatusBadge status={status} />
-          <Shield className="h-4 w-4 text-green-500" />
+          <Globe className="h-4 w-4 text-blue-500" />
           {isAdmin && <Crown className="h-4 w-4 text-yellow-500" />}
         </CardTitle>
         <CardDescription>
-          Connect your content generation system to n8n.io workflows for automation.
-          {isAdmin && " As an admin, you can configure webhooks for all users."}
+          Configure global webhook integrations for n8n.io workflows. These settings are shared across all users of the application.
           {activeWebhookType === 'content' && " Configure the AI Content Suggestions webhook here."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Alert>
+          <Globe className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Global Configuration:</strong> Webhook URLs saved here will be used by all users of this application. 
+            Changes are automatically synchronized across all browser sessions.
+          </AlertDescription>
+        </Alert>
+
         {onWebhookTypeChange && (
           <WebhookTypeSelector 
             activeWebhookType={activeWebhookType} 
             onWebhookTypeChange={onWebhookTypeChange} 
           />
-        )}
-
-        {isAdmin && (
-          <div className="flex items-center space-x-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-            <Crown className="h-4 w-4 text-yellow-600" />
-            <Switch
-              id="admin-mode"
-              checked={saveAsAdmin}
-              onCheckedChange={setSaveAsAdmin}
-            />
-            <Label htmlFor="admin-mode" className="text-sm font-medium text-yellow-800">
-              Save as admin-controlled webhook (available to all users)
-            </Label>
-          </div>
         )}
 
         {activeWebhookType === 'content' ? (
