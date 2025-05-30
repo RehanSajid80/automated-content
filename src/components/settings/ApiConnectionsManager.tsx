@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import ApiUsageMetrics from "./ApiUsageMetrics";
@@ -8,6 +7,7 @@ import ConnectionHeader from "./api/ConnectionHeader";
 import OpenAIConnection from "./api/OpenAIConnection";
 import WebhookConnection from "./api/WebhookConnection";
 import SemrushConnection from "./api/SemrushConnection";
+import AdminSettings from "./api/AdminSettings";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
 
 const ApiConnectionsManager = () => {
@@ -20,7 +20,7 @@ const ApiConnectionsManager = () => {
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   const { toast } = useToast();
-  const { webhooks, fetchWebhookUrls } = useN8nConfig();
+  const { webhooks, fetchWebhookUrls, isAdmin } = useN8nConfig();
 
   const resetConnections = async () => {
     try {
@@ -136,6 +136,7 @@ const ApiConnectionsManager = () => {
           <ConnectionHeader onResetConnections={resetConnections} />
           <div className="space-y-6">
             <ApiUsageMetrics />
+            {isAdmin && <AdminSettings />}
             <OpenAIConnection
               apiKey={openaiApiKey}
               status={openaiStatus}
