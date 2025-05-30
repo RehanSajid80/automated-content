@@ -122,23 +122,46 @@ export const useN8nConfig = () => {
   const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'keywords', asAdmin = false) => {
     setIsLoading(true);
     try {
-      const webhookData = {
-        type: type,
-        url: url,
-        is_global: true,
-        is_active: true,
-        admin_controlled: false // Since we're allowing anonymous access
-      };
-
-      const { error } = await supabase
+      // First, check if a global webhook of this type already exists
+      const { data: existingWebhook, error: fetchError } = await supabase
         .from('webhook_configs')
-        .upsert(webhookData, {
-          onConflict: 'type',
-          ignoreDuplicates: false
-        });
+        .select('id')
+        .eq('type', type)
+        .eq('is_global', true)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error saving webhook URL:", error);
+      if (fetchError) {
+        console.error("Error checking existing webhook:", fetchError);
+        toast.error("Failed to check existing webhook configuration");
+        return false;
+      }
+
+      let result;
+      if (existingWebhook) {
+        // Update existing webhook
+        result = await supabase
+          .from('webhook_configs')
+          .update({
+            url: url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingWebhook.id);
+      } else {
+        // Insert new webhook
+        result = await supabase
+          .from('webhook_configs')
+          .insert({
+            type: type,
+            url: url,
+            is_global: true,
+            is_active: true,
+            admin_controlled: false
+          });
+      }
+
+      if (result.error) {
+        console.error("Error saving webhook URL:", result.error);
         toast.error("Failed to save webhook configuration");
         return false;
       }
