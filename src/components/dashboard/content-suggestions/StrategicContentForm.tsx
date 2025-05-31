@@ -54,9 +54,10 @@ export const StrategicContentForm: React.FC = () => {
 
       console.log("StrategicContentForm: Sending payload:", payload);
 
+      // Use 'custom-keywords' webhook which has the correct AI Content Suggestions URL
       const result = await sendToN8n({
         customPayload: payload
-      }, 'content'); // Use content webhook
+      }, 'custom-keywords');
 
       console.log("StrategicContentForm: Received result:", result);
 
