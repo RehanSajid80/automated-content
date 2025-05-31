@@ -85,7 +85,10 @@ export const StrategicContentForm: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <TopicAreaSelector value={topicArea} onChange={setTopicArea} />
+        <TopicAreaSelector 
+          selectedTopic={topicArea} 
+          onTopicChange={setTopicArea} 
+        />
         
         <CustomKeywordsInput 
           keywords={customKeywords} 
@@ -105,8 +108,7 @@ export const StrategicContentForm: React.FC = () => {
         <ContextInput value={context} onChange={setContext} />
         
         <FileUploadInput 
-          selectedFile={selectedFile} 
-          onFileChange={setSelectedFile} 
+          onFileSelect={setSelectedFile} 
         />
         
         <Button 
