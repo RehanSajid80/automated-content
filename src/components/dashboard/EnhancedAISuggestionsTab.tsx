@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { KeywordData } from "@/utils/excelUtils";
@@ -36,10 +37,10 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     console.log("EnhancedAISuggestionsTab - rawResponse:", rawResponse);
   }, [generatedContent, isAgentLoading, rawResponse]);
   
-  // Auto-process raw response if present
+  // Auto-process raw response if present and no generated content
   useEffect(() => {
     if (rawResponse && (!generatedContent || generatedContent.length === 0)) {
-      console.log("Auto-processing raw response since no generated content is available");
+      console.log("EnhancedAISuggestionsTab: Auto-processing raw response since no generated content is available");
       processRawResponse();
     }
   }, [rawResponse, generatedContent]);
@@ -54,100 +55,79 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     }
     
     try {
-      let processedContent;
+      console.log("EnhancedAISuggestionsTab: Processing raw response:", typeof rawResponse, rawResponse);
       
-      // Handle empty array as a special case
-      if (Array.isArray(rawResponse) && rawResponse.length === 0) {
-        toast.error("Empty array response - no content to display");
-        setIsForceProcessing(false);
-        return;
-      }
+      let processedContent = [];
       
-      console.log("Processing raw response:", typeof rawResponse, rawResponse);
-      
-      // If rawResponse is directly usable, use it
-      if (rawResponse && (
-        (typeof rawResponse === 'object' && (
-          rawResponse.pillarContent !== undefined ||
-          rawResponse.supportContent !== undefined ||
-          rawResponse.socialMediaPosts !== undefined ||
-          rawResponse.emailSeries !== undefined
-        )) ||
-        (Array.isArray(rawResponse) && rawResponse.length > 0 && typeof rawResponse[0] === 'object' && (
-          rawResponse[0].pillarContent !== undefined ||
-          rawResponse[0].supportContent !== undefined ||
-          rawResponse[0].socialMediaPosts !== undefined ||
-          rawResponse[0].emailSeries !== undefined
-        ))
-      )) {
-        // Wrap single object in array for consistent handling if needed
-        processedContent = Array.isArray(rawResponse) ? rawResponse : [rawResponse];
-        console.log("Using content directly:", processedContent);
-        setGeneratedContent(processedContent);
-        toast.success("Content processed successfully");
-        setIsForceProcessing(false);
-        return;
-      }
-      
-      if (typeof rawResponse === 'string') {
-        // Attempt to parse string as JSON
-        try {
-          console.log("Attempting to parse string response as JSON");
-          processedContent = JSON.parse(rawResponse);
-          
-          console.log("Parsed content:", processedContent);
-          
-          // Check if parsed content is properly formatted
-          if (processedContent && (
-            (Array.isArray(processedContent) && processedContent.length > 0 && typeof processedContent[0] === 'object' && (
-              processedContent[0].pillarContent !== undefined ||
-              processedContent[0].supportContent !== undefined ||
-              processedContent[0].socialMediaPosts !== undefined ||
-              processedContent[0].emailSeries !== undefined
-            )) ||
-            (typeof processedContent === 'object' && (
-              processedContent.pillarContent !== undefined || 
-              processedContent.supportContent !== undefined || 
-              processedContent.socialMediaPosts !== undefined || 
-              processedContent.emailSeries !== undefined
-            ))
-          )) {
-            // Handle both array and single object formats
-            const contentArray = Array.isArray(processedContent) ? processedContent : [processedContent];
-            console.log("Setting generated content from parsed JSON:", contentArray);
-            setGeneratedContent(contentArray);
+      // Handle the response and create structured content
+      if (rawResponse && typeof rawResponse === 'object') {
+        // Check if it's already in the expected format
+        if (rawResponse.pillarContent || rawResponse.supportContent || 
+            rawResponse.socialMediaPosts || rawResponse.emailSeries) {
+          processedContent = [rawResponse];
+        } else if (Array.isArray(rawResponse) && rawResponse.length > 0) {
+          // Check if it's an array of content items
+          if (rawResponse[0].pillarContent || rawResponse[0].supportContent || 
+              rawResponse[0].socialMediaPosts || rawResponse[0].emailSeries) {
+            processedContent = rawResponse;
+          } else if (rawResponse[0].output) {
+            // Handle n8n response format
+            try {
+              const outputData = typeof rawResponse[0].output === 'string' 
+                ? JSON.parse(rawResponse[0].output) 
+                : rawResponse[0].output;
+              processedContent = Array.isArray(outputData) ? outputData : [outputData];
+            } catch (error) {
+              console.error("Error parsing output:", error);
+              processedContent = [{
+                topicArea: "Generated Content",
+                pillarContent: [rawResponse[0].output || JSON.stringify(rawResponse[0])],
+                supportContent: [],
+                socialMediaPosts: [],
+                emailSeries: []
+              }];
+            }
           } else {
-            console.log("Parsed content doesn't match expected format");
-            // Create a structured format from unstructured response
-            setGeneratedContent([{ 
-              pillarContent: typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse),
-              supportContent: "",
+            // Generic array handling
+            processedContent = rawResponse.map(item => ({
+              topicArea: item.title || item.topicArea || "Generated Content",
+              pillarContent: [item.content || item.text || JSON.stringify(item)],
+              supportContent: [],
               socialMediaPosts: [],
               emailSeries: []
-            }]);
+            }));
           }
-        } catch (parseError) {
-          console.error("Error parsing raw response as JSON:", parseError);
-          // If can't parse as JSON, treat the string as content directly
-          processedContent = [{ 
-            pillarContent: rawResponse,
-            supportContent: "",
+        } else {
+          // Single object that's not in expected format
+          processedContent = [{
+            topicArea: rawResponse.title || rawResponse.topicArea || "Generated Content",
+            pillarContent: [rawResponse.content || rawResponse.text || JSON.stringify(rawResponse)],
+            supportContent: [],
             socialMediaPosts: [],
             emailSeries: []
           }];
-          console.log("Using raw string as content:", processedContent);
-          setGeneratedContent(processedContent);
         }
-      } else {
-        // For other types, wrap in array as needed
-        processedContent = rawResponse;
-        console.log("Using non-string content directly:", processedContent);
-        setGeneratedContent(Array.isArray(processedContent) ? processedContent : [processedContent]);
+      } else if (typeof rawResponse === 'string') {
+        // Handle string responses
+        try {
+          const parsedResponse = JSON.parse(rawResponse);
+          processedContent = Array.isArray(parsedResponse) ? parsedResponse : [parsedResponse];
+        } catch (error) {
+          processedContent = [{
+            topicArea: "Generated Content",
+            pillarContent: [rawResponse],
+            supportContent: [],
+            socialMediaPosts: [],
+            emailSeries: []
+          }];
+        }
       }
       
+      console.log("EnhancedAISuggestionsTab: Setting processed content:", processedContent);
+      setGeneratedContent(processedContent);
       toast.success("Content processed successfully");
     } catch (err) {
-      console.error("Error processing raw response:", err);
+      console.error("EnhancedAISuggestionsTab: Error processing raw response:", err);
       toast.error("Failed to process content");
     } finally {
       setIsForceProcessing(false);
@@ -158,7 +138,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   const processContentForDisplay = (contentArray: any[]) => {
     if (!contentArray || contentArray.length === 0) return [];
     
-    console.log("Processing content array for display:", contentArray);
+    console.log("EnhancedAISuggestionsTab: Processing content array for display:", contentArray);
     
     return contentArray.map(item => {
       // Initialize with default values
@@ -250,7 +230,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     (generatedContent && generatedContent.length > 0)
   );
                     
-  console.log("HasContent check:", hasContent, "Generated content:", generatedContent);
+  console.log("EnhancedAISuggestionsTab: HasContent check:", hasContent, "Generated content:", generatedContent);
   
   const structuredSuggestions = hasContent ? 
     generatedContent && generatedContent.length > 0 
@@ -260,7 +240,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         : [] 
     : [];
   
-  console.log("Structured suggestions:", structuredSuggestions);
+  console.log("EnhancedAISuggestionsTab: Structured suggestions:", structuredSuggestions);
 
   const handleForceRefresh = () => {
     setForceRerender(prev => prev + 1);
@@ -301,6 +281,13 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
                     <Button 
                       variant="outline" 
                       size="sm"
+                      onClick={handleForceRefresh}
+                    >
+                      Force Process
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
                       onClick={() => setDebugMode(!debugMode)}
                     >
                       {debugMode ? "Hide Debug" : "Show Debug"}
@@ -333,7 +320,9 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
             <div className="p-8 flex justify-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-                <p className="text-muted-foreground">Generating strategic content suggestions...</p>
+                <p className="text-muted-foreground">
+                  {isForceProcessing ? "Processing content..." : "Generating strategic content suggestions..."}
+                </p>
               </div>
             </div>
           )}
