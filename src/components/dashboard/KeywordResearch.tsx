@@ -35,12 +35,23 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   const { selectedKeywords, toggleKeywordSelection } = useSelectedKeywords(keywords);
   const { isSyncingFromN8n, handleN8nSync } = useN8nSync(updateKeywords);
 
+  // Debug logging for the main component
+  useEffect(() => {
+    console.log("KeywordResearch: Component state:", {
+      totalKeywords: keywords.length,
+      filteredKeywords: filteredKeywords.length,
+      searchTerm,
+      selectedKeywords: selectedKeywords.length
+    });
+  }, [keywords.length, filteredKeywords.length, searchTerm, selectedKeywords.length]);
+
   // Initialize from URL search param only once on mount
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const searchFromUrl = searchParams.get('search');
     
     if (searchFromUrl) {
+      console.log("KeywordResearch: Setting search from URL:", searchFromUrl);
       handleSearchInputChange({ 
         target: { value: searchFromUrl } 
       } as React.ChangeEvent<HTMLInputElement>);

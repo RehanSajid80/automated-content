@@ -37,6 +37,12 @@ const KeywordToolbar: React.FC<KeywordToolbarProps> = ({
     window.open(url.toString(), '_blank');
   };
 
+  // Debug search input changes
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("KeywordToolbar: Search input changed:", e.target.value);
+    onSearchChange(e);
+  };
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
       <div className="relative w-full md:w-auto md:flex-1 max-w-lg flex gap-2">
@@ -44,7 +50,7 @@ const KeywordToolbar: React.FC<KeywordToolbarProps> = ({
           <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchTerm}
-            onChange={onSearchChange}
+            onChange={handleSearchInputChange}
             placeholder="Search for keywords..."
             className="pl-9 bg-secondary/50"
           />
