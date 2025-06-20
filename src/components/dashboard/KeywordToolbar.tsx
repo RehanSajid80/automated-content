@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SemrushIntegration from "./SemrushIntegration";
@@ -75,6 +75,28 @@ const KeywordToolbar: React.FC<KeywordToolbarProps> = ({
       </div>
       
       <div className="flex gap-2 w-full md:w-auto">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button 
+              variant="create" 
+              size="sm" 
+              className="text-xs font-medium"
+            >
+              <Database size={16} className="mr-2" />
+              Fetch Keywords
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Fetch Keywords from SEMrush</DialogTitle>
+              <DialogDescription>
+                Enter a domain and optional keyword to fetch relevant keyword data from SEMrush
+              </DialogDescription>
+            </DialogHeader>
+            <SemrushIntegration onKeywordsReceived={onSemrushKeywords} />
+          </DialogContent>
+        </Dialog>
+        
         <Button 
           variant="outline" 
           size="sm" 
@@ -83,7 +105,7 @@ const KeywordToolbar: React.FC<KeywordToolbarProps> = ({
         >
           Reset Data
         </Button>
-        <SemrushIntegration onKeywordsReceived={onSemrushKeywords} />
+        
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="text-xs" disabled={isSyncingFromN8n}>
