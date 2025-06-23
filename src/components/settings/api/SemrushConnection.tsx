@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Database, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { API_KEYS, saveApiKey, getApiKey } from "@/utils/apiKeyUtils";
 
 interface SemrushConnectionProps {
   onSaveConfig?: () => void;
@@ -17,7 +19,9 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
 }) => {
   const [keywordLimit, setKeywordLimit] = useState(100);
   const [status, setStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
-  const [maskedApiKey, setMaskedApiKey] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check if SEMrush API key is configured
@@ -25,18 +29,29 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
     loadKeywordLimit();
   }, []);
 
-  const checkSemrushConnection = () => {
-    // Check if we have any SEMrush metrics (indicating the API key works)
-    const metrics = localStorage.getItem('semrush-api-metrics');
-    if (metrics) {
-      const parsedMetrics = JSON.parse(metrics);
-      if (parsedMetrics.successfulCalls > 0) {
+  const checkSemrushConnection = async () => {
+    try {
+      const savedKey = await getApiKey('semrush-api-key');
+      if (savedKey) {
         setStatus('connected');
-        setMaskedApiKey("••••••••••••••••••••••••••");
+        setApiKey("••••••••••••••••••••••••••");
       } else {
-        setStatus('disconnected');
+        // Check if we have any SEMrush metrics (indicating the API key works)
+        const metrics = localStorage.getItem('semrush-api-metrics');
+        if (metrics) {
+          const parsedMetrics = JSON.parse(metrics);
+          if (parsedMetrics.successfulCalls > 0) {
+            setStatus('connected');
+            setApiKey("••••••••••••••••••••••••••");
+          } else {
+            setStatus('disconnected');
+          }
+        } else {
+          setStatus('disconnected');
+        }
       }
-    } else {
+    } catch (error) {
+      console.error('Error checking SEMrush connection:', error);
       setStatus('disconnected');
     }
   };
@@ -48,8 +63,49 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
     }
   };
 
+  const handleSaveApiKey = async () => {
+    if (!apiKey || apiKey === "••••••••••••••••••••••••••") {
+      toast({
+        title: "API Key Required",
+        description: "Please enter a valid SEMrush API key",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await saveApiKey('semrush-api-key', apiKey, 'SEMrush');
+      setStatus('connected');
+      setApiKey("••••••••••••••••••••••••••");
+      
+      toast({
+        title: "SEMrush API Key Saved",
+        description: "Your SEMrush API key has been saved successfully",
+      });
+
+      if (onSaveConfig) {
+        onSaveConfig();
+      }
+    } catch (error) {
+      console.error('Error saving SEMrush API key:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save SEMrush API key",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSaveKeywordLimit = () => {
     localStorage.setItem('semrush-keyword-limit', keywordLimit.toString());
+    toast({
+      title: "Settings Saved",
+      description: "Keyword limit has been updated",
+    });
+    
     if (onSaveConfig) {
       onSaveConfig();
     }
@@ -97,15 +153,26 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
           <Label htmlFor="semrush-api-key" className="text-sm font-medium">
             SEMrush API Key
           </Label>
-          <Input
-            id="semrush-api-key"
-            placeholder="API key is managed via Supabase secrets"
-            value={maskedApiKey}
-            className="font-mono text-sm"
-            disabled={true}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="semrush-api-key"
+              type="password"
+              placeholder="Enter your SEMrush API key"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="font-mono text-sm"
+            />
+            <Button 
+              onClick={handleSaveApiKey}
+              disabled={isLoading || !apiKey || apiKey === "••••••••••••••••••••••••••"}
+              variant="outline"
+              size="sm"
+            >
+              {isLoading ? "Saving..." : "Save"}
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
-            SEMrush API key is securely managed through Supabase edge functions
+            Enter your SEMrush API key to enable keyword research functionality
           </p>
         </div>
 
