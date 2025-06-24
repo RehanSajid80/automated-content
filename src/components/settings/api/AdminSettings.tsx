@@ -24,21 +24,9 @@ const AdminSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Try to call is_admin function, fallback if not available
-      try {
-        const { data: adminResult, error } = await supabase.rpc('is_admin', { 
-          user_id: user.id 
-        });
-        
-        if (!error) {
-          setIsAdmin(adminResult || false);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.log("is_admin function not available, defaulting to false");
-        setIsAdmin(false);
-      }
+      // For now, we'll default to false since we don't have is_admin function yet
+      // Users will need to run the SQL to create the function first
+      setIsAdmin(false);
     } catch (error) {
       console.error("Error checking admin status:", error);
     }

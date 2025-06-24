@@ -26,21 +26,9 @@ export const useN8nConfig = () => {
         return;
       }
 
-      // Try to call is_admin function if it exists
-      try {
-        const { data: adminResult, error } = await supabase.rpc('is_admin', { 
-          user_id: user.id 
-        });
-        
-        if (!error) {
-          setIsAdmin(adminResult || false);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.log("is_admin function not available, defaulting to false");
-        setIsAdmin(false);
-      }
+      // For now, we'll default to false since we don't have is_admin function yet
+      // Users will need to run the SQL to create the function first
+      setIsAdmin(false);
     } catch (error) {
       console.error("Error checking admin status:", error);
       setIsAdmin(false);
@@ -54,7 +42,7 @@ export const useN8nConfig = () => {
       try {
         const { data: globalWebhooks, error } = await supabase
           .from('webhook_configs')
-          .select('type, url')
+          .select('type, url, webhook_type, webhook_url')
           .eq('is_active', true);
 
         if (!error && globalWebhooks) {
@@ -66,18 +54,23 @@ export const useN8nConfig = () => {
           };
 
           globalWebhooks.forEach((config: any) => {
-            switch (config.type) {
+            // Handle both new 'type' field and legacy 'webhook_type' field
+            const webhookType = config.type || config.webhook_type;
+            const webhookUrl = config.url || config.webhook_url;
+            
+            switch (webhookType) {
               case 'keywords':
-                webhookMap.keywordWebhook = config.url;
+              case 'keyword-sync':
+                webhookMap.keywordWebhook = webhookUrl;
                 break;
               case 'content':
-                webhookMap.contentWebhook = config.url;
+                webhookMap.contentWebhook = webhookUrl;
                 break;
               case 'custom-keywords':
-                webhookMap.customKeywordsWebhook = config.url;
+                webhookMap.customKeywordsWebhook = webhookUrl;
                 break;
               case 'content-adjustment':
-                webhookMap.contentAdjustmentWebhook = config.url;
+                webhookMap.contentAdjustmentWebhook = webhookUrl;
                 break;
             }
           });
@@ -134,14 +127,19 @@ export const useN8nConfig = () => {
     try {
       // Try to save to database
       try {
+        // Use both new and legacy fields to ensure compatibility
+        const webhookData = {
+          type: type,
+          url: url,
+          webhook_type: type === 'keywords' ? 'keyword-sync' : type,
+          webhook_url: url,
+          is_global: true,
+          is_active: true
+        };
+
         const { error } = await supabase
           .from('webhook_configs')
-          .upsert({
-            type: type,
-            url: url,
-            is_global: true,
-            is_active: true
-          });
+          .upsert(webhookData);
 
         if (error) {
           console.error("Error saving webhook URL:", error);
