@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,39 +28,14 @@ const AdminSettings = () => {
 
       // Try to call the function to see if it exists
       try {
-        // Use a raw SQL query to check if the function exists
-        const { data, error } = await supabase
-          .rpc('exec_sql', { 
-            sql: `SELECT has_role('${user.id}', 'admin') as is_admin;`,
-            params: []
-          });
+        // Check if is_admin function exists by calling it directly
+        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
         
-        if (!error && data) {
+        if (!error) {
           setFunctionExists(true);
-          setIsAdmin(Boolean(data.is_admin));
+          setIsAdmin(Boolean(data));
         } else {
-          // Try the is_admin function directly if exec_sql fails
-          try {
-            const result = await fetch(`${supabase.supabaseUrl}/rest/v1/rpc/is_admin`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabase.supabaseKey}`,
-                'apikey': supabase.supabaseKey
-              },
-              body: JSON.stringify({ user_id: user.id })
-            });
-            
-            if (result.ok) {
-              const adminResult = await result.json();
-              setFunctionExists(true);
-              setIsAdmin(Boolean(adminResult));
-            } else {
-              setFunctionExists(false);
-            }
-          } catch {
-            setFunctionExists(false);
-          }
+          setFunctionExists(false);
         }
       } catch (error) {
         setFunctionExists(false);
@@ -79,41 +55,14 @@ const AdminSettings = () => {
 
       // Try to call is_admin function if it exists
       try {
-        // Use a raw SQL query first
-        const { data, error } = await supabase
-          .rpc('exec_sql', { 
-            sql: `SELECT has_role('${user.id}', 'admin') as is_admin;`,
-            params: []
-          });
+        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
         
-        if (!error && data) {
-          setIsAdmin(Boolean(data.is_admin));
+        if (!error) {
+          setIsAdmin(Boolean(data));
           setFunctionExists(true);
         } else {
-          // Fallback to direct API call
-          try {
-            const result = await fetch(`${supabase.supabaseUrl}/rest/v1/rpc/is_admin`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabase.supabaseKey}`,
-                'apikey': supabase.supabaseKey
-              },
-              body: JSON.stringify({ user_id: user.id })
-            });
-            
-            if (result.ok) {
-              const adminResult = await result.json();
-              setIsAdmin(Boolean(adminResult));
-              setFunctionExists(true);
-            } else {
-              setIsAdmin(false);
-              setFunctionExists(false);
-            }
-          } catch {
-            setIsAdmin(false);
-            setFunctionExists(false);
-          }
+          setIsAdmin(false);
+          setFunctionExists(false);
         }
       } catch (error) {
         console.log("is_admin function not available");

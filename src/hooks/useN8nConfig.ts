@@ -27,37 +27,12 @@ export const useN8nConfig = () => {
 
       // Try to call is_admin function if it exists
       try {
-        // Use a raw SQL query first
-        const { data, error } = await supabase
-          .rpc('exec_sql', { 
-            sql: `SELECT has_role('${user.id}', 'admin') as is_admin;`,
-            params: []
-          });
+        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
         
-        if (!error && data) {
-          setIsAdmin(Boolean(data.is_admin));
+        if (!error) {
+          setIsAdmin(Boolean(data));
         } else {
-          // Fallback to direct API call
-          try {
-            const result = await fetch(`${supabase.supabaseUrl}/rest/v1/rpc/is_admin`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabase.supabaseKey}`,
-                'apikey': supabase.supabaseKey
-              },
-              body: JSON.stringify({ user_id: user.id })
-            });
-            
-            if (result.ok) {
-              const adminResult = await result.json();
-              setIsAdmin(Boolean(adminResult));
-            } else {
-              setIsAdmin(false);
-            }
-          } catch {
-            setIsAdmin(false);
-          }
+          setIsAdmin(false);
         }
       } catch (error) {
         console.log("is_admin function not available, defaulting to false");
