@@ -9,10 +9,8 @@ import OpenAIConnection from "./api/OpenAIConnection";
 import WebhookConnection from "./api/WebhookConnection";
 import SemrushConnection from "./api/SemrushConnection";
 import AdminSettings from "./api/AdminSettings";
-import ProductionChecklist from "./api/ProductionChecklist";
 import ErrorBoundary from "@/components/ui/error-boundary";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
-import { supabase } from "@/integrations/supabase/client";
 
 const ApiConnectionsManager = () => {
   // API key state
@@ -23,62 +21,8 @@ const ApiConnectionsManager = () => {
   const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords' | 'content-adjustment'>('keywords');
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
-  // Production readiness checks
-  const [productionChecks, setProductionChecks] = React.useState({
-    database: false,
-    authentication: false,
-    apiKeys: false,
-    webhooks: false,
-    admin: false
-  });
-  
   const { toast } = useToast();
   const { webhooks, fetchWebhookUrls, isAdmin } = useN8nConfig();
-
-  // Check production readiness
-  useEffect(() => {
-    const checkProductionReadiness = async () => {
-      try {
-        // Check database connection
-        const { error: dbError } = await supabase.from('api_keys').select('id').limit(1);
-        const databaseConnected = !dbError;
-
-        // Check authentication
-        const { data: { user } } = await supabase.auth.getUser();
-        const authenticationWorking = !!user;
-
-        // Check API keys
-        const openaiKey = await getApiKey(API_KEYS.OPENAI);
-        const apiKeysConfigured = !!openaiKey;
-
-        // Check webhooks
-        const webhooksConfigured = !!(webhooks.contentWebhook || webhooks.keywordWebhook);
-
-        // Check admin functions
-        let adminFunctionsReady = false;
-        try {
-          if (user) {
-            await supabase.rpc('is_admin', { user_id: user.id });
-            adminFunctionsReady = true;
-          }
-        } catch (error) {
-          adminFunctionsReady = false;
-        }
-
-        setProductionChecks({
-          database: databaseConnected,
-          authentication: authenticationWorking,
-          apiKeys: apiKeysConfigured,
-          webhooks: webhooksConfigured,
-          admin: adminFunctionsReady
-        });
-      } catch (error) {
-        console.error('Error checking production readiness:', error);
-      }
-    };
-
-    checkProductionReadiness();
-  }, [webhooks, openaiApiKey]);
 
   const resetConnections = async () => {
     try {
@@ -204,7 +148,6 @@ const ApiConnectionsManager = () => {
           <main className="flex-1 p-6 md:p-8 pt-6 max-w-5xl mx-auto w-full">
             <ConnectionHeader onResetConnections={resetConnections} />
             <div className="space-y-6">
-              <ProductionChecklist checks={productionChecks} />
               <ApiUsageMetrics />
               {isAdmin && <AdminSettings />}
               <OpenAIConnection

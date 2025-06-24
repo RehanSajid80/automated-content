@@ -27,12 +27,12 @@ export const useN8nConfig = () => {
 
       // Try to call is_admin function if it exists
       try {
-        const { data: adminResult, error } = await supabase.rpc('is_admin', { 
+        const { data, error } = await supabase.rpc('is_admin', { 
           user_id: user.id 
         });
         
         if (!error) {
-          setIsAdmin(adminResult || false);
+          setIsAdmin(Boolean(data));
         } else {
           setIsAdmin(false);
         }

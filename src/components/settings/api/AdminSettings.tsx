@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,8 +27,13 @@ const AdminSettings = () => {
 
       // Try to call the function to see if it exists
       try {
-        await supabase.rpc('is_admin', { user_id: user.id });
-        setFunctionExists(true);
+        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
+        if (!error) {
+          setFunctionExists(true);
+          setIsAdmin(Boolean(data));
+        } else {
+          setFunctionExists(false);
+        }
       } catch (error) {
         setFunctionExists(false);
       }
@@ -48,12 +52,12 @@ const AdminSettings = () => {
 
       // Try to call is_admin function if it exists
       try {
-        const { data: adminResult, error } = await supabase.rpc('is_admin', { 
+        const { data, error } = await supabase.rpc('is_admin', { 
           user_id: user.id 
         });
         
         if (!error) {
-          setIsAdmin(adminResult || false);
+          setIsAdmin(Boolean(data));
           setFunctionExists(true);
         } else {
           setIsAdmin(false);
