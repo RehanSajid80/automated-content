@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import ApiUsageMetrics from "./ApiUsageMetrics";
@@ -59,6 +58,57 @@ const ApiConnectionsManager = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Check OpenAI API key on mount and when component loads
+  const checkOpenAI = async () => {
+    console.log('Checking OpenAI connection...');
+    setOpenaiStatus('checking');
+    
+    try {
+      const key = await getApiKey(API_KEYS.OPENAI);
+      console.log('Retrieved OpenAI key:', key ? 'Found' : 'Not found');
+      
+      if (!key) {
+        console.log('No OpenAI API key found');
+        setOpenaiStatus('disconnected');
+        return;
+      }
+      
+      // Validate key with OpenAI API
+      console.log('Validating OpenAI API key...');
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${key}`,
+        },
+      });
+      
+      console.log('OpenAI API response status:', response.status);
+      
+      if (response.ok) {
+        console.log('OpenAI API key is valid');
+        setOpenaiStatus('connected');
+        setOpenaiApiKey("••••••••••••••••••••••••••");
+      } else {
+        console.log('OpenAI API key is invalid');
+        setOpenaiStatus('disconnected');
+      }
+    } catch (error) {
+      console.error('OpenAI connection error:', error);
+      setOpenaiStatus('disconnected');
+    }
+  };
+
+  // Run OpenAI check when component mounts
+  useEffect(() => {
+    checkOpenAI();
+  }, []);
+
+  // Also run when authentication status is determined
+  useEffect(() => {
+    if (isAuthenticated !== null) {
+      fetchWebhookUrls();
+    }
+  }, [isAuthenticated]);
+
   const resetConnections = async () => {
     try {
       await removeApiKey(API_KEYS.OPENAI);
@@ -88,40 +138,6 @@ const ApiConnectionsManager = () => {
     }
   };
 
-  // Check OpenAI API key on mount
-  const checkOpenAI = async () => {
-    try {
-      const key = await getApiKey(API_KEYS.OPENAI);
-      if (!key) {
-        setOpenaiStatus('disconnected');
-        return;
-      }
-      
-      // Validate key with OpenAI API
-      const response = await fetch('https://api.openai.com/v1/models', {
-        headers: {
-          'Authorization': `Bearer ${key}`,
-        },
-      });
-      
-      if (response.ok) {
-        setOpenaiStatus('connected');
-        setOpenaiApiKey("••••••••••••••••••••••••••");
-      } else {
-        setOpenaiStatus('disconnected');
-      }
-    } catch (error) {
-      console.error('OpenAI connection error:', error);
-      setOpenaiStatus('disconnected');
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated !== null) {
-      checkOpenAI();
-    }
-  }, [isAuthenticated]);
-
   // Update webhook status based on type
   useEffect(() => {
     if (activeWebhookType === 'keywords') {
@@ -134,13 +150,6 @@ const ApiConnectionsManager = () => {
       setWebhookStatus(webhooks.customKeywordsWebhook ? 'connected' : 'disconnected');
     }
   }, [activeWebhookType, webhooks]);
-
-  // Fetch webhook URLs on mount
-  useEffect(() => {
-    if (isAuthenticated !== null) {
-      fetchWebhookUrls();
-    }
-  }, [isAuthenticated]);
 
   const handleSaveOpenaiKey = async () => {
     if (openaiApiKey && openaiApiKey !== "••••••••••••••••••••••••••") {
