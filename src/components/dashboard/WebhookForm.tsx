@@ -23,8 +23,9 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
       try {
         const { data, error } = await supabase
           .from('webhook_configs')
-          .select('url')
-          .eq('type', 'keyword-sync')
+          .select('webhook_url')
+          .eq('webhook_type', 'keyword-sync')
+          .eq('is_active', true)
           .maybeSingle();
 
         if (error) {
@@ -33,9 +34,9 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
         }
 
         if (data) {
-          setWebhookUrl(data.url);
+          setWebhookUrl(data.webhook_url);
           // Also store in localStorage for easy access by other components
-          localStorage.setItem("n8n-webhook-url", data.url);
+          localStorage.setItem("n8n-webhook-url", data.webhook_url);
         }
       } catch (err) {
         console.error("Error in fetchWebhook:", err);
@@ -70,25 +71,33 @@ const WebhookForm: React.FC<WebhookFormProps> = ({ onSync }) => {
       // Save to localStorage first for immediate access
       localStorage.setItem("n8n-webhook-url", webhookUrl);
       
-      // Save to Supabase
+      // Save to Supabase using updated table structure
       try {
         const { data: existingWebhook } = await supabase
           .from('webhook_configs')
           .select('id')
-          .eq('type', 'keyword-sync')
+          .eq('webhook_type', 'keyword-sync')
+          .eq('is_active', true)
           .maybeSingle();
 
         if (existingWebhook) {
           // Update existing webhook
           await supabase
             .from('webhook_configs')
-            .update({ url: webhookUrl })
+            .update({ 
+              webhook_url: webhookUrl,
+              updated_at: new Date().toISOString()
+            })
             .eq('id', existingWebhook.id);
         } else {
           // Insert new webhook
           await supabase
             .from('webhook_configs')
-            .insert([{ url: webhookUrl, type: 'keyword-sync' }]);
+            .insert([{ 
+              webhook_url: webhookUrl, 
+              webhook_type: 'keyword-sync',
+              is_active: true
+            }]);
         }
       } catch (dbError) {
         console.error("Error saving webhook to database:", dbError);

@@ -9,7 +9,72 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      content_library: {
+        Row: {
+          content: string
+          content_type: string
+          created_at: string
+          id: string
+          is_saved: boolean | null
+          is_selected: boolean | null
+          keywords: string[] | null
+          title: string | null
+          topic_area: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          content_type: string
+          created_at?: string
+          id?: string
+          is_saved?: boolean | null
+          is_selected?: boolean | null
+          keywords?: string[] | null
+          title?: string | null
+          topic_area?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          is_saved?: boolean | null
+          is_selected?: boolean | null
+          keywords?: string[] | null
+          title?: string | null
+          topic_area?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      webhook_configs: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          updated_at: string
+          webhook_type: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+          webhook_type: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+          webhook_type?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

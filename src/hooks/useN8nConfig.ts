@@ -26,12 +26,8 @@ export const useN8nConfig = () => {
         return;
       }
 
-      const { data: adminResult, error } = await supabase
-        .rpc('is_admin', { user_id: user.id });
-
-      if (!error) {
-        setIsAdmin(adminResult || false);
-      }
+      // For now, set admin to false. Can be implemented later with proper admin logic
+      setIsAdmin(false);
     } catch (error) {
       console.error("Error checking admin status:", error);
       setIsAdmin(false);
@@ -41,16 +37,14 @@ export const useN8nConfig = () => {
   const fetchWebhookUrls = async () => {
     setIsLoading(true);
     try {
-      // Fetch global webhooks (available to everyone)
+      // Fetch global webhooks from new table structure
       const { data: globalWebhooks, error } = await supabase
         .from('webhook_configs')
-        .select('type, url')
-        .eq('is_global', true)
+        .select('webhook_type, webhook_url')
         .eq('is_active', true);
 
       if (error) {
-        console.error("Error fetching global webhook configs:", error);
-        // Fallback to localStorage if database fetch fails
+        console.error("Error fetching webhook configs:", error);
         loadFromLocalStorage();
         return;
       }
@@ -63,18 +57,18 @@ export const useN8nConfig = () => {
       };
 
       globalWebhooks?.forEach(config => {
-        switch (config.type) {
+        switch (config.webhook_type) {
           case 'keywords':
-            webhookMap.keywordWebhook = config.url;
+            webhookMap.keywordWebhook = config.webhook_url;
             break;
           case 'content':
-            webhookMap.contentWebhook = config.url;
+            webhookMap.contentWebhook = config.webhook_url;
             break;
           case 'custom-keywords':
-            webhookMap.customKeywordsWebhook = config.url;
+            webhookMap.customKeywordsWebhook = config.webhook_url;
             break;
           case 'content-adjustment':
-            webhookMap.contentAdjustmentWebhook = config.url;
+            webhookMap.contentAdjustmentWebhook = config.webhook_url;
             break;
         }
       });
@@ -122,12 +116,11 @@ export const useN8nConfig = () => {
   const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'keywords', asAdmin = false) => {
     setIsLoading(true);
     try {
-      // First, check if a global webhook of this type already exists
+      // Check if webhook of this type already exists
       const { data: existingWebhook, error: fetchError } = await supabase
         .from('webhook_configs')
         .select('id')
-        .eq('type', type)
-        .eq('is_global', true)
+        .eq('webhook_type', type)
         .eq('is_active', true)
         .maybeSingle();
 
@@ -143,7 +136,7 @@ export const useN8nConfig = () => {
         result = await supabase
           .from('webhook_configs')
           .update({
-            url: url,
+            webhook_url: url,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingWebhook.id);
@@ -152,11 +145,9 @@ export const useN8nConfig = () => {
         result = await supabase
           .from('webhook_configs')
           .insert({
-            type: type,
-            url: url,
-            is_global: true,
-            is_active: true,
-            admin_controlled: false
+            webhook_type: type,
+            webhook_url: url,
+            is_active: true
           });
       }
 
