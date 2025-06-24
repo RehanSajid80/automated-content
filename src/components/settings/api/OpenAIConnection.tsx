@@ -5,12 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Braces, CheckCircle, XCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 interface OpenAIConnectionProps {
   apiKey: string;
   status: 'checking' | 'connected' | 'disconnected';
-  onSaveKey: (key: string) => void;
+  onSaveKey: () => void;
   onKeyChange: (key: string) => void;
 }
 
@@ -82,7 +81,7 @@ const OpenAIConnection: React.FC<OpenAIConnectionProps> = ({
             </a>
           </p>
         </div>
-        <Button onClick={() => onSaveKey(apiKey)} className="w-full sm:w-auto">
+        <Button onClick={onSaveKey} className="w-full sm:w-auto">
           Save API Key
         </Button>
       </CardContent>
