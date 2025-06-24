@@ -37,54 +37,45 @@ export const useN8nConfig = () => {
   const fetchWebhookUrls = async () => {
     setIsLoading(true);
     try {
-      // Check if webhook_configs table is available
-      const { error: testError } = await supabase
-        .from('webhook_configs')
-        .select('id')
-        .limit(1);
-
-      if (!testError) {
-        // Fetch global webhooks from database
-        const { data: globalWebhooks, error } = await supabase
-          .from('webhook_configs')
-          .select('webhook_type, webhook_url')
-          .eq('is_active', true);
-
-        if (error) {
-          console.error("Error fetching webhook configs:", error);
-          loadFromLocalStorage();
-          return;
-        }
-
-        const webhookMap = {
-          keywordWebhook: '',
-          contentWebhook: '',
-          customKeywordsWebhook: '',
-          contentAdjustmentWebhook: ''
-        };
-
-        globalWebhooks?.forEach(config => {
-          switch (config.webhook_type) {
-            case 'keywords':
-              webhookMap.keywordWebhook = config.webhook_url;
-              break;
-            case 'content':
-              webhookMap.contentWebhook = config.webhook_url;
-              break;
-            case 'custom-keywords':
-              webhookMap.customKeywordsWebhook = config.webhook_url;
-              break;
-            case 'content-adjustment':
-              webhookMap.contentAdjustmentWebhook = config.webhook_url;
-              break;
-          }
+      // Try to fetch global webhooks from database using raw SQL
+      try {
+        const { data: globalWebhooks, error } = await supabase.rpc('exec_sql', {
+          sql: 'SELECT type as webhook_type, url as webhook_url FROM webhook_configs WHERE is_active = true'
         });
 
-        setWebhooks(webhookMap);
-        
-        // Also save to localStorage for offline access
-        localStorage.setItem('webhook-configs', JSON.stringify(webhookMap));
-      } else {
+        if (!error && globalWebhooks) {
+          const webhookMap = {
+            keywordWebhook: '',
+            contentWebhook: '',
+            customKeywordsWebhook: '',
+            contentAdjustmentWebhook: ''
+          };
+
+          globalWebhooks.forEach((config: any) => {
+            switch (config.webhook_type) {
+              case 'keywords':
+                webhookMap.keywordWebhook = config.webhook_url;
+                break;
+              case 'content':
+                webhookMap.contentWebhook = config.webhook_url;
+                break;
+              case 'custom-keywords':
+                webhookMap.customKeywordsWebhook = config.webhook_url;
+                break;
+              case 'content-adjustment':
+                webhookMap.contentAdjustmentWebhook = config.webhook_url;
+                break;
+            }
+          });
+
+          setWebhooks(webhookMap);
+          
+          // Also save to localStorage for offline access
+          localStorage.setItem('webhook-configs', JSON.stringify(webhookMap));
+        } else {
+          loadFromLocalStorage();
+        }
+      } catch (dbError) {
         console.log('Webhook configs table not available, using localStorage');
         loadFromLocalStorage();
       }
@@ -127,54 +118,24 @@ export const useN8nConfig = () => {
   const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'keywords', asAdmin = false) => {
     setIsLoading(true);
     try {
-      // Check if webhook_configs table is available
-      const { error: testError } = await supabase
-        .from('webhook_configs')
-        .select('id')
-        .limit(1);
+      // Try to save to database using raw SQL
+      try {
+        const { error } = await supabase.rpc('exec_sql', {
+          sql: `
+            INSERT INTO webhook_configs (type, url, is_global, is_active)
+            VALUES ($1, $2, true, true)
+            ON CONFLICT (type) 
+            DO UPDATE SET 
+              url = EXCLUDED.url,
+              updated_at = now()
+          `,
+          params: [type, url]
+        });
 
-      if (!testError) {
-        // Check if webhook of this type already exists
-        const { data: existingWebhook, error: fetchError } = await supabase
-          .from('webhook_configs')
-          .select('id')
-          .eq('webhook_type', type)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (fetchError) {
-          console.error("Error checking existing webhook:", fetchError);
-          toast.error("Failed to check existing webhook configuration");
-          return false;
+        if (error) {
+          console.error("Error saving webhook URL:", error);
         }
-
-        let result;
-        if (existingWebhook) {
-          // Update existing webhook
-          result = await supabase
-            .from('webhook_configs')
-            .update({
-              webhook_url: url,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingWebhook.id);
-        } else {
-          // Insert new webhook
-          result = await supabase
-            .from('webhook_configs')
-            .insert({
-              webhook_type: type,
-              webhook_url: url,
-              is_active: true
-            });
-        }
-
-        if (result.error) {
-          console.error("Error saving webhook URL:", result.error);
-          toast.error("Failed to save webhook configuration");
-          return false;
-        }
-      } else {
+      } catch (dbError) {
         console.log('Webhook configs table not available, saving to localStorage only');
       }
 

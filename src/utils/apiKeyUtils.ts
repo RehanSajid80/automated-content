@@ -24,36 +24,31 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
   try {
     const encryptedKey = encryptKey(keyValue);
     
-    // For now, save to localStorage as fallback until auth is implemented
+    // Save to localStorage as fallback
     localStorage.setItem(keyName, keyValue);
     
     // Try to save to database if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // First, check if we have the api_keys table available
-      const { error: testError } = await supabase
-        .from('api_keys')
-        .select('id')
-        .limit(1);
-      
-      if (!testError) {
-        const { error } = await supabase
-          .from('api_keys')
-          .upsert({
-            user_id: user.id,
-            service_name: serviceName.toLowerCase(),
-            key_name: keyName,
-            encrypted_key: encryptedKey,
-            is_active: true
-          }, {
-            onConflict: 'user_id,service_name,key_name'
-          });
+      // Use raw SQL to check if api_keys table exists and insert data
+      try {
+        const { error } = await supabase.rpc('exec_sql', {
+          sql: `
+            INSERT INTO api_keys (user_id, service_name, key_name, encrypted_key, is_active)
+            VALUES ($1, $2, $3, $4, true)
+            ON CONFLICT (user_id, service_name, key_name) 
+            DO UPDATE SET 
+              encrypted_key = EXCLUDED.encrypted_key,
+              updated_at = now()
+          `,
+          params: [user.id, serviceName.toLowerCase(), keyName, encryptedKey]
+        });
         
         if (error) {
-          console.error('Error saving API key to database:', error);
+          console.log('Database save failed, using localStorage only:', error);
         }
-      } else {
+      } catch (dbError) {
         console.log('API keys table not available, using localStorage only');
       }
     }
@@ -69,24 +64,21 @@ export const getApiKey = async (keyName: string): Promise<string | null> => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // Check if api_keys table is available
-      const { error: testError } = await supabase
-        .from('api_keys')
-        .select('id')
-        .limit(1);
-      
-      if (!testError) {
-        const { data, error } = await supabase
-          .from('api_keys')
-          .select('encrypted_key')
-          .eq('user_id', user.id)
-          .eq('key_name', keyName)
-          .eq('is_active', true)
-          .maybeSingle();
+      try {
+        const { data, error } = await supabase.rpc('exec_sql', {
+          sql: `
+            SELECT encrypted_key 
+            FROM api_keys 
+            WHERE user_id = $1 AND key_name = $2 AND is_active = true
+          `,
+          params: [user.id, keyName]
+        });
         
-        if (!error && data) {
-          return decryptKey(data.encrypted_key);
+        if (!error && data && data.length > 0) {
+          return decryptKey(data[0].encrypted_key);
         }
+      } catch (dbError) {
+        console.log('Database fetch failed, using localStorage');
       }
     }
     
@@ -108,22 +100,13 @@ export const deleteApiKey = async (keyName: string): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // Check if api_keys table is available
-      const { error: testError } = await supabase
-        .from('api_keys')
-        .select('id')
-        .limit(1);
-      
-      if (!testError) {
-        const { error } = await supabase
-          .from('api_keys')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('key_name', keyName);
-        
-        if (error) {
-          console.error('Error deleting API key from database:', error);
-        }
+      try {
+        await supabase.rpc('exec_sql', {
+          sql: 'DELETE FROM api_keys WHERE user_id = $1 AND key_name = $2',
+          params: [user.id, keyName]
+        });
+      } catch (dbError) {
+        console.log('Database delete failed, but localStorage cleared');
       }
     }
   } catch (error) {

@@ -24,10 +24,21 @@ const AdminSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: adminResult } = await supabase
-        .rpc('is_admin', { user_id: user.id });
-
-      setIsAdmin(adminResult || false);
+      // Try to call is_admin function, fallback if not available
+      try {
+        const { data: adminResult, error } = await supabase.rpc('is_admin', { 
+          user_id: user.id 
+        });
+        
+        if (!error) {
+          setIsAdmin(adminResult || false);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.log("is_admin function not available, defaulting to false");
+        setIsAdmin(false);
+      }
     } catch (error) {
       console.error("Error checking admin status:", error);
     }

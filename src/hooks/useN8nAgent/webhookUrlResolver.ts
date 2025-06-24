@@ -7,20 +7,25 @@ export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | '
     const targetType = webhookType || 'content';
 
     // Try to get global webhook from database first
-    const { data: globalWebhook, error } = await supabase
-      .from('webhook_configs')
-      .select('webhook_url')
-      .eq('webhook_type', targetType)
-      .eq('is_active', true)
-      .maybeSingle();
+    try {
+      const { data: globalWebhooks, error } = await supabase.rpc('exec_sql', {
+        sql: `
+          SELECT url as webhook_url 
+          FROM webhook_configs 
+          WHERE type = $1 AND is_active = true 
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `,
+        params: [targetType]
+      });
 
-    if (error) {
-      console.error(`Error fetching global ${targetType} webhook:`, error);
-    }
-
-    if (globalWebhook?.webhook_url) {
-      console.log(`Using global ${targetType} webhook:`, globalWebhook.webhook_url);
-      return globalWebhook.webhook_url;
+      if (!error && globalWebhooks && globalWebhooks.length > 0) {
+        const webhookUrl = globalWebhooks[0].webhook_url;
+        console.log(`Using global ${targetType} webhook:`, webhookUrl);
+        return webhookUrl;
+      }
+    } catch (dbError) {
+      console.error(`Error fetching global ${targetType} webhook:`, dbError);
     }
 
     // Fallback to localStorage if database is unavailable
