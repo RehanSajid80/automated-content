@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          id: string
+          is_active: boolean | null
+          key_name: string
+          service_name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          id?: string
+          is_active?: boolean | null
+          key_name: string
+          service_name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          id?: string
+          is_active?: boolean | null
+          key_name?: string
+          service_name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       content_library: {
         Row: {
           content: string
@@ -23,8 +56,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          content: string
-          content_type: string
+          content?: string
+          content_type?: string
           created_at?: string
           id?: string
           is_saved?: boolean | null
@@ -53,7 +86,10 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean | null
+          is_global: boolean | null
+          type: string | null
           updated_at: string
+          url: string | null
           webhook_type: string
           webhook_url: string
         }
@@ -61,7 +97,10 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
+          type?: string | null
           updated_at?: string
+          url?: string | null
           webhook_type: string
           webhook_url: string
         }
@@ -69,7 +108,10 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
+          type?: string | null
           updated_at?: string
+          url?: string | null
           webhook_type?: string
           webhook_url?: string
         }
@@ -80,7 +122,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      exec_sql: {
+        Args: { sql: string; params?: Json }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

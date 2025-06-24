@@ -8,19 +8,16 @@ export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | '
 
     // Try to get global webhook from database first
     try {
-      const { data: globalWebhooks, error } = await supabase.rpc('exec_sql', {
-        sql: `
-          SELECT url as webhook_url 
-          FROM webhook_configs 
-          WHERE type = $1 AND is_active = true 
-          ORDER BY created_at DESC 
-          LIMIT 1
-        `,
-        params: [targetType]
-      });
+      const { data: globalWebhooks, error } = await supabase
+        .from('webhook_configs')
+        .select('url')
+        .eq('type', targetType)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (!error && globalWebhooks && globalWebhooks.length > 0) {
-        const webhookUrl = globalWebhooks[0].webhook_url;
+        const webhookUrl = globalWebhooks[0].url;
         console.log(`Using global ${targetType} webhook:`, webhookUrl);
         return webhookUrl;
       }

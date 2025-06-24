@@ -26,8 +26,21 @@ export const useN8nConfig = () => {
         return;
       }
 
-      // For now, set admin to false. Can be implemented later with proper admin logic
-      setIsAdmin(false);
+      // Try to call is_admin function if it exists
+      try {
+        const { data: adminResult, error } = await supabase.rpc('is_admin', { 
+          user_id: user.id 
+        });
+        
+        if (!error) {
+          setIsAdmin(adminResult || false);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.log("is_admin function not available, defaulting to false");
+        setIsAdmin(false);
+      }
     } catch (error) {
       console.error("Error checking admin status:", error);
       setIsAdmin(false);
@@ -37,11 +50,12 @@ export const useN8nConfig = () => {
   const fetchWebhookUrls = async () => {
     setIsLoading(true);
     try {
-      // Try to fetch global webhooks from database using raw SQL
+      // Try to fetch global webhooks from database
       try {
-        const { data: globalWebhooks, error } = await supabase.rpc('exec_sql', {
-          sql: 'SELECT type as webhook_type, url as webhook_url FROM webhook_configs WHERE is_active = true'
-        });
+        const { data: globalWebhooks, error } = await supabase
+          .from('webhook_configs')
+          .select('type, url')
+          .eq('is_active', true);
 
         if (!error && globalWebhooks) {
           const webhookMap = {
@@ -52,18 +66,18 @@ export const useN8nConfig = () => {
           };
 
           globalWebhooks.forEach((config: any) => {
-            switch (config.webhook_type) {
+            switch (config.type) {
               case 'keywords':
-                webhookMap.keywordWebhook = config.webhook_url;
+                webhookMap.keywordWebhook = config.url;
                 break;
               case 'content':
-                webhookMap.contentWebhook = config.webhook_url;
+                webhookMap.contentWebhook = config.url;
                 break;
               case 'custom-keywords':
-                webhookMap.customKeywordsWebhook = config.webhook_url;
+                webhookMap.customKeywordsWebhook = config.url;
                 break;
               case 'content-adjustment':
-                webhookMap.contentAdjustmentWebhook = config.webhook_url;
+                webhookMap.contentAdjustmentWebhook = config.url;
                 break;
             }
           });
@@ -118,19 +132,16 @@ export const useN8nConfig = () => {
   const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'keywords', asAdmin = false) => {
     setIsLoading(true);
     try {
-      // Try to save to database using raw SQL
+      // Try to save to database
       try {
-        const { error } = await supabase.rpc('exec_sql', {
-          sql: `
-            INSERT INTO webhook_configs (type, url, is_global, is_active)
-            VALUES ($1, $2, true, true)
-            ON CONFLICT (type) 
-            DO UPDATE SET 
-              url = EXCLUDED.url,
-              updated_at = now()
-          `,
-          params: [type, url]
-        });
+        const { error } = await supabase
+          .from('webhook_configs')
+          .upsert({
+            type: type,
+            url: url,
+            is_global: true,
+            is_active: true
+          });
 
         if (error) {
           console.error("Error saving webhook URL:", error);

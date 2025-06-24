@@ -31,19 +31,16 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // Use raw SQL to check if api_keys table exists and insert data
       try {
-        const { error } = await supabase.rpc('exec_sql', {
-          sql: `
-            INSERT INTO api_keys (user_id, service_name, key_name, encrypted_key, is_active)
-            VALUES ($1, $2, $3, $4, true)
-            ON CONFLICT (user_id, service_name, key_name) 
-            DO UPDATE SET 
-              encrypted_key = EXCLUDED.encrypted_key,
-              updated_at = now()
-          `,
-          params: [user.id, serviceName.toLowerCase(), keyName, encryptedKey]
-        });
+        const { error } = await supabase
+          .from('api_keys')
+          .upsert({
+            user_id: user.id,
+            service_name: serviceName.toLowerCase(),
+            key_name: keyName,
+            encrypted_key: encryptedKey,
+            is_active: true
+          });
         
         if (error) {
           console.log('Database save failed, using localStorage only:', error);
@@ -65,17 +62,16 @@ export const getApiKey = async (keyName: string): Promise<string | null> => {
     
     if (user) {
       try {
-        const { data, error } = await supabase.rpc('exec_sql', {
-          sql: `
-            SELECT encrypted_key 
-            FROM api_keys 
-            WHERE user_id = $1 AND key_name = $2 AND is_active = true
-          `,
-          params: [user.id, keyName]
-        });
+        const { data, error } = await supabase
+          .from('api_keys')
+          .select('encrypted_key')
+          .eq('user_id', user.id)
+          .eq('key_name', keyName)
+          .eq('is_active', true)
+          .maybeSingle();
         
-        if (!error && data && data.length > 0) {
-          return decryptKey(data[0].encrypted_key);
+        if (!error && data) {
+          return decryptKey(data.encrypted_key);
         }
       } catch (dbError) {
         console.log('Database fetch failed, using localStorage');
@@ -101,10 +97,11 @@ export const deleteApiKey = async (keyName: string): Promise<void> => {
     
     if (user) {
       try {
-        await supabase.rpc('exec_sql', {
-          sql: 'DELETE FROM api_keys WHERE user_id = $1 AND key_name = $2',
-          params: [user.id, keyName]
-        });
+        await supabase
+          .from('api_keys')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('key_name', keyName);
       } catch (dbError) {
         console.log('Database delete failed, but localStorage cleared');
       }
