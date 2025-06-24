@@ -1,132 +1,19 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Crown, Settings, Copy, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Crown } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAdminStatus } from "@/hooks/useAdminStatus";
+import AdminSQLGenerator from "./admin/AdminSQLGenerator";
+import GeneratedSQLDisplay from "./admin/GeneratedSQLDisplay";
+import AdminStatusAlerts from "./admin/AdminStatusAlerts";
 
 const AdminSettings = () => {
-  const [adminDomain, setAdminDomain] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [generatedSQL, setGeneratedSQL] = useState("");
-  const [functionExists, setFunctionExists] = useState(false);
+  const { isAdmin, functionExists } = useAdminStatus();
 
-  useEffect(() => {
-    checkAdminStatus();
-    checkIfFunctionExists();
-  }, []);
-
-  const checkIfFunctionExists = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Try to call the function directly to check if it exists
-      try {
-        const { data, error } = await supabase
-          .rpc('exec_sql', { 
-            sql: `SELECT public.is_admin('${user.id}') as is_admin` 
-          });
-        
-        if (!error && data) {
-          setFunctionExists(true);
-          // Type check and extract the result
-          const result = data as any;
-          if (result && typeof result.is_admin === 'boolean') {
-            setIsAdmin(result.is_admin);
-          }
-        } else {
-          setFunctionExists(false);
-        }
-      } catch (error) {
-        setFunctionExists(false);
-      }
-    } catch (error) {
-      setFunctionExists(false);
-    }
-  };
-
-  const checkAdminStatus = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsAdmin(false);
-        return;
-      }
-
-      // Try to check if function exists and call it
-      try {
-        const { data: adminData, error } = await supabase
-          .rpc('exec_sql', { 
-            sql: `SELECT public.is_admin('${user.id}') as is_admin` 
-          });
-        
-        if (!error && adminData) {
-          // Type check and extract the result
-          const result = adminData as any;
-          if (result && typeof result.is_admin === 'boolean') {
-            setIsAdmin(result.is_admin);
-            setFunctionExists(true);
-          } else {
-            setIsAdmin(false);
-            setFunctionExists(false);
-          }
-        } else {
-          setIsAdmin(false);
-          setFunctionExists(false);
-        }
-      } catch (error) {
-        console.log("is_admin function not available");
-        setIsAdmin(false);
-        setFunctionExists(false);
-      }
-    } catch (error) {
-      console.error("Error checking admin status:", error);
-      setIsAdmin(false);
-    }
-  };
-
-  const generateAdminSQL = () => {
-    if (!adminDomain) {
-      toast.error("Please enter a valid email domain");
-      return;
-    }
-
-    // Validate domain format
-    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
-    if (!domainRegex.test(adminDomain)) {
-      toast.error("Please enter a valid domain (e.g., company.com)");
-      return;
-    }
-
-    const sql = `CREATE OR REPLACE FUNCTION public.is_admin(user_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM auth.users 
-    WHERE id = user_id 
-    AND email LIKE '%@${adminDomain}'
-  );
-$$;`;
-
+  const handleSQLGenerated = (sql: string) => {
     setGeneratedSQL(sql);
-    toast.success("SQL generated! Copy and run it in the SQL Editor.");
-  };
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedSQL);
-      toast.success("SQL copied to clipboard!");
-    } catch (error) {
-      toast.error("Failed to copy to clipboard");
-    }
   };
 
   return (
@@ -143,70 +30,11 @@ $$;`;
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!functionExists && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Setup Required:</strong> The admin function needs to be created in your database. 
-              Generate and run the SQL below to enable admin functionality.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Alert>
-          <Settings className="h-4 w-4" />
-          <AlertDescription>
-            Admins can create webhook configurations that are available to all users.
-            Enter your organization's email domain (e.g., "company.com" for emails like admin@company.com).
-          </AlertDescription>
-        </Alert>
-
-        <div className="space-y-2">
-          <Label htmlFor="admin-domain">Admin Email Domain</Label>
-          <div className="flex gap-2">
-            <div className="flex-1 flex items-center">
-              <span className="text-sm text-muted-foreground mr-1">@</span>
-              <Input
-                id="admin-domain"
-                value={adminDomain}
-                onChange={(e) => setAdminDomain(e.target.value)}
-                placeholder="company.com"
-                className="flex-1"
-              />
-            </div>
-            <Button 
-              onClick={generateAdminSQL} 
-              disabled={isLoading || !adminDomain}
-            >
-              Generate SQL
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Users with emails ending in @{adminDomain || "yourdomain.com"} will have admin access.
-          </p>
-        </div>
-
-        {generatedSQL && (
-          <div className="space-y-2">
-            <Label>Generated SQL (Run this in the SQL Editor)</Label>
-            <div className="relative">
-              <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto whitespace-pre-wrap">
-                {generatedSQL}
-              </pre>
-              <Button
-                onClick={copyToClipboard}
-                size="sm"
-                variant="outline"
-                className="absolute top-2 right-2"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Copy this SQL and run it in the Supabase SQL Editor to update the admin domain.
-            </p>
-          </div>
-        )}
+        <AdminStatusAlerts functionExists={functionExists} />
+        
+        <AdminSQLGenerator onSQLGenerated={handleSQLGenerated} />
+        
+        <GeneratedSQLDisplay sql={generatedSQL} />
 
         <Alert>
           <AlertDescription>
