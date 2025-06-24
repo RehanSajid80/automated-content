@@ -25,25 +25,19 @@ const AdminSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Try to call the function using a simple query to check if it exists
+      // Try to call the function directly to check if it exists
       try {
         const { data, error } = await supabase
-          .from('information_schema.routines')
-          .select('routine_name')
-          .eq('routine_name', 'is_admin')
-          .eq('routine_schema', 'public')
-          .maybeSingle();
+          .rpc('exec_sql', { 
+            sql: `SELECT public.is_admin('${user.id}') as is_admin` 
+          });
         
         if (!error && data) {
           setFunctionExists(true);
-          // If function exists, check admin status
-          const { data: adminData, error: adminError } = await supabase
-            .rpc('exec_sql', { 
-              sql: `SELECT public.is_admin('${user.id}') as is_admin` 
-            });
-          
-          if (!adminError && adminData) {
-            setIsAdmin(Boolean(adminData.is_admin));
+          // Type check and extract the result
+          const result = data as any;
+          if (result && typeof result.is_admin === 'boolean') {
+            setIsAdmin(result.is_admin);
           }
         } else {
           setFunctionExists(false);
@@ -72,8 +66,15 @@ const AdminSettings = () => {
           });
         
         if (!error && adminData) {
-          setIsAdmin(Boolean(adminData.is_admin));
-          setFunctionExists(true);
+          // Type check and extract the result
+          const result = adminData as any;
+          if (result && typeof result.is_admin === 'boolean') {
+            setIsAdmin(result.is_admin);
+            setFunctionExists(true);
+          } else {
+            setIsAdmin(false);
+            setFunctionExists(false);
+          }
         } else {
           setIsAdmin(false);
           setFunctionExists(false);

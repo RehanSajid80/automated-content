@@ -33,7 +33,13 @@ export const useN8nConfig = () => {
           });
         
         if (!error && data) {
-          setIsAdmin(Boolean(data.is_admin));
+          // Type check and extract the result
+          const result = data as any;
+          if (result && typeof result.is_admin === 'boolean') {
+            setIsAdmin(result.is_admin);
+          } else {
+            setIsAdmin(false);
+          }
         } else {
           setIsAdmin(false);
         }
