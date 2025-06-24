@@ -25,10 +25,11 @@ export const useOpenAIConnection = () => {
         return;
       }
       
-      // Show that a global key exists (masked)
+      // Show that a global key exists (masked) and set as connected immediately
       setOpenaiApiKey("••••••••••••••••••••••••••");
+      setOpenaiStatus('connected'); // Set as connected immediately when key is found
       
-      // Validate key with OpenAI API
+      // Validate key with OpenAI API in background
       console.log('🔬 Validating OpenAI API key with OpenAI servers...');
       const response = await fetch('https://api.openai.com/v1/models', {
         method: 'GET',
@@ -42,7 +43,7 @@ export const useOpenAIConnection = () => {
       
       if (response.ok) {
         console.log('✅ OpenAI API key is valid and working globally');
-        setOpenaiStatus('connected');
+        // Status is already set to connected above
         console.log('🌍 Global API key loaded and ready for all users');
       } else {
         const errorText = await response.text();
@@ -63,7 +64,7 @@ export const useOpenAIConnection = () => {
         console.log('💾 Saving OpenAI API key globally...');
         await saveApiKey(API_KEYS.OPENAI, openaiApiKey, "OpenAI");
         setOpenaiApiKey("••••••••••••••••••••••••••");
-        setOpenaiStatus('checking');
+        setOpenaiStatus('connected'); // Set as connected immediately after saving
         
         console.log(`✅ OpenAI API key saved globally (available to all users everywhere)`);
         
@@ -72,7 +73,7 @@ export const useOpenAIConnection = () => {
           description: "Your OpenAI API key has been saved and is now available to all users of this application worldwide",
         });
         
-        // Re-check the connection after saving
+        // Re-check the connection after saving to validate
         setTimeout(checkOpenAI, 500);
       } catch (error) {
         console.error('❌ Failed to save OpenAI API key:', error);
