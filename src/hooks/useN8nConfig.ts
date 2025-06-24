@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,9 +25,21 @@ export const useN8nConfig = () => {
         return;
       }
 
-      // For now, we'll default to false since we don't have is_admin function yet
-      // Users will need to run the SQL to create the function first
-      setIsAdmin(false);
+      // Try to call is_admin function if it exists
+      try {
+        const { data: adminResult, error } = await supabase.rpc('is_admin', { 
+          user_id: user.id 
+        });
+        
+        if (!error) {
+          setIsAdmin(adminResult || false);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.log("is_admin function not available, defaulting to false");
+        setIsAdmin(false);
+      }
     } catch (error) {
       console.error("Error checking admin status:", error);
       setIsAdmin(false);
@@ -83,7 +94,7 @@ export const useN8nConfig = () => {
           loadFromLocalStorage();
         }
       } catch (dbError) {
-        console.log('Webhook configs table not available, using localStorage');
+        console.error('Webhook configs table not available, using localStorage');
         loadFromLocalStorage();
       }
       
@@ -123,6 +134,19 @@ export const useN8nConfig = () => {
   };
 
   const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'keywords', asAdmin = false) => {
+    if (!url || url.trim() === '') {
+      toast.error("Webhook URL cannot be empty");
+      return false;
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      toast.error("Please enter a valid URL");
+      return false;
+    }
+
     setIsLoading(true);
     try {
       // Try to save to database
@@ -143,9 +167,11 @@ export const useN8nConfig = () => {
 
         if (error) {
           console.error("Error saving webhook URL:", error);
+          throw new Error('Failed to save webhook configuration');
         }
       } catch (dbError) {
-        console.log('Webhook configs table not available, saving to localStorage only');
+        console.error('Webhook configs table not available:', dbError);
+        throw new Error('Database not available for webhook storage');
       }
 
       // Update local state
@@ -187,10 +213,10 @@ export const useN8nConfig = () => {
     isAdmin,
     webhooks,
     fetchWebhookUrls,
-    getWebhookUrl,
-    getContentWebhookUrl,
-    getCustomKeywordsWebhookUrl,
-    getContentAdjustmentWebhookUrl,
+    getWebhookUrl: () => webhooks.keywordWebhook,
+    getContentWebhookUrl: () => webhooks.contentWebhook,
+    getCustomKeywordsWebhookUrl: () => webhooks.customKeywordsWebhook,
+    getContentAdjustmentWebhookUrl: () => webhooks.contentAdjustmentWebhook,
     saveWebhookUrl
   };
 };

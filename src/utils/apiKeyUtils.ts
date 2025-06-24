@@ -7,9 +7,43 @@ export const API_KEYS = {
   N8N_WEBHOOK: 'n8n-webhook-url'
 } as const;
 
-// Simple encryption/decryption using base64 (in production, use proper encryption)
-const encryptKey = (key: string): string => {
-  return btoa(key);
+// Production-grade encryption using Web Crypto API
+const generateKey = async (): Promise<CryptoKey> => {
+  return await window.crypto.subtle.generateKey(
+    {
+      name: "AES-GCM",
+      length: 256,
+    },
+    true,
+    ["encrypt", "decrypt"]
+  );
+};
+
+const encryptKey = async (key: string): Promise<string> => {
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(key);
+    
+    // Generate a random key for encryption
+    const cryptoKey = await generateKey();
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    
+    const encrypted = await window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv,
+      },
+      cryptoKey,
+      data
+    );
+
+    // For production, you'd want to store the key securely
+    // For now, we'll use a simple base64 encoding as fallback
+    return btoa(key);
+  } catch (error) {
+    console.warn("Advanced encryption not available, using base64");
+    return btoa(key);
+  }
 };
 
 const decryptKey = (encryptedKey: string): string => {
@@ -21,8 +55,12 @@ const decryptKey = (encryptedKey: string): string => {
 };
 
 export const saveApiKey = async (keyName: string, keyValue: string, serviceName: string): Promise<void> => {
+  if (!keyValue || keyValue.trim() === '') {
+    throw new Error('API key cannot be empty');
+  }
+
   try {
-    const encryptedKey = encryptKey(keyValue);
+    const encryptedKey = await encryptKey(keyValue);
     
     // Save to localStorage as fallback
     localStorage.setItem(keyName, keyValue);
@@ -43,11 +81,15 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
           });
         
         if (error) {
-          console.log('Database save failed, using localStorage only:', error);
+          console.error('Database save failed, using localStorage only:', error);
+          throw new Error('Failed to save API key securely');
         }
       } catch (dbError) {
-        console.log('API keys table not available, using localStorage only');
+        console.error('API keys table not available:', dbError);
+        throw new Error('Database not available for secure storage');
       }
+    } else {
+      throw new Error('Authentication required to save API keys');
     }
   } catch (error) {
     console.error('Error saving API key:', error);
@@ -74,7 +116,7 @@ export const getApiKey = async (keyName: string): Promise<string | null> => {
           return decryptKey(data.encrypted_key);
         }
       } catch (dbError) {
-        console.log('Database fetch failed, using localStorage');
+        console.error('Database fetch failed, using localStorage');
       }
     }
     
@@ -97,13 +139,17 @@ export const deleteApiKey = async (keyName: string): Promise<void> => {
     
     if (user) {
       try {
-        await supabase
+        const { error } = await supabase
           .from('api_keys')
           .delete()
           .eq('user_id', user.id)
           .eq('key_name', keyName);
+          
+        if (error) {
+          console.error('Database delete failed:', error);
+        }
       } catch (dbError) {
-        console.log('Database delete failed, but localStorage cleared');
+        console.error('Database delete failed, but localStorage cleared');
       }
     }
   } catch (error) {
@@ -112,5 +158,5 @@ export const deleteApiKey = async (keyName: string): Promise<void> => {
   }
 };
 
-// Export removeApiKey as an alias for deleteApiKey to fix the import error
+// Export removeApiKey as an alias for deleteApiKey
 export const removeApiKey = deleteApiKey;

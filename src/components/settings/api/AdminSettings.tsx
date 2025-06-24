@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Crown, Settings, Copy } from "lucide-react";
+import { Crown, Settings, Copy, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,27 +14,71 @@ const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [generatedSQL, setGeneratedSQL] = useState("");
+  const [functionExists, setFunctionExists] = useState(false);
 
   useEffect(() => {
     checkAdminStatus();
+    checkIfFunctionExists();
   }, []);
 
-  const checkAdminStatus = async () => {
+  const checkIfFunctionExists = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // For now, we'll default to false since we don't have is_admin function yet
-      // Users will need to run the SQL to create the function first
-      setIsAdmin(false);
+      // Try to call the function to see if it exists
+      try {
+        await supabase.rpc('is_admin', { user_id: user.id });
+        setFunctionExists(true);
+      } catch (error) {
+        setFunctionExists(false);
+      }
+    } catch (error) {
+      setFunctionExists(false);
+    }
+  };
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+
+      // Try to call is_admin function if it exists
+      try {
+        const { data: adminResult, error } = await supabase.rpc('is_admin', { 
+          user_id: user.id 
+        });
+        
+        if (!error) {
+          setIsAdmin(adminResult || false);
+          setFunctionExists(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.log("is_admin function not available");
+        setIsAdmin(false);
+        setFunctionExists(false);
+      }
     } catch (error) {
       console.error("Error checking admin status:", error);
+      setIsAdmin(false);
     }
   };
 
   const generateAdminSQL = () => {
     if (!adminDomain) {
       toast.error("Please enter a valid email domain");
+      return;
+    }
+
+    // Validate domain format
+    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
+    if (!domainRegex.test(adminDomain)) {
+      toast.error("Please enter a valid domain (e.g., company.com)");
       return;
     }
 
@@ -71,12 +115,23 @@ $$;`;
           <Crown className="h-5 w-5 text-yellow-500" />
           Admin Settings
           {isAdmin && <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Admin</span>}
+          {functionExists && <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Function Active</span>}
         </CardTitle>
         <CardDescription>
           Configure admin access for webhook management. Users with emails from the specified domain will have admin privileges.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {!functionExists && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Setup Required:</strong> The admin function needs to be created in your database. 
+              Generate and run the SQL below to enable admin functionality.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Alert>
           <Settings className="h-4 w-4" />
           <AlertDescription>
