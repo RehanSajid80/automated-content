@@ -59,13 +59,12 @@ export const useN8nConfig = () => {
 
   const saveWebhookUrl = async (
     url: string, 
-    type: WebhookType = 'keywords', 
-    asAdmin = false
+    type: WebhookType = 'keywords'
   ): Promise<boolean> => {
     setIsLoading(true);
     
     try {
-      const success = await saveWebhookUrlUtil(url, type, asAdmin);
+      const success = await saveWebhookUrlUtil(url, type);
       
       if (success) {
         // Update local state
