@@ -43,6 +43,9 @@ const ApiConnectionsManager = () => {
         return;
       }
       
+      // Show that a global key exists (masked)
+      setOpenaiApiKey("••••••••••••••••••••••••••");
+      
       // Validate key with OpenAI API
       console.log('🔬 Validating OpenAI API key with OpenAI servers...');
       const response = await fetch('https://api.openai.com/v1/models', {
@@ -58,7 +61,6 @@ const ApiConnectionsManager = () => {
       if (response.ok) {
         console.log('✅ OpenAI API key is valid and working globally');
         setOpenaiStatus('connected');
-        setOpenaiApiKey("••••••••••••••••••••••••••");
         console.log('🌍 Global API key loaded and ready for all users');
       } else {
         const errorText = await response.text();
