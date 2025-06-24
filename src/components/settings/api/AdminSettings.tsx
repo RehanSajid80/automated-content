@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,14 +25,26 @@ const AdminSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Try to call the function to see if it exists
+      // Try to call the function using a simple query to check if it exists
       try {
-        // Check if is_admin function exists by calling it directly
-        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
+        const { data, error } = await supabase
+          .from('information_schema.routines')
+          .select('routine_name')
+          .eq('routine_name', 'is_admin')
+          .eq('routine_schema', 'public')
+          .maybeSingle();
         
-        if (!error) {
+        if (!error && data) {
           setFunctionExists(true);
-          setIsAdmin(Boolean(data));
+          // If function exists, check admin status
+          const { data: adminData, error: adminError } = await supabase
+            .rpc('exec_sql', { 
+              sql: `SELECT public.is_admin('${user.id}') as is_admin` 
+            });
+          
+          if (!adminError && adminData) {
+            setIsAdmin(Boolean(adminData.is_admin));
+          }
         } else {
           setFunctionExists(false);
         }
@@ -53,12 +64,15 @@ const AdminSettings = () => {
         return;
       }
 
-      // Try to call is_admin function if it exists
+      // Try to check if function exists and call it
       try {
-        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
+        const { data: adminData, error } = await supabase
+          .rpc('exec_sql', { 
+            sql: `SELECT public.is_admin('${user.id}') as is_admin` 
+          });
         
-        if (!error) {
-          setIsAdmin(Boolean(data));
+        if (!error && adminData) {
+          setIsAdmin(Boolean(adminData.is_admin));
           setFunctionExists(true);
         } else {
           setIsAdmin(false);

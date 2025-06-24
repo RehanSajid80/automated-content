@@ -25,12 +25,15 @@ export const useN8nConfig = () => {
         return;
       }
 
-      // Try to call is_admin function if it exists
+      // Try to call is_admin function using exec_sql if it exists
       try {
-        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
+        const { data, error } = await supabase
+          .rpc('exec_sql', { 
+            sql: `SELECT public.is_admin('${user.id}') as is_admin` 
+          });
         
-        if (!error) {
-          setIsAdmin(Boolean(data));
+        if (!error && data) {
+          setIsAdmin(Boolean(data.is_admin));
         } else {
           setIsAdmin(false);
         }
