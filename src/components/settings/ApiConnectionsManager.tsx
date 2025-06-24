@@ -12,7 +12,7 @@ import AdminSettings from "./api/AdminSettings";
 import ErrorBoundary from "@/components/ui/error-boundary";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Globe } from "lucide-react";
+import { Globe, Users } from "lucide-react";
 
 const ApiConnectionsManager = () => {
   // API key state
@@ -26,13 +26,13 @@ const ApiConnectionsManager = () => {
   const { toast } = useToast();
   const { webhooks, fetchWebhookUrls, isAdmin } = useN8nConfig();
 
-  // Check OpenAI API key - improved version with better logging
+  // Check OpenAI API key on component mount
   const checkOpenAI = async () => {
-    console.log('🔍 Starting global OpenAI connection check...');
+    console.log('🔍 Checking global OpenAI connection...');
     setOpenaiStatus('checking');
     
     try {
-      // Get global API key from Supabase or localStorage
+      // Get global API key from Supabase
       const key = await getApiKey(API_KEYS.OPENAI);
       console.log('🔑 Global OpenAI key retrieval result:', key ? 'Key found' : 'No key found');
       
@@ -59,7 +59,7 @@ const ApiConnectionsManager = () => {
         console.log('✅ OpenAI API key is valid and working globally');
         setOpenaiStatus('connected');
         setOpenaiApiKey("••••••••••••••••••••••••••");
-        console.log('🌍 API key loaded from global configuration (available to all users)');
+        console.log('🌍 Global API key loaded and ready for all users');
       } else {
         const errorText = await response.text();
         console.log('❌ OpenAI API key validation failed:', response.status, errorText);
@@ -73,15 +73,10 @@ const ApiConnectionsManager = () => {
     }
   };
 
-  // Run OpenAI check immediately on component mount
+  // Run checks immediately on component mount
   useEffect(() => {
-    console.log('🚀 Component mounted, checking global OpenAI connection...');
+    console.log('🚀 Component mounted, checking global connections...');
     checkOpenAI();
-  }, []);
-
-  // Also run when component loads to ensure fresh data
-  useEffect(() => {
-    console.log('🔄 Fetching global webhook URLs...');
     fetchWebhookUrls();
   }, []);
 
@@ -135,11 +130,11 @@ const ApiConnectionsManager = () => {
         setOpenaiApiKey("••••••••••••••••••••••••••");
         setOpenaiStatus('checking');
         
-        console.log(`✅ OpenAI API key saved globally (available to all users)`);
+        console.log(`✅ OpenAI API key saved globally (available to all users everywhere)`);
         
         toast({
           title: "OpenAI API Key Saved Globally",
-          description: "Your OpenAI API key has been saved and is now available to all users of this application",
+          description: "Your OpenAI API key has been saved and is now available to all users of this application worldwide",
         });
         
         // Re-check the connection after saving
@@ -181,10 +176,10 @@ const ApiConnectionsManager = () => {
             <ConnectionHeader onResetConnections={resetConnections} />
             
             <Alert className="mb-6">
-              <Globe className="h-4 w-4" />
+              <Users className="h-4 w-4" />
               <AlertDescription>
-                <strong>Global Configuration:</strong> API keys and webhooks configured here are shared across all users. 
-                No sign-in required - this works for everyone using this application.
+                <strong>Global Configuration Center:</strong> API keys and webhooks configured here are shared across ALL users and devices. 
+                No sign-in required - settings are instantly available to everyone using this application worldwide.
               </AlertDescription>
             </Alert>
             

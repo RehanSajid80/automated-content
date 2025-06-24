@@ -7,42 +7,13 @@ export const API_KEYS = {
   N8N_WEBHOOK: 'n8n-webhook-url'
 } as const;
 
-// Production-grade encryption using Web Crypto API
-const generateKey = async (): Promise<CryptoKey> => {
-  return await window.crypto.subtle.generateKey(
-    {
-      name: "AES-GCM",
-      length: 256,
-    },
-    true,
-    ["encrypt", "decrypt"]
-  );
-};
-
-const encryptKey = async (key: string): Promise<string> => {
+// Simple encryption using base64 (can be enhanced later)
+const encryptKey = (key: string): string => {
   try {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(key);
-    
-    // Generate a random key for encryption
-    const cryptoKey = await generateKey();
-    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    
-    const encrypted = await window.crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: iv,
-      },
-      cryptoKey,
-      data
-    );
-
-    // For production, you'd want to store the key securely
-    // For now, we'll use a simple base64 encoding as fallback
     return btoa(key);
   } catch (error) {
-    console.warn("Advanced encryption not available, using base64");
-    return btoa(key);
+    console.warn("Encryption failed, storing as plain text");
+    return key;
   }
 };
 
@@ -59,65 +30,60 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
     throw new Error('API key cannot be empty');
   }
 
-  console.log(`💾 Saving ${serviceName} API key globally...`);
+  console.log(`💾 Saving ${serviceName} API key globally for all users...`);
 
   try {
-    const encryptedKey = await encryptKey(keyValue);
+    const encryptedKey = encryptKey(keyValue);
     
-    // Always save to localStorage as immediate fallback
+    // Save to localStorage as immediate fallback
     localStorage.setItem(keyName, keyValue);
-    console.log(`✅ ${serviceName} API key saved to localStorage`);
+    console.log(`✅ ${serviceName} API key saved to localStorage as backup`);
     
-    // Save to database as global configuration (no authentication required)
+    // Save to database as global configuration (no user authentication required)
     console.log(`🌐 Saving ${serviceName} API key to Supabase as global configuration...`);
-    try {
-      // Check if global key already exists
-      const { data: existing } = await supabase
+    
+    // Check if global key already exists
+    const { data: existing } = await supabase
+      .from('api_keys')
+      .select('id')
+      .eq('key_name', keyName)
+      .is('user_id', null) // Global keys have null user_id
+      .maybeSingle();
+
+    const keyData = {
+      user_id: null, // Global configuration - no user required
+      service_name: serviceName.toLowerCase(),
+      key_name: keyName,
+      encrypted_key: encryptedKey,
+      is_active: true
+    };
+
+    if (existing) {
+      // Update existing global key
+      const { error } = await supabase
         .from('api_keys')
-        .select('id')
-        .eq('key_name', keyName)
-        .is('user_id', null) // Global keys have null user_id
-        .maybeSingle();
-
-      const keyData = {
-        user_id: null, // Global configuration
-        service_name: serviceName.toLowerCase(),
-        key_name: keyName,
-        encrypted_key: encryptedKey,
-        is_active: true
-      };
-
-      if (existing) {
-        // Update existing global key
-        const { error } = await supabase
-          .from('api_keys')
-          .update(keyData)
-          .eq('id', existing.id);
-          
-        if (error) {
-          console.error("❌ Supabase update failed:", error);
-          throw new Error('Failed to update global API key in database');
-        }
-        console.log(`✅ ${serviceName} global API key updated in Supabase database`);
-      } else {
-        // Insert new global key
-        const { error } = await supabase
-          .from('api_keys')
-          .insert(keyData);
-          
-        if (error) {
-          console.error("❌ Supabase insert failed:", error);
-          throw new Error('Failed to save global API key to database');
-        }
-        console.log(`✅ ${serviceName} global API key saved to Supabase database`);
+        .update(keyData)
+        .eq('id', existing.id);
+        
+      if (error) {
+        console.error("❌ Supabase update failed:", error);
+        throw new Error('Failed to update global API key in database');
       }
-      
-      console.log(`🌍 ${serviceName} API key now available globally for all users`);
-    } catch (dbError) {
-      console.error('❌ Database save failed, but localStorage backup is available:', dbError);
-      // Don't throw error here - localStorage backup is still functional
-      console.log(`⚠️ ${serviceName} API key saved locally only (database sync failed)`);
+      console.log(`✅ ${serviceName} global API key updated in Supabase database`);
+    } else {
+      // Insert new global key
+      const { error } = await supabase
+        .from('api_keys')
+        .insert(keyData);
+        
+      if (error) {
+        console.error("❌ Supabase insert failed:", error);
+        throw new Error('Failed to save global API key to database');
+      }
+      console.log(`✅ ${serviceName} global API key saved to Supabase database`);
     }
+    
+    console.log(`🌍 ${serviceName} API key now available globally for all users on any device`);
   } catch (error) {
     console.error('❌ Error saving API key:', error);
     throw error;
@@ -130,33 +96,32 @@ export const getApiKey = async (keyName: string): Promise<string | null> => {
   try {
     // First try to get global configuration from database (no authentication required)
     console.log(`🌐 Checking Supabase for global ${keyName}...`);
-    try {
-      const { data, error } = await supabase
-        .from('api_keys')
-        .select('encrypted_key')
-        .eq('key_name', keyName)
-        .is('user_id', null) // Global keys have null user_id
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      if (!error && data) {
-        const decryptedKey = decryptKey(data.encrypted_key);
-        console.log(`✅ ${keyName} retrieved from Supabase global configuration`);
-        return decryptedKey;
-      } else {
-        console.log(`⚠️ ${keyName} not found in global configuration, checking localStorage...`);
-      }
-    } catch (dbError) {
-      console.error('❌ Database fetch failed, using localStorage fallback:', dbError);
+    
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('encrypted_key')
+      .eq('key_name', keyName)
+      .is('user_id', null) // Global keys have null user_id
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    if (!error && data) {
+      const decryptedKey = decryptKey(data.encrypted_key);
+      console.log(`✅ ${keyName} retrieved from Supabase global configuration`);
+      return decryptedKey;
+    } else if (error) {
+      console.error('❌ Database fetch error:', error);
+    } else {
+      console.log(`⚠️ ${keyName} not found in global configuration`);
     }
     
-    // Fallback to localStorage
+    // Fallback to localStorage only if database fails
     const localKey = localStorage.getItem(keyName);
     if (localKey) {
-      console.log(`✅ ${keyName} retrieved from localStorage`);
+      console.log(`✅ ${keyName} retrieved from localStorage fallback`);
       return localKey;
     } else {
-      console.log(`❌ ${keyName} not found in localStorage either`);
+      console.log(`❌ ${keyName} not found anywhere`);
       return null;
     }
   } catch (error) {
@@ -176,20 +141,16 @@ export const deleteApiKey = async (keyName: string): Promise<void> => {
     localStorage.removeItem(keyName);
     
     // Remove from database (global configuration)
-    try {
-      const { error } = await supabase
-        .from('api_keys')
-        .delete()
-        .eq('key_name', keyName)
-        .is('user_id', null); // Global keys have null user_id
-        
-      if (error) {
-        console.error('Database delete failed:', error);
-      } else {
-        console.log(`Deleted global ${keyName} from database`);
-      }
-    } catch (dbError) {
-      console.error('Database delete failed, but localStorage cleared:', dbError);
+    const { error } = await supabase
+      .from('api_keys')
+      .delete()
+      .eq('key_name', keyName)
+      .is('user_id', null); // Global keys have null user_id
+      
+    if (error) {
+      console.error('Database delete failed:', error);
+    } else {
+      console.log(`Deleted global ${keyName} from database`);
     }
   } catch (error) {
     console.error('Error deleting API key:', error);
