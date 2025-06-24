@@ -37,46 +37,57 @@ export const useN8nConfig = () => {
   const fetchWebhookUrls = async () => {
     setIsLoading(true);
     try {
-      // Fetch global webhooks from new table structure
-      const { data: globalWebhooks, error } = await supabase
+      // Check if webhook_configs table is available
+      const { error: testError } = await supabase
         .from('webhook_configs')
-        .select('webhook_type, webhook_url')
-        .eq('is_active', true);
+        .select('id')
+        .limit(1);
 
-      if (error) {
-        console.error("Error fetching webhook configs:", error);
-        loadFromLocalStorage();
-        return;
-      }
+      if (!testError) {
+        // Fetch global webhooks from database
+        const { data: globalWebhooks, error } = await supabase
+          .from('webhook_configs')
+          .select('webhook_type, webhook_url')
+          .eq('is_active', true);
 
-      const webhookMap = {
-        keywordWebhook: '',
-        contentWebhook: '',
-        customKeywordsWebhook: '',
-        contentAdjustmentWebhook: ''
-      };
-
-      globalWebhooks?.forEach(config => {
-        switch (config.webhook_type) {
-          case 'keywords':
-            webhookMap.keywordWebhook = config.webhook_url;
-            break;
-          case 'content':
-            webhookMap.contentWebhook = config.webhook_url;
-            break;
-          case 'custom-keywords':
-            webhookMap.customKeywordsWebhook = config.webhook_url;
-            break;
-          case 'content-adjustment':
-            webhookMap.contentAdjustmentWebhook = config.webhook_url;
-            break;
+        if (error) {
+          console.error("Error fetching webhook configs:", error);
+          loadFromLocalStorage();
+          return;
         }
-      });
 
-      setWebhooks(webhookMap);
-      
-      // Also save to localStorage for offline access
-      localStorage.setItem('webhook-configs', JSON.stringify(webhookMap));
+        const webhookMap = {
+          keywordWebhook: '',
+          contentWebhook: '',
+          customKeywordsWebhook: '',
+          contentAdjustmentWebhook: ''
+        };
+
+        globalWebhooks?.forEach(config => {
+          switch (config.webhook_type) {
+            case 'keywords':
+              webhookMap.keywordWebhook = config.webhook_url;
+              break;
+            case 'content':
+              webhookMap.contentWebhook = config.webhook_url;
+              break;
+            case 'custom-keywords':
+              webhookMap.customKeywordsWebhook = config.webhook_url;
+              break;
+            case 'content-adjustment':
+              webhookMap.contentAdjustmentWebhook = config.webhook_url;
+              break;
+          }
+        });
+
+        setWebhooks(webhookMap);
+        
+        // Also save to localStorage for offline access
+        localStorage.setItem('webhook-configs', JSON.stringify(webhookMap));
+      } else {
+        console.log('Webhook configs table not available, using localStorage');
+        loadFromLocalStorage();
+      }
       
     } catch (error) {
       console.error("Error fetching webhook URLs:", error);
@@ -116,45 +127,55 @@ export const useN8nConfig = () => {
   const saveWebhookUrl = async (url: string, type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'keywords', asAdmin = false) => {
     setIsLoading(true);
     try {
-      // Check if webhook of this type already exists
-      const { data: existingWebhook, error: fetchError } = await supabase
+      // Check if webhook_configs table is available
+      const { error: testError } = await supabase
         .from('webhook_configs')
         .select('id')
-        .eq('webhook_type', type)
-        .eq('is_active', true)
-        .maybeSingle();
+        .limit(1);
 
-      if (fetchError) {
-        console.error("Error checking existing webhook:", fetchError);
-        toast.error("Failed to check existing webhook configuration");
-        return false;
-      }
-
-      let result;
-      if (existingWebhook) {
-        // Update existing webhook
-        result = await supabase
+      if (!testError) {
+        // Check if webhook of this type already exists
+        const { data: existingWebhook, error: fetchError } = await supabase
           .from('webhook_configs')
-          .update({
-            webhook_url: url,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingWebhook.id);
+          .select('id')
+          .eq('webhook_type', type)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (fetchError) {
+          console.error("Error checking existing webhook:", fetchError);
+          toast.error("Failed to check existing webhook configuration");
+          return false;
+        }
+
+        let result;
+        if (existingWebhook) {
+          // Update existing webhook
+          result = await supabase
+            .from('webhook_configs')
+            .update({
+              webhook_url: url,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingWebhook.id);
+        } else {
+          // Insert new webhook
+          result = await supabase
+            .from('webhook_configs')
+            .insert({
+              webhook_type: type,
+              webhook_url: url,
+              is_active: true
+            });
+        }
+
+        if (result.error) {
+          console.error("Error saving webhook URL:", result.error);
+          toast.error("Failed to save webhook configuration");
+          return false;
+        }
       } else {
-        // Insert new webhook
-        result = await supabase
-          .from('webhook_configs')
-          .insert({
-            webhook_type: type,
-            webhook_url: url,
-            is_active: true
-          });
-      }
-
-      if (result.error) {
-        console.error("Error saving webhook URL:", result.error);
-        toast.error("Failed to save webhook configuration");
-        return false;
+        console.log('Webhook configs table not available, saving to localStorage only');
       }
 
       // Update local state

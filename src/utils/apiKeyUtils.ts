@@ -31,20 +31,30 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      const { error } = await supabase
+      // First, check if we have the api_keys table available
+      const { error: testError } = await supabase
         .from('api_keys')
-        .upsert({
-          user_id: user.id,
-          service_name: serviceName.toLowerCase(),
-          key_name: keyName,
-          encrypted_key: encryptedKey,
-          is_active: true
-        }, {
-          onConflict: 'user_id,service_name,key_name'
-        });
+        .select('id')
+        .limit(1);
       
-      if (error) {
-        console.error('Error saving API key to database:', error);
+      if (!testError) {
+        const { error } = await supabase
+          .from('api_keys')
+          .upsert({
+            user_id: user.id,
+            service_name: serviceName.toLowerCase(),
+            key_name: keyName,
+            encrypted_key: encryptedKey,
+            is_active: true
+          }, {
+            onConflict: 'user_id,service_name,key_name'
+          });
+        
+        if (error) {
+          console.error('Error saving API key to database:', error);
+        }
+      } else {
+        console.log('API keys table not available, using localStorage only');
       }
     }
   } catch (error) {
@@ -59,16 +69,24 @@ export const getApiKey = async (keyName: string): Promise<string | null> => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      const { data, error } = await supabase
+      // Check if api_keys table is available
+      const { error: testError } = await supabase
         .from('api_keys')
-        .select('encrypted_key')
-        .eq('user_id', user.id)
-        .eq('key_name', keyName)
-        .eq('is_active', true)
-        .maybeSingle();
+        .select('id')
+        .limit(1);
       
-      if (!error && data) {
-        return decryptKey(data.encrypted_key);
+      if (!testError) {
+        const { data, error } = await supabase
+          .from('api_keys')
+          .select('encrypted_key')
+          .eq('user_id', user.id)
+          .eq('key_name', keyName)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!error && data) {
+          return decryptKey(data.encrypted_key);
+        }
       }
     }
     
@@ -90,14 +108,22 @@ export const deleteApiKey = async (keyName: string): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      const { error } = await supabase
+      // Check if api_keys table is available
+      const { error: testError } = await supabase
         .from('api_keys')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('key_name', keyName);
+        .select('id')
+        .limit(1);
       
-      if (error) {
-        console.error('Error deleting API key from database:', error);
+      if (!testError) {
+        const { error } = await supabase
+          .from('api_keys')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('key_name', keyName);
+        
+        if (error) {
+          console.error('Error deleting API key from database:', error);
+        }
       }
     }
   } catch (error) {
@@ -105,3 +131,6 @@ export const deleteApiKey = async (keyName: string): Promise<void> => {
     throw error;
   }
 };
+
+// Export removeApiKey as an alias for deleteApiKey to fix the import error
+export const removeApiKey = deleteApiKey;
