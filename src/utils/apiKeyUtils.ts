@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export const API_KEYS = {
@@ -59,16 +58,20 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
     throw new Error('API key cannot be empty');
   }
 
+  console.log(`💾 Saving ${serviceName} API key...`);
+
   try {
     const encryptedKey = await encryptKey(keyValue);
     
-    // Save to localStorage as fallback
+    // Always save to localStorage as immediate fallback
     localStorage.setItem(keyName, keyValue);
+    console.log(`✅ ${serviceName} API key saved to localStorage`);
     
     // Try to save to database if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
+      console.log(`🔄 User authenticated, saving ${serviceName} API key to Supabase...`);
       try {
         // Check if key already exists for this user
         const { data: existing } = await supabase
@@ -94,9 +97,10 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
             .eq('id', existing.id);
             
           if (error) {
-            console.error("Database update failed:", error);
-            throw new Error('Failed to update API key securely');
+            console.error("❌ Supabase update failed:", error);
+            throw new Error('Failed to update API key in database');
           }
+          console.log(`✅ ${serviceName} API key updated in Supabase database`);
         } else {
           // Insert new key
           const { error } = await supabase
@@ -104,31 +108,36 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
             .insert(keyData);
             
           if (error) {
-            console.error("Database insert failed:", error);
-            throw new Error('Failed to save API key securely');
+            console.error("❌ Supabase insert failed:", error);
+            throw new Error('Failed to save API key to database');
           }
+          console.log(`✅ ${serviceName} API key saved to Supabase database`);
         }
         
-        console.log(`Saved ${serviceName} API key to database`);
+        console.log(`🌐 ${serviceName} API key now available across all browsers for this user`);
       } catch (dbError) {
-        console.error('Database save failed, key saved to localStorage only:', dbError);
+        console.error('❌ Database save failed, but localStorage backup is available:', dbError);
         // Don't throw error here - localStorage backup is still functional
+        console.log(`⚠️ ${serviceName} API key saved locally only (database sync failed)`);
       }
     } else {
-      console.log('User not authenticated, API key saved to localStorage only');
+      console.log(`📱 User not authenticated, ${serviceName} API key saved to localStorage only`);
     }
   } catch (error) {
-    console.error('Error saving API key:', error);
+    console.error('❌ Error saving API key:', error);
     throw error;
   }
 };
 
 export const getApiKey = async (keyName: string): Promise<string | null> => {
+  console.log(`🔍 Retrieving API key: ${keyName}`);
+  
   try {
     // First try to get from database if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
+      console.log(`👤 User authenticated, checking Supabase for ${keyName}...`);
       try {
         const { data, error } = await supabase
           .from('api_keys')
@@ -140,24 +149,35 @@ export const getApiKey = async (keyName: string): Promise<string | null> => {
         
         if (!error && data) {
           const decryptedKey = decryptKey(data.encrypted_key);
-          console.log(`Retrieved ${keyName} from database`);
+          console.log(`✅ ${keyName} retrieved from Supabase database`);
           return decryptedKey;
+        } else {
+          console.log(`⚠️ ${keyName} not found in Supabase, checking localStorage...`);
         }
       } catch (dbError) {
-        console.error('Database fetch failed, using localStorage:', dbError);
+        console.error('❌ Database fetch failed, using localStorage fallback:', dbError);
       }
+    } else {
+      console.log(`🔓 User not authenticated, checking localStorage for ${keyName}...`);
     }
     
     // Fallback to localStorage
     const localKey = localStorage.getItem(keyName);
     if (localKey) {
-      console.log(`Retrieved ${keyName} from localStorage`);
+      console.log(`✅ ${keyName} retrieved from localStorage`);
+      return localKey;
+    } else {
+      console.log(`❌ ${keyName} not found in localStorage either`);
+      return null;
     }
-    return localKey;
   } catch (error) {
-    console.error('Error getting API key:', error);
-    // Fallback to localStorage
-    return localStorage.getItem(keyName);
+    console.error('❌ Error getting API key:', error);
+    // Final fallback to localStorage
+    const fallbackKey = localStorage.getItem(keyName);
+    if (fallbackKey) {
+      console.log(`✅ ${keyName} retrieved from localStorage (error fallback)`);
+    }
+    return fallbackKey;
   }
 };
 

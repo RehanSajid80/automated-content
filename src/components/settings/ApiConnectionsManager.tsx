@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import ApiUsageMetrics from "./ApiUsageMetrics";
@@ -35,6 +36,7 @@ const ApiConnectionsManager = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         setIsAuthenticated(!!user);
+        console.log('Authentication status:', !!user ? 'Authenticated' : 'Not authenticated');
       } catch (error) {
         console.error('Error checking auth status:', error);
         setIsAuthenticated(false);
@@ -45,9 +47,13 @@ const ApiConnectionsManager = () => {
     
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session?.user);
+      const authenticated = !!session?.user;
+      setIsAuthenticated(authenticated);
+      console.log('Auth state changed:', event, authenticated ? 'Authenticated' : 'Not authenticated');
+      
       if (event === 'SIGNED_IN') {
         // Refresh data when user signs in
+        console.log('User signed in, refreshing data...');
         setTimeout(() => {
           fetchWebhookUrls();
           checkOpenAI();
@@ -58,54 +64,75 @@ const ApiConnectionsManager = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Check OpenAI API key on mount and when component loads
+  // Check OpenAI API key - improved version with better logging
   const checkOpenAI = async () => {
-    console.log('Checking OpenAI connection...');
+    console.log('🔍 Starting OpenAI connection check...');
     setOpenaiStatus('checking');
     
     try {
+      // Get API key from either Supabase or localStorage
       const key = await getApiKey(API_KEYS.OPENAI);
-      console.log('Retrieved OpenAI key:', key ? 'Found' : 'Not found');
+      console.log('🔑 OpenAI key retrieval result:', key ? 'Key found' : 'No key found');
       
       if (!key) {
-        console.log('No OpenAI API key found');
+        console.log('❌ No OpenAI API key found in storage');
         setOpenaiStatus('disconnected');
+        setOpenaiApiKey("");
         return;
       }
       
       // Validate key with OpenAI API
-      console.log('Validating OpenAI API key...');
+      console.log('🔬 Validating OpenAI API key with OpenAI servers...');
       const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
         },
       });
       
-      console.log('OpenAI API response status:', response.status);
+      console.log('📡 OpenAI API validation response status:', response.status);
       
       if (response.ok) {
-        console.log('OpenAI API key is valid');
+        console.log('✅ OpenAI API key is valid and working');
         setOpenaiStatus('connected');
         setOpenaiApiKey("••••••••••••••••••••••••••");
+        
+        // Test if key is stored in Supabase vs localStorage
+        if (isAuthenticated) {
+          console.log('📊 API key loaded from Supabase (cross-browser sync enabled)');
+        } else {
+          console.log('💾 API key loaded from localStorage (browser-specific storage)');
+        }
       } else {
-        console.log('OpenAI API key is invalid');
+        const errorText = await response.text();
+        console.log('❌ OpenAI API key validation failed:', response.status, errorText);
         setOpenaiStatus('disconnected');
+        setOpenaiApiKey("");
       }
     } catch (error) {
-      console.error('OpenAI connection error:', error);
+      console.error('💥 OpenAI connection check error:', error);
       setOpenaiStatus('disconnected');
+      setOpenaiApiKey("");
     }
   };
 
-  // Run OpenAI check when component mounts
+  // Run OpenAI check immediately on component mount
   useEffect(() => {
+    console.log('🚀 Component mounted, checking OpenAI connection...');
     checkOpenAI();
   }, []);
 
-  // Also run when authentication status is determined
+  // Also run when authentication status changes
   useEffect(() => {
     if (isAuthenticated !== null) {
+      console.log('🔄 Authentication status determined, fetching webhook URLs...');
       fetchWebhookUrls();
+      
+      // Re-check OpenAI when auth status changes to ensure proper storage location
+      setTimeout(() => {
+        checkOpenAI();
+      }, 500);
     }
   }, [isAuthenticated]);
 
@@ -154,19 +181,25 @@ const ApiConnectionsManager = () => {
   const handleSaveOpenaiKey = async () => {
     if (openaiApiKey && openaiApiKey !== "••••••••••••••••••••••••••") {
       try {
+        console.log('💾 Saving OpenAI API key...');
         await saveApiKey(API_KEYS.OPENAI, openaiApiKey, "OpenAI");
         setOpenaiApiKey("••••••••••••••••••••••••••");
         setOpenaiStatus('checking');
+        
+        const storageLocation = isAuthenticated ? 'Supabase database (syncs across browsers)' : 'localStorage (this browser only)';
+        console.log(`✅ OpenAI API key saved to ${storageLocation}`);
+        
         toast({
           title: "OpenAI API Key Saved",
           description: isAuthenticated 
             ? "Your OpenAI API key has been saved securely and will sync across browsers" 
-            : "Your OpenAI API key has been saved locally",
+            : "Your OpenAI API key has been saved locally. Sign in to sync across browsers.",
         });
         
-        // Re-check the connection
+        // Re-check the connection after saving
         setTimeout(checkOpenAI, 500);
       } catch (error) {
+        console.error('❌ Failed to save OpenAI API key:', error);
         toast({
           title: "Error",
           description: "Failed to save OpenAI API key",
