@@ -27,12 +27,39 @@ const AdminSettings = () => {
 
       // Try to call the function to see if it exists
       try {
-        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
-        if (!error) {
+        // Use a raw SQL query to check if the function exists
+        const { data, error } = await supabase
+          .rpc('exec_sql', { 
+            sql: `SELECT has_role('${user.id}', 'admin') as is_admin;`,
+            params: []
+          });
+        
+        if (!error && data) {
           setFunctionExists(true);
-          setIsAdmin(Boolean(data));
+          setIsAdmin(Boolean(data.is_admin));
         } else {
-          setFunctionExists(false);
+          // Try the is_admin function directly if exec_sql fails
+          try {
+            const result = await fetch(`${supabase.supabaseUrl}/rest/v1/rpc/is_admin`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabase.supabaseKey}`,
+                'apikey': supabase.supabaseKey
+              },
+              body: JSON.stringify({ user_id: user.id })
+            });
+            
+            if (result.ok) {
+              const adminResult = await result.json();
+              setFunctionExists(true);
+              setIsAdmin(Boolean(adminResult));
+            } else {
+              setFunctionExists(false);
+            }
+          } catch {
+            setFunctionExists(false);
+          }
         }
       } catch (error) {
         setFunctionExists(false);
@@ -52,15 +79,41 @@ const AdminSettings = () => {
 
       // Try to call is_admin function if it exists
       try {
-        const { data, error } = await supabase.rpc('is_admin', { 
-          user_id: user.id 
-        });
+        // Use a raw SQL query first
+        const { data, error } = await supabase
+          .rpc('exec_sql', { 
+            sql: `SELECT has_role('${user.id}', 'admin') as is_admin;`,
+            params: []
+          });
         
-        if (!error) {
-          setIsAdmin(Boolean(data));
+        if (!error && data) {
+          setIsAdmin(Boolean(data.is_admin));
           setFunctionExists(true);
         } else {
-          setIsAdmin(false);
+          // Fallback to direct API call
+          try {
+            const result = await fetch(`${supabase.supabaseUrl}/rest/v1/rpc/is_admin`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabase.supabaseKey}`,
+                'apikey': supabase.supabaseKey
+              },
+              body: JSON.stringify({ user_id: user.id })
+            });
+            
+            if (result.ok) {
+              const adminResult = await result.json();
+              setIsAdmin(Boolean(adminResult));
+              setFunctionExists(true);
+            } else {
+              setIsAdmin(false);
+              setFunctionExists(false);
+            }
+          } catch {
+            setIsAdmin(false);
+            setFunctionExists(false);
+          }
         }
       } catch (error) {
         console.log("is_admin function not available");
