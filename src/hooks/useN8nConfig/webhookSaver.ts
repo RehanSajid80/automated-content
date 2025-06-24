@@ -22,29 +22,61 @@ export const saveWebhookUrl = async (
   }
 
   try {
-    // Try to save to database
-    try {
-      // Use both new and legacy fields to ensure compatibility
-      const webhookData = {
-        type: type,
-        url: url,
-        webhook_type: type === 'keywords' ? 'keyword-sync' : type,
-        webhook_url: url,
-        is_global: true,
-        is_active: true
-      };
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      try {
+        // Use both new and legacy fields to ensure compatibility
+        const webhookData = {
+          type: type,
+          url: url,
+          webhook_type: type === 'keywords' ? 'keyword-sync' : type,
+          webhook_url: url,
+          is_global: asAdmin,
+          is_active: true
+        };
 
-      const { error } = await supabase
-        .from('webhook_configs')
-        .upsert(webhookData);
+        // First try to update existing webhook of this type
+        const { data: existing } = await supabase
+          .from('webhook_configs')
+          .select('id')
+          .eq('type', type)
+          .eq('is_active', true)
+          .maybeSingle();
 
-      if (error) {
-        console.error("Error saving webhook URL:", error);
-        throw new Error('Failed to save webhook configuration');
+        if (existing) {
+          // Update existing webhook
+          const { error } = await supabase
+            .from('webhook_configs')
+            .update(webhookData)
+            .eq('id', existing.id);
+
+          if (error) {
+            console.error("Error updating webhook URL:", error);
+            throw new Error('Failed to update webhook configuration');
+          }
+        } else {
+          // Insert new webhook
+          const { error } = await supabase
+            .from('webhook_configs')
+            .insert(webhookData);
+
+          if (error) {
+            console.error("Error saving webhook URL:", error);
+            throw new Error('Failed to save webhook configuration');
+          }
+        }
+
+        console.log(`Saved ${type} webhook to database:`, url);
+      } catch (dbError) {
+        console.error('Database save failed, falling back to localStorage:', dbError);
+        // Fallback to localStorage if database fails
+        saveToLocalStorage(url, type);
       }
-    } catch (dbError) {
-      console.error('Webhook configs table not available:', dbError);
-      throw new Error('Database not available for webhook storage');
+    } else {
+      console.log('User not authenticated, saving to localStorage only');
+      saveToLocalStorage(url, type);
     }
 
     toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} webhook saved successfully`);
@@ -53,6 +85,33 @@ export const saveWebhookUrl = async (
     console.error("Error saving webhook URL:", error);
     toast.error("Failed to save webhook configuration");
     return false;
+  }
+};
+
+const saveToLocalStorage = (url: string, type: WebhookType) => {
+  try {
+    const saved = localStorage.getItem('webhook-configs');
+    let webhooks = saved ? JSON.parse(saved) : {};
+    
+    switch (type) {
+      case 'keywords':
+        webhooks.keywordWebhook = url;
+        break;
+      case 'content':
+        webhooks.contentWebhook = url;
+        break;
+      case 'custom-keywords':
+        webhooks.customKeywordsWebhook = url;
+        break;
+      case 'content-adjustment':
+        webhooks.contentAdjustmentWebhook = url;
+        break;
+    }
+    
+    localStorage.setItem('webhook-configs', JSON.stringify(webhooks));
+    console.log(`Saved ${type} webhook to localStorage:`, url);
+  } catch (error) {
+    console.error("Error saving to localStorage:", error);
   }
 };
 

@@ -70,26 +70,52 @@ export const saveApiKey = async (keyName: string, keyValue: string, serviceName:
     
     if (user) {
       try {
-        const { error } = await supabase
+        // Check if key already exists for this user
+        const { data: existing } = await supabase
           .from('api_keys')
-          .upsert({
-            user_id: user.id,
-            service_name: serviceName.toLowerCase(),
-            key_name: keyName,
-            encrypted_key: encryptedKey,
-            is_active: true
-          });
-        
-        if (error) {
-          console.error('Database save failed, using localStorage only:', error);
-          throw new Error('Failed to save API key securely');
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('key_name', keyName)
+          .maybeSingle();
+
+        const keyData = {
+          user_id: user.id,
+          service_name: serviceName.toLowerCase(),
+          key_name: keyName,
+          encrypted_key: encryptedKey,
+          is_active: true
+        };
+
+        if (existing) {
+          // Update existing key
+          const { error } = await supabase
+            .from('api_keys')
+            .update(keyData)
+            .eq('id', existing.id);
+            
+          if (error) {
+            console.error("Database update failed:", error);
+            throw new Error('Failed to update API key securely');
+          }
+        } else {
+          // Insert new key
+          const { error } = await supabase
+            .from('api_keys')
+            .insert(keyData);
+            
+          if (error) {
+            console.error("Database insert failed:", error);
+            throw new Error('Failed to save API key securely');
+          }
         }
+        
+        console.log(`Saved ${serviceName} API key to database`);
       } catch (dbError) {
-        console.error('API keys table not available:', dbError);
-        throw new Error('Database not available for secure storage');
+        console.error('Database save failed, key saved to localStorage only:', dbError);
+        // Don't throw error here - localStorage backup is still functional
       }
     } else {
-      throw new Error('Authentication required to save API keys');
+      console.log('User not authenticated, API key saved to localStorage only');
     }
   } catch (error) {
     console.error('Error saving API key:', error);
@@ -113,15 +139,21 @@ export const getApiKey = async (keyName: string): Promise<string | null> => {
           .maybeSingle();
         
         if (!error && data) {
-          return decryptKey(data.encrypted_key);
+          const decryptedKey = decryptKey(data.encrypted_key);
+          console.log(`Retrieved ${keyName} from database`);
+          return decryptedKey;
         }
       } catch (dbError) {
-        console.error('Database fetch failed, using localStorage');
+        console.error('Database fetch failed, using localStorage:', dbError);
       }
     }
     
     // Fallback to localStorage
-    return localStorage.getItem(keyName);
+    const localKey = localStorage.getItem(keyName);
+    if (localKey) {
+      console.log(`Retrieved ${keyName} from localStorage`);
+    }
+    return localKey;
   } catch (error) {
     console.error('Error getting API key:', error);
     // Fallback to localStorage
@@ -147,9 +179,11 @@ export const deleteApiKey = async (keyName: string): Promise<void> => {
           
         if (error) {
           console.error('Database delete failed:', error);
+        } else {
+          console.log(`Deleted ${keyName} from database`);
         }
       } catch (dbError) {
-        console.error('Database delete failed, but localStorage cleared');
+        console.error('Database delete failed, but localStorage cleared:', dbError);
       }
     }
   } catch (error) {

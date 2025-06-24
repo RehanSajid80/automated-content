@@ -11,48 +11,55 @@ export const fetchWebhookUrls = async (): Promise<WebhookConfig> => {
   };
 
   try {
-    // Try to fetch global webhooks from database
-    try {
-      const { data: globalWebhooks, error } = await supabase
-        .from('webhook_configs')
-        .select('type, url, webhook_type, webhook_url')
-        .eq('is_active', true);
+    // First check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      // Try to fetch user-specific or global webhooks from database
+      try {
+        const { data: webhookConfigs, error } = await supabase
+          .from('webhook_configs')
+          .select('type, url, webhook_type, webhook_url')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
 
-      if (!error && globalWebhooks) {
-        const webhookMap = { ...defaultWebhooks };
+        if (!error && webhookConfigs && webhookConfigs.length > 0) {
+          const webhookMap = { ...defaultWebhooks };
 
-        globalWebhooks.forEach((config: any) => {
-          // Handle both new 'type' field and legacy 'webhook_type' field
-          const webhookType = config.type || config.webhook_type;
-          const webhookUrl = config.url || config.webhook_url;
-          
-          switch (webhookType) {
-            case 'keywords':
-            case 'keyword-sync':
-              webhookMap.keywordWebhook = webhookUrl;
-              break;
-            case 'content':
-              webhookMap.contentWebhook = webhookUrl;
-              break;
-            case 'custom-keywords':
-              webhookMap.customKeywordsWebhook = webhookUrl;
-              break;
-            case 'content-adjustment':
-              webhookMap.contentAdjustmentWebhook = webhookUrl;
-              break;
-          }
-        });
+          webhookConfigs.forEach((config: any) => {
+            // Handle both new 'type' field and legacy 'webhook_type' field
+            const webhookType = config.type || config.webhook_type;
+            const webhookUrl = config.url || config.webhook_url;
+            
+            switch (webhookType) {
+              case 'keywords':
+              case 'keyword-sync':
+                webhookMap.keywordWebhook = webhookUrl;
+                break;
+              case 'content':
+                webhookMap.contentWebhook = webhookUrl;
+                break;
+              case 'custom-keywords':
+                webhookMap.customKeywordsWebhook = webhookUrl;
+                break;
+              case 'content-adjustment':
+                webhookMap.contentAdjustmentWebhook = webhookUrl;
+                break;
+            }
+          });
 
-        // Also save to localStorage for offline access
-        localStorage.setItem('webhook-configs', JSON.stringify(webhookMap));
-        return webhookMap;
-      } else {
-        return loadFromLocalStorage();
+          console.log('Loaded webhooks from database:', webhookMap);
+          return webhookMap;
+        }
+      } catch (dbError) {
+        console.error('Database error fetching webhooks, falling back to localStorage:', dbError);
       }
-    } catch (dbError) {
-      console.error('Webhook configs table not available, using localStorage');
-      return loadFromLocalStorage();
+    } else {
+      console.log('User not authenticated, using localStorage only');
     }
+    
+    // Fallback to localStorage for unauthenticated users or database errors
+    return loadFromLocalStorage();
     
   } catch (error) {
     console.error("Error fetching webhook URLs:", error);
@@ -71,7 +78,9 @@ const loadFromLocalStorage = (): WebhookConfig => {
   try {
     const saved = localStorage.getItem('webhook-configs');
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      console.log('Loaded webhooks from localStorage:', parsed);
+      return parsed;
     }
   } catch (error) {
     console.error("Error loading from localStorage:", error);

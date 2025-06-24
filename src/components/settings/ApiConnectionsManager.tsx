@@ -11,6 +11,9 @@ import SemrushConnection from "./api/SemrushConnection";
 import AdminSettings from "./api/AdminSettings";
 import ErrorBoundary from "@/components/ui/error-boundary";
 import { useN8nConfig } from "@/hooks/useN8nConfig";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ApiConnectionsManager = () => {
   // API key state
@@ -21,8 +24,40 @@ const ApiConnectionsManager = () => {
   const [activeWebhookType, setActiveWebhookType] = React.useState<'keywords' | 'content' | 'custom-keywords' | 'content-adjustment'>('keywords');
   const [webhookStatus, setWebhookStatus] = React.useState<'checking' | 'connected' | 'disconnected'>('checking');
   
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(null);
+  
   const { toast } = useToast();
   const { webhooks, fetchWebhookUrls, isAdmin } = useN8nConfig();
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsAuthenticated(!!user);
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsAuthenticated(false);
+      }
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user);
+      if (event === 'SIGNED_IN') {
+        // Refresh data when user signs in
+        setTimeout(() => {
+          fetchWebhookUrls();
+          checkOpenAI();
+        }, 100);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const resetConnections = async () => {
     try {
@@ -54,36 +89,38 @@ const ApiConnectionsManager = () => {
   };
 
   // Check OpenAI API key on mount
-  useEffect(() => {
-    const checkOpenAI = async () => {
-      try {
-        const key = await getApiKey(API_KEYS.OPENAI);
-        if (!key) {
-          setOpenaiStatus('disconnected');
-          return;
-        }
-        
-        // Validate key with OpenAI API
-        const response = await fetch('https://api.openai.com/v1/models', {
-          headers: {
-            'Authorization': `Bearer ${key}`,
-          },
-        });
-        
-        if (response.ok) {
-          setOpenaiStatus('connected');
-          setOpenaiApiKey("••••••••••••••••••••••••••");
-        } else {
-          setOpenaiStatus('disconnected');
-        }
-      } catch (error) {
-        console.error('OpenAI connection error:', error);
+  const checkOpenAI = async () => {
+    try {
+      const key = await getApiKey(API_KEYS.OPENAI);
+      if (!key) {
+        setOpenaiStatus('disconnected');
+        return;
+      }
+      
+      // Validate key with OpenAI API
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${key}`,
+        },
+      });
+      
+      if (response.ok) {
+        setOpenaiStatus('connected');
+        setOpenaiApiKey("••••••••••••••••••••••••••");
+      } else {
         setOpenaiStatus('disconnected');
       }
-    };
-    
-    checkOpenAI();
-  }, []);
+    } catch (error) {
+      console.error('OpenAI connection error:', error);
+      setOpenaiStatus('disconnected');
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated !== null) {
+      checkOpenAI();
+    }
+  }, [isAuthenticated]);
 
   // Update webhook status based on type
   useEffect(() => {
@@ -100,8 +137,10 @@ const ApiConnectionsManager = () => {
 
   // Fetch webhook URLs on mount
   useEffect(() => {
-    fetchWebhookUrls();
-  }, []);
+    if (isAuthenticated !== null) {
+      fetchWebhookUrls();
+    }
+  }, [isAuthenticated]);
 
   const handleSaveOpenaiKey = async () => {
     if (openaiApiKey && openaiApiKey !== "••••••••••••••••••••••••••") {
@@ -111,8 +150,13 @@ const ApiConnectionsManager = () => {
         setOpenaiStatus('checking');
         toast({
           title: "OpenAI API Key Saved",
-          description: "Your OpenAI API key has been saved securely",
+          description: isAuthenticated 
+            ? "Your OpenAI API key has been saved securely and will sync across browsers" 
+            : "Your OpenAI API key has been saved locally",
         });
+        
+        // Re-check the connection
+        setTimeout(checkOpenAI, 500);
       } catch (error) {
         toast({
           title: "Error",
@@ -136,7 +180,9 @@ const ApiConnectionsManager = () => {
   const handleSemrushConfigSave = () => {
     toast({
       title: "SEMrush Configuration Saved",
-      description: "Your SEMrush settings have been updated",
+      description: isAuthenticated 
+        ? "Your SEMrush settings have been updated and will sync across browsers"
+        : "Your SEMrush settings have been saved locally",
     });
   };
 
@@ -147,6 +193,17 @@ const ApiConnectionsManager = () => {
           <Sidebar />
           <main className="flex-1 p-6 md:p-8 pt-6 max-w-5xl mx-auto w-full">
             <ConnectionHeader onResetConnections={resetConnections} />
+            
+            {isAuthenticated === false && (
+              <Alert className="mb-6">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Not signed in:</strong> Your API keys and webhooks are stored locally and won't sync across browsers. 
+                  Sign in to sync your settings across all devices and browsers.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-6">
               <ApiUsageMetrics />
               {isAdmin && <AdminSettings />}
