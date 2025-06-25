@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KeywordData } from "@/utils/excelUtils";
+import { getApiKey } from "@/utils/apiKeyUtils";
 
 // Function to update SEMrush API metrics
 const updateSemrushMetrics = (success: boolean) => {
@@ -48,7 +49,21 @@ const extractDomain = (input: string): string => {
   }
 };
 
-const getKeywordLimit = (): number => {
+const getKeywordLimit = async (): Promise<number> => {
+  try {
+    // Try to get global keyword limit first
+    const globalLimit = await getApiKey('semrush-keyword-limit');
+    if (globalLimit) {
+      const parsedLimit = parseInt(globalLimit, 10);
+      if (!isNaN(parsedLimit)) {
+        return parsedLimit;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading global keyword limit:', error);
+  }
+  
+  // Fallback to localStorage
   const savedLimit = localStorage.getItem('semrush-keyword-limit');
   return savedLimit ? parseInt(savedLimit, 10) : 100;
 };
@@ -62,7 +77,17 @@ export const useSemrushApi = (
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<string | null>(null);
+  const [keywordLimit, setKeywordLimit] = useState(100);
   const { toast } = useToast();
+
+  // Load keyword limit on component mount
+  React.useEffect(() => {
+    const loadLimit = async () => {
+      const limit = await getKeywordLimit();
+      setKeywordLimit(limit);
+    };
+    loadLimit();
+  }, []);
 
   const fetchKeywords = async () => {
     if (!domain.trim()) {
@@ -80,13 +105,13 @@ export const useSemrushApi = (
 
     try {
       const cleanDomain = extractDomain(domain);
-      const keywordLimit = getKeywordLimit();
+      const currentKeywordLimit = await getKeywordLimit();
       
       // Use keyword if provided, otherwise empty string for domain analysis
       const searchKeyword = keyword.trim();
       
       console.log(`Fetching ${searchKeyword ? 'related keywords for' : 'domain overview'} data for domain: ${cleanDomain}${searchKeyword ? ` with keyword: "${searchKeyword}"` : ''}`);
-      console.log(`Requesting ${keywordLimit} keywords from SEMrush API (from settings)`);
+      console.log(`Requesting ${currentKeywordLimit} keywords from SEMrush API (from global settings)`);
 
       // Validate domain format before making the call
       const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
@@ -99,7 +124,7 @@ export const useSemrushApi = (
         body: { 
           keyword: searchKeyword,
           domain: cleanDomain,
-          limit: keywordLimit,
+          limit: currentKeywordLimit,
           topicArea: topicArea || '' 
         }
       });
@@ -190,7 +215,7 @@ export const useSemrushApi = (
       
       toast({
         title: statusMessage,
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} ${analysisType} keywords for ${cleanDomain} (limit: ${keywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} ${analysisType} keywords for ${cleanDomain} (limit: ${currentKeywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
       });
       
     } catch (error) {
@@ -219,7 +244,7 @@ export const useSemrushApi = (
     isLoading,
     errorMsg,
     apiStatus,
-    keywordLimit: getKeywordLimit(),
+    keywordLimit,
     setKeyword,
     setDomain,
     fetchKeywords

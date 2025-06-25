@@ -45,7 +45,7 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
 
   const loadKeywordLimit = async () => {
     try {
-      // Try to get global keyword limit first
+      // Get global keyword limit first
       const globalLimit = await getApiKey('semrush-keyword-limit');
       if (globalLimit) {
         const parsedLimit = parseInt(globalLimit, 10);
