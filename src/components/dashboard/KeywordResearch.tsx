@@ -24,6 +24,8 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
   const { toast } = useToast();
   const { keywords, updateKeywords, clearKeywords } = useKeywordData(onKeywordDataUpdate);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [currentTopicArea, setCurrentTopicArea] = useState("");
+  const [currentDomain, setCurrentDomain] = useState("");
   
   // Custom hooks
   const { 
@@ -76,10 +78,14 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
     }
   };
 
-  const handleTopicKeywords = (newKeywords: KeywordData[]) => {
+  const handleTopicKeywords = (newKeywords: KeywordData[], topicArea?: string, domain?: string) => {
     if (newKeywords && newKeywords.length > 0) {
       console.log(`KeywordResearch received ${newKeywords.length} keywords from topic search`);
       updateKeywords(newKeywords);
+      
+      // Store the topic area and domain for AI strategy
+      if (topicArea) setCurrentTopicArea(topicArea);
+      if (domain) setCurrentDomain(domain);
       
       toast({
         title: "Keywords Loaded",
@@ -121,6 +127,8 @@ const KeywordResearch: React.FC<KeywordResearchProps> = ({
           onKeywordToggle={toggleKeywordSelection}
           onGenerateContent={handleGenerateContent}
           onFiltersChange={handleFilterChange}
+          topicArea={currentTopicArea}
+          domain={currentDomain}
         />
       )}
     </div>

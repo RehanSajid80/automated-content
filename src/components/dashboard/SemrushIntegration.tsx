@@ -10,12 +10,14 @@ interface SemrushIntegrationProps {
   onKeywordsReceived: (keywords: KeywordData[]) => void;
   topicArea?: string;
   disabled?: boolean;
+  onDomainChange?: (domain: string) => void;
 }
 
 const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({ 
   onKeywordsReceived,
   topicArea,
-  disabled = false
+  disabled = false,
+  onDomainChange
 }) => {
   const {
     keyword,
@@ -29,6 +31,13 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
     fetchKeywords
   } = useSemrushApi(onKeywordsReceived, topicArea);
 
+  const handleDomainChange = (newDomain: string) => {
+    setDomain(newDomain);
+    if (onDomainChange) {
+      onDomainChange(newDomain);
+    }
+  };
+
   return (
     <div className="space-y-2">
       <SemrushInputForm
@@ -38,7 +47,7 @@ const SemrushIntegration: React.FC<SemrushIntegrationProps> = ({
         disabled={disabled}
         keywordLimit={keywordLimit}
         onKeywordChange={setKeyword}
-        onDomainChange={setDomain}
+        onDomainChange={handleDomainChange}
         onFetchKeywords={fetchKeywords}
       />
       

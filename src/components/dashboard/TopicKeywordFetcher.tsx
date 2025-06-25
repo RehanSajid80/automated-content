@@ -1,16 +1,14 @@
 
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Settings, Sparkles } from "lucide-react";
+import { TopicAreaSelector } from "./TopicAreaSelector";
+import SemrushIntegration from "./SemrushIntegration";
 import { KeywordData } from "@/utils/excelUtils";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface TopicKeywordFetcherProps {
-  onKeywordsReceived: (keywords: KeywordData[]) => void;
+  onKeywordsReceived: (keywords: KeywordData[], topicArea?: string, domain?: string) => void;
   onToggleAdvanced: () => void;
   showAdvanced: boolean;
 }
@@ -20,175 +18,55 @@ const TopicKeywordFetcher: React.FC<TopicKeywordFetcherProps> = ({
   onToggleAdvanced,
   showAdvanced
 }) => {
-  const [topic, setTopic] = useState('');
-  const [domain, setDomain] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [selectedTopicArea, setSelectedTopicArea] = useState("");
+  const [currentDomain, setCurrentDomain] = useState("");
 
-  const handleFetchKeywords = async () => {
-    if (!topic.trim()) {
-      toast({
-        title: "Topic Required",
-        description: "Please enter a topic to search for keywords",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Get keyword limit from settings
-      const keywordLimit = parseInt(localStorage.getItem('semrush-keyword-limit') || '100', 10);
-      
-      console.log(`Fetching keywords for topic: "${topic}" with domain context: "${domain}"`);
-
-      // Call SEMrush API through edge function
-      const { data, error } = await supabase.functions.invoke('semrush-keywords', {
-        body: { 
-          keyword: topic.trim(), // Use topic as the search keyword
-          domain: domain.trim() || 'example.com', // Use provided domain or fallback
-          limit: keywordLimit,
-          topicArea: 'general' 
-        }
-      });
-
-      if (error) {
-        console.error('Function error:', error);
-        throw new Error(error.message || "Failed to fetch keywords");
-      }
-
-      if (data.error) {
-        console.error('API error from SEMrush:', data.error);
-        
-        let errorMessage = data.error;
-        if (data.error.includes('NOTHING FOUND')) {
-          errorMessage = `No keywords found for "${topic}". Try different or broader search terms.`;
-        }
-        
-        toast({
-          title: "No Keywords Found",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Process the keywords
-      const keywordsArray = data.keywords || [];
-      
-      if (keywordsArray.length === 0) {
-        toast({
-          title: "No Keywords Found",
-          description: `No keywords found for "${topic}". Try broader or different terms.`,
-          variant: "default",
-        });
-        return;
-      }
-
-      // Format keywords consistently
-      const formattedKeywords: KeywordData[] = keywordsArray.map((kw: any) => ({
-        keyword: kw.keyword,
-        volume: kw.volume || 0,
-        difficulty: kw.difficulty || 50,
-        cpc: kw.cpc || 0,
-        trend: kw.trend || 'neutral'
-      }));
-      
-      console.log(`Processed ${formattedKeywords.length} keywords for topic: "${topic}"`);
-      
-      onKeywordsReceived(formattedKeywords);
-      
-      toast({
-        title: "Keywords Loaded",
-        description: `Found ${formattedKeywords.length} keywords related to "${topic}"`,
-      });
-      
-    } catch (error) {
-      console.error('Error fetching keywords:', error);
-      
-      let errorMessage = "Failed to fetch keywords";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleKeywordsReceived = (keywords: KeywordData[]) => {
+    // Pass the topic area and domain along with the keywords
+    onKeywordsReceived(keywords, selectedTopicArea, currentDomain);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      handleFetchKeywords();
-    }
+  const handleDomainChange = (domain: string) => {
+    setCurrentDomain(domain);
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Find Keywords for Your Topic
-        </CardTitle>
+        <CardTitle>Keyword Research</CardTitle>
         <CardDescription>
-          Enter a topic to discover relevant keywords for content creation
+          Start by selecting a topic area and domain to find relevant keywords
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="topic-input">Topic or Subject</Label>
-          <Input
-            id="topic-input"
-            placeholder="e.g., office space management, coworking trends, workspace productivity"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="text-base"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="domain-input">Domain (Optional)</Label>
-          <Input
-            id="domain-input"
-            placeholder="e.g., officespacesoftware.com (for competitive analysis)"
-            value={domain}
-            onChange={(e) => setDomain(e.target.value)}
-            onKeyPress={handleKeyPress}
-          />
-        </div>
-
-        <div className="flex gap-2 items-center">
+        <TopicAreaSelector 
+          value={selectedTopicArea}
+          onChange={setSelectedTopicArea}
+        />
+        
+        <SemrushIntegration 
+          onKeywordsReceived={handleKeywordsReceived}
+          topicArea={selectedTopicArea}
+          onDomainChange={handleDomainChange}
+        />
+        
+        <div className="pt-4 border-t">
           <Button 
-            onClick={handleFetchKeywords}
-            disabled={isLoading || !topic.trim()}
-            className="flex-1"
+            variant="outline" 
+            onClick={onToggleAdvanced}
+            className="w-full"
           >
-            {isLoading ? (
+            {showAdvanced ? (
               <>
-                <Search className="w-4 h-4 mr-2 animate-spin" />
-                Finding Keywords...
+                <ChevronUp className="mr-2 h-4 w-4" />
+                Hide Advanced Options
               </>
             ) : (
               <>
-                <Search className="w-4 h-4 mr-2" />
-                Find Keywords
+                <ChevronDown className="mr-2 h-4 w-4" />
+                Show Advanced Options
               </>
             )}
-          </Button>
-          
-          <Button
-            variant="outline"
-            onClick={onToggleAdvanced}
-            size="sm"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            {showAdvanced ? 'Hide' : 'Advanced'}
           </Button>
         </div>
       </CardContent>
