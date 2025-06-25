@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -293,23 +292,6 @@ const ContentAdjustmentTab = () => {
         />
         
         <div className="space-y-6">
-          {/* Quick Webinar Setup */}
-          <Card className="border-blue-200 bg-blue-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-800">
-                🎥 Quick Webinar Email Series Setup
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-blue-700 mb-4">
-                Want to create a 5-part email series to promote a webinar based on your content? Click the button below to auto-configure the settings.
-              </p>
-              <Button onClick={handleQuickWebinarSetup} className="bg-blue-600 hover:bg-blue-700">
-                🚀 Setup Webinar Email Series
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Response Status */}
           {n8nLoading && (
             <Card className="border-yellow-200 bg-yellow-50">
