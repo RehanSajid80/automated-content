@@ -58,12 +58,12 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
             {isLoading ? (
               <>
                 <Database className="w-4 h-4 mr-2 animate-spin" />
-                Analyzing...
+                Searching...
               </>
             ) : (
               <>
                 <Search className="w-4 h-4 mr-2" />
-                {keyword.trim() ? `Find Keywords (${keywordLimit})` : `Analyze Domain (${keywordLimit})`}
+                Search Keywords ({keywordLimit})
               </>
             )}
           </Button>

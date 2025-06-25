@@ -35,7 +35,7 @@ const TopicKeywordFetcher: React.FC<TopicKeywordFetcherProps> = ({
       <CardHeader>
         <CardTitle>Keyword Research</CardTitle>
         <CardDescription>
-          Start by selecting a topic area and domain to find relevant keywords
+          Enter your topic area and domain to find relevant keywords from SEMrush
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -48,6 +48,7 @@ const TopicKeywordFetcher: React.FC<TopicKeywordFetcherProps> = ({
           onKeywordsReceived={handleKeywordsReceived}
           topicArea={selectedTopicArea}
           onDomainChange={handleDomainChange}
+          disabled={!selectedTopicArea.trim()}
         />
         
         <div className="pt-4 border-t">
