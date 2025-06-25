@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -154,6 +153,39 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
     return [content.toString()];
   };
   
+  // Helper function to safely render reasoning values
+  const renderReasoningValue = (value: any): React.ReactNode => {
+    if (typeof value === 'string') {
+      return value;
+    }
+    
+    if (typeof value === 'object' && value !== null) {
+      // Handle objects with title/description structure
+      if (value.title && value.description) {
+        return (
+          <div className="space-y-1">
+            <div className="font-medium text-sm">{value.title}</div>
+            <div className="text-sm text-muted-foreground">{value.description}</div>
+          </div>
+        );
+      }
+      
+      // Handle other object structures
+      return (
+        <div className="space-y-1">
+          {Object.entries(value).map(([key, val]) => (
+            <div key={key} className="text-sm">
+              <span className="font-medium capitalize">{key}: </span>
+              <span>{String(val)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    return String(value);
+  };
+  
   if (isLoading) {
     return (
       <div className="p-8 flex justify-center">
@@ -245,13 +277,15 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                 Object.entries(processedSuggestions[0].reasoning).map(([key, value]) => (
                   <div key={key} className="space-y-1">
                     <h4 className="text-xs font-medium text-muted-foreground capitalize">{key} Justification:</h4>
-                    <p className="text-sm pl-4">{String(value)}</p>
+                    <div className="text-sm pl-4">
+                      {renderReasoningValue(value)}
+                    </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {String(processedSuggestions[0].reasoning)}
-                </p>
+                <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {renderReasoningValue(processedSuggestions[0].reasoning)}
+                </div>
               )}
             </div>
           </div>
