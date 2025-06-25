@@ -28,6 +28,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   const [debugMode, setDebugMode] = useState(false);
   const [showContentDialog, setShowContentDialog] = useState(false);
   const [strategicSuggestions, setStrategicSuggestions] = useState<any[]>([]);
+  const [persistedSuggestions, setPersistedSuggestions] = useState<any[]>([]);
   
   const { generatedContent, isLoading: isAgentLoading, rawResponse, setGeneratedContent } = useN8nAgent();
   
@@ -37,32 +38,29 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     console.log("EnhancedAISuggestionsTab - isAgentLoading:", isAgentLoading);
     console.log("EnhancedAISuggestionsTab - rawResponse:", rawResponse);
     console.log("EnhancedAISuggestionsTab - strategicSuggestions:", strategicSuggestions);
-  }, [generatedContent, isAgentLoading, rawResponse, strategicSuggestions]);
-  
-  // Auto-process raw response if present and no generated content
-  useEffect(() => {
-    if (rawResponse && (!generatedContent || generatedContent.length === 0)) {
-      console.log("EnhancedAISuggestionsTab: Auto-processing raw response since no generated content is available");
-      processRawResponse();
-    }
-  }, [rawResponse, generatedContent]);
+    console.log("EnhancedAISuggestionsTab - persistedSuggestions:", persistedSuggestions);
+  }, [generatedContent, isAgentLoading, rawResponse, strategicSuggestions, persistedSuggestions]);
 
   // Handle strategic suggestions from the form
   const handleStrategicSuggestions = (suggestions: any[]) => {
     console.log("EnhancedAISuggestionsTab: Received strategic suggestions:", suggestions);
     setStrategicSuggestions(suggestions);
     
-    // Convert strategic suggestions to structured format
+    // Convert strategic suggestions to structured format and persist them
     const structuredSuggestions = suggestions.map(suggestion => ({
       topicArea: suggestion.topicArea || "Strategic Content",
       pillarContent: Array.isArray(suggestion.pillarContent) ? suggestion.pillarContent : [suggestion.pillarContent].filter(Boolean),
-      supportPages: Array.isArray(suggestion.supportPages) ? suggestion.supportPages : [suggestion.supportPages].filter(Boolean),
-      metaTags: suggestion.metaTags || [],
-      socialMedia: Array.isArray(suggestion.socialMedia) ? suggestion.socialMedia : [suggestion.socialMedia].filter(Boolean),
-      email: suggestion.email || [],
+      supportContent: Array.isArray(suggestion.supportPages) ? suggestion.supportPages : [suggestion.supportPages].filter(Boolean),
+      metaTags: Array.isArray(suggestion.metaTags) ? 
+        suggestion.metaTags.map(tag => typeof tag === 'object' ? `${tag.title} - ${tag.description}` : tag) : 
+        [],
+      socialMediaPosts: Array.isArray(suggestion.socialMedia) ? suggestion.socialMedia : [suggestion.socialMedia].filter(Boolean),
+      emailSeries: Array.isArray(suggestion.email) ? suggestion.email : [suggestion.email].filter(Boolean),
       reasoning: suggestion.reasoning || {}
     }));
     
+    console.log("EnhancedAISuggestionsTab: Processed structured suggestions:", structuredSuggestions);
+    setPersistedSuggestions(structuredSuggestions);
     setGeneratedContent(structuredSuggestions);
   };
   
@@ -146,6 +144,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
       
       console.log("EnhancedAISuggestionsTab: Setting processed content:", processedContent);
       setGeneratedContent(processedContent);
+      setPersistedSuggestions(processedContent);
       toast.success("Content processed successfully");
     } catch (err) {
       console.error("EnhancedAISuggestionsTab: Error processing raw response:", err);
@@ -155,116 +154,24 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     }
   };
   
-  // Convert generatedContent to the format expected by StructuredContentSuggestions
-  const processContentForDisplay = (contentArray: any[]) => {
-    if (!contentArray || contentArray.length === 0) return [];
-    
-    console.log("EnhancedAISuggestionsTab: Processing content array for display:", contentArray);
-    
-    return contentArray.map(item => {
-      // Initialize with default values
-      const structuredItem: any = {
-        topicArea: item.topicArea || item.title || "Content Suggestions",
-        pillarContent: [],
-        supportPages: [],
-        metaTags: [],
-        socialMedia: [],
-        email: [],
-        reasoning: item.reasoning || {}
-      };
-      
-      // Process pillar content
-      if (item.pillarContent) {
-        if (typeof item.pillarContent === 'string') {
-          structuredItem.pillarContent = [item.pillarContent];
-        } else if (Array.isArray(item.pillarContent)) {
-          structuredItem.pillarContent = item.pillarContent;
-        } else if (typeof item.pillarContent === 'object') {
-          if (item.pillarContent.content) {
-            structuredItem.pillarContent = [item.pillarContent.content];
-          } else if (item.pillarContent.title) {
-            structuredItem.pillarContent = [item.pillarContent.title];
-          } else {
-            structuredItem.pillarContent = [JSON.stringify(item.pillarContent)];
-          }
-        }
-      }
-      
-      // Process support content
-      if (item.supportContent) {
-        if (typeof item.supportContent === 'string') {
-          structuredItem.supportPages = [item.supportContent];
-        } else if (Array.isArray(item.supportContent)) {
-          structuredItem.supportPages = item.supportContent;
-        } else if (typeof item.supportContent === 'object') {
-          if (item.supportContent.content) {
-            structuredItem.supportPages = [item.supportContent.content];
-          } else if (item.supportContent.title) {
-            structuredItem.supportPages = [item.supportContent.title];
-          } else {
-            structuredItem.supportPages = [JSON.stringify(item.supportContent)];
-          }
-        }
-      } else if (item.supportPages) {
-        structuredItem.supportPages = Array.isArray(item.supportPages) ? 
-          item.supportPages : [item.supportPages];
-      }
-      
-      // Process meta tags
-      if (item.metaTags) {
-        structuredItem.metaTags = Array.isArray(item.metaTags) ? 
-          item.metaTags : [item.metaTags];
-      }
-      
-      // Process social media posts
-      if (item.socialMediaPosts) {
-        structuredItem.socialMedia = Array.isArray(item.socialMediaPosts) ? 
-          item.socialMediaPosts : [item.socialMediaPosts];
-      } else if (item.socialMedia) {
-        structuredItem.socialMedia = Array.isArray(item.socialMedia) ? 
-          item.socialMedia : [item.socialMedia];
-      } else if (item.socialPosts) {
-        structuredItem.socialMedia = Array.isArray(item.socialPosts) ? 
-          item.socialPosts : [item.socialPosts];
-      }
-      
-      // Process email series
-      if (item.emailSeries) {
-        structuredItem.email = item.emailSeries;
-      } else if (item.email) {
-        structuredItem.email = Array.isArray(item.email) ? item.email : [item.email];
-      } else if (item.emailCampaign) {
-        structuredItem.email = Array.isArray(item.emailCampaign) ? 
-          item.emailCampaign : [item.emailCampaign];
-      }
-      
-      return structuredItem;
-    });
-  };
-  
   // Always show debug mode if there's raw content but no processed content
-  const shouldAlwaysShowDebug = rawResponse && (!generatedContent || generatedContent.length === 0);
+  const shouldAlwaysShowDebug = rawResponse && (!generatedContent || generatedContent.length === 0) && persistedSuggestions.length === 0;
   
   // Force showing suggestions if content is available (including strategic suggestions)
   const hasContent = Boolean(
-    (rawResponse && typeof rawResponse === 'object') || 
+    persistedSuggestions.length > 0 ||
     (generatedContent && generatedContent.length > 0) ||
     (strategicSuggestions && strategicSuggestions.length > 0)
   );
                     
-  console.log("EnhancedAISuggestionsTab: HasContent check:", hasContent, "Generated content:", generatedContent);
+  console.log("EnhancedAISuggestionsTab: HasContent check:", hasContent, "Persisted suggestions:", persistedSuggestions.length);
   
-  const structuredSuggestions = hasContent ? 
-    generatedContent && generatedContent.length > 0 
-      ? processContentForDisplay(generatedContent) 
-      : rawResponse 
-        ? processContentForDisplay(Array.isArray(rawResponse) ? rawResponse : [rawResponse]) 
-        : strategicSuggestions.length > 0
-          ? strategicSuggestions
-          : []
-    : [];
+  // Use persisted suggestions as the primary source, fall back to generated content
+  const displaySuggestions = persistedSuggestions.length > 0 ? 
+    persistedSuggestions : 
+    (generatedContent && generatedContent.length > 0 ? generatedContent : []);
   
-  console.log("EnhancedAISuggestionsTab: Structured suggestions:", structuredSuggestions);
+  console.log("EnhancedAISuggestionsTab: Display suggestions:", displaySuggestions);
 
   const handleForceRefresh = () => {
     setForceRerender(prev => prev + 1);
@@ -329,10 +236,10 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           )}
           
           {/* Show generated content when available */}
-          {!isAgentLoading && !isForceProcessing && hasContent && structuredSuggestions.length > 0 && (
+          {!isAgentLoading && !isForceProcessing && hasContent && displaySuggestions.length > 0 && (
             <StructuredContentSuggestions
-              key={`suggestions-${forceRerender}`}
-              suggestions={structuredSuggestions}
+              key={`suggestions-${forceRerender}-${persistedSuggestions.length}`}
+              suggestions={displaySuggestions}
               persona="strategic-marketing"
               goal="content-suggestions"
               isLoading={false}
@@ -362,7 +269,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           <div className="overflow-auto flex-1 h-full">
             <DebugContentViewer 
               rawResponse={rawResponse}
-              processedContent={generatedContent && generatedContent.length > 0 ? generatedContent : (rawResponse ? [rawResponse] : [])}
+              processedContent={displaySuggestions.length > 0 ? displaySuggestions : (rawResponse ? [rawResponse] : [])}
             />
           </div>
         </DialogContent>
