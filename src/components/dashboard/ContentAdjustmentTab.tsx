@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,28 +74,50 @@ const ContentAdjustmentTab = () => {
     fetchContentItems();
   }, []);
 
-  // Watch for changes in generated content or raw response
+  // Enhanced response processing with better logging and format handling
   useEffect(() => {
     console.log("ContentAdjustmentTab: Checking for response updates");
     console.log("Generated content:", generatedContent);
     console.log("Raw response:", rawResponse);
     
+    // Handle the specific format we're receiving: array with single object containing "output" property
+    if (rawResponse && Array.isArray(rawResponse) && rawResponse.length > 0) {
+      const firstItem = rawResponse[0];
+      console.log("Processing first item from raw response array:", firstItem);
+      
+      if (firstItem && firstItem.output && typeof firstItem.output === 'string') {
+        console.log("Found output property, setting adjusted content");
+        setAdjustedContent(firstItem.output);
+        setShowAdjustedContent(true);
+        
+        toast({
+          title: "✨ Webinar Email Series Ready!",
+          description: "Your 5-part email series has been generated successfully"
+        });
+        return;
+      }
+    }
+    
+    // Handle generated content from useN8nAgent
     if (generatedContent && generatedContent.length > 0) {
       const content = generatedContent[0];
       console.log("Processing generated content:", content);
       
-      if (content.output) {
+      if (content.output && typeof content.output === 'string') {
         setAdjustedContent(content.output);
         setShowAdjustedContent(true);
-        console.log("Content adjustment successful");
+        console.log("Content adjustment successful from generatedContent");
       } else if (typeof content === 'string') {
         setAdjustedContent(content);
         setShowAdjustedContent(true);
       }
-    } else if (rawResponse) {
-      console.log("Processing raw response:", typeof rawResponse);
+    }
+    
+    // Handle direct rawResponse object format
+    if (rawResponse && typeof rawResponse === 'object' && !Array.isArray(rawResponse)) {
+      console.log("Processing raw response object:", typeof rawResponse);
       
-      if (typeof rawResponse === 'object' && rawResponse.output) {
+      if (rawResponse.output && typeof rawResponse.output === 'string') {
         setAdjustedContent(rawResponse.output);
         setShowAdjustedContent(true);
       } else if (typeof rawResponse === 'string') {
@@ -195,12 +218,35 @@ const ContentAdjustmentTab = () => {
         throw new Error(result.error);
       }
       
-      // Check if we got immediate content back
+      // Enhanced immediate response handling
       if (result.content && result.content.length > 0) {
         const content = result.content[0];
         if (content.output) {
           setAdjustedContent(content.output);
           setShowAdjustedContent(true);
+          toast({
+            title: "✨ Success!",
+            description: "Your webinar email series is ready!"
+          });
+          return;
+        }
+      }
+      
+      // Handle raw response directly
+      if (result.rawResponse) {
+        console.log("Processing raw response from result:", result.rawResponse);
+        
+        if (Array.isArray(result.rawResponse) && result.rawResponse.length > 0) {
+          const firstItem = result.rawResponse[0];
+          if (firstItem && firstItem.output) {
+            setAdjustedContent(firstItem.output);
+            setShowAdjustedContent(true);
+            toast({
+              title: "✨ Success!",
+              description: "Your webinar email series is ready!"
+            });
+            return;
+          }
         }
       }
       
@@ -276,7 +322,7 @@ const ContentAdjustmentTab = () => {
             </Card>
           )}
 
-          {/* Adjusted Content Results */}
+          {/* Enhanced Adjusted Content Results */}
           {showAdjustedContent && adjustedContent && (
             <Card className="border-green-200 bg-green-50">
               <CardHeader>
@@ -301,10 +347,10 @@ const ContentAdjustmentTab = () => {
                       Copy All Emails
                     </Button>
                   </div>
-                  <div className="p-4 bg-white rounded-lg border border-green-200 max-h-[400px] overflow-y-auto">
-                    <pre className="text-sm whitespace-pre-wrap text-gray-800">
+                  <div className="p-4 bg-white rounded-lg border border-green-200 max-h-[500px] overflow-y-auto">
+                    <div className="text-sm whitespace-pre-wrap text-gray-800">
                       {adjustedContent}
-                    </pre>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button
