@@ -26,45 +26,48 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
   onFetchKeywords
 }) => {
   return (
-    <div className="flex flex-col gap-2">
-      <Input
-        type="text"
-        placeholder="Enter keyword (optional, e.g., asset management)"
-        value={keyword}
-        onChange={(e) => onKeywordChange(e.target.value)}
-        className="max-w-sm"
-        disabled={disabled}
-      />
-      <div className="flex gap-2 items-center">
+    <div className="space-y-3">
+      <div className="space-y-2">
         <Input
           type="text"
-          placeholder="Enter domain (required, e.g., officespacesoftware.com)"
-          value={domain}
-          onChange={(e) => onDomainChange(e.target.value)}
-          className="max-w-sm"
-          disabled={disabled}
+          placeholder="Enter keyword (optional, e.g., asset management)"
+          value={keyword}
+          onChange={(e) => onKeywordChange(e.target.value)}
+          disabled={disabled || isLoading}
         />
-        <Button 
-          onClick={onFetchKeywords} 
-          disabled={isLoading || disabled || !domain.trim()}
-          variant="outline"
-          title={keyword.trim() 
-            ? `Will fetch ${keywordLimit} keywords related to "${keyword}"`
-            : `Will fetch ${keywordLimit} keywords for the domain using Domain Overview`
-          }
-        >
-          {isLoading ? (
-            <>
-              <Database className="w-4 h-4 mr-2 animate-spin" />
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <Search className="w-4 h-4 mr-2" />
-              {keyword.trim() ? `Find Related Keywords (${keywordLimit})` : `Analyze Domain (${keywordLimit})`}
-            </>
-          )}
-        </Button>
+        
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            placeholder="Enter domain (required, e.g., officespacesoftware.com)"
+            value={domain}
+            onChange={(e) => onDomainChange(e.target.value)}
+            disabled={disabled || isLoading}
+            className="flex-1"
+          />
+          
+          <Button 
+            onClick={onFetchKeywords} 
+            disabled={isLoading || disabled || !domain.trim()}
+            className="shrink-0"
+            title={keyword.trim() 
+              ? `Will fetch ${keywordLimit} keywords related to "${keyword}"`
+              : `Will fetch ${keywordLimit} keywords for the domain using Domain Overview`
+            }
+          >
+            {isLoading ? (
+              <>
+                <Database className="w-4 h-4 mr-2 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 mr-2" />
+                {keyword.trim() ? `Find Keywords (${keywordLimit})` : `Analyze Domain (${keywordLimit})`}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
