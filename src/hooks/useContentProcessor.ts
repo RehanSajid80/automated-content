@@ -57,14 +57,8 @@ export const useContentProcessor = (generatedContent: any[]) => {
         console.log("Processing output content length:", output.length);
         console.log("Processing output content preview:", output.substring(0, 100) + "...");
 
-        // Log the markers we're looking for
-        console.log("Looking for section markers in content");
-        console.log("Contains '### Support Content':", output.includes("### Support Content"));
-        console.log("Contains '### Meta Tags':", output.includes("### Meta Tags"));
-        console.log("Contains '### Social Media Posts':", output.includes("### Social Media Posts"));
-        
         try {
-          // Check if this content has section markers
+          // Check if this content has section markers - Updated to handle ## markers
           const hasSections = output.includes("### Support Content") || 
                           output.includes("# Support Content") ||
                           output.includes("<h1>Common Questions") ||
@@ -88,7 +82,6 @@ export const useContentProcessor = (generatedContent: any[]) => {
           if (hasSections) {
             console.log("Found section markers, parsing sections");
             
-            // More robust section parsing with multiple possible delimiters
             const fullContent = output.trim();
             
             // Extract pillar content (everything before any support content marker)
@@ -146,7 +139,6 @@ export const useContentProcessor = (generatedContent: any[]) => {
               }
             }
 
-            // Log the parsed sections for debugging
             console.log("Parsed sections from content:", 
               Object.keys(sections).map(key => `${key}: ${sections[key].substring(0, 30)}...`));
           } else {

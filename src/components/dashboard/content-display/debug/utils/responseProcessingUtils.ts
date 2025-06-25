@@ -19,7 +19,7 @@ export const preprocessRawResponse = (rawResponse: any) => {
       console.log("TESTING - Detected structured n8n content format");
       const outputContent = rawResponse[0].output;
       
-      // Check if this contains structured content sections
+      // Check if this contains structured content sections with ## markers
       if (outputContent.includes('## Pillar Content:') || 
           outputContent.includes('## Support Content:') ||
           outputContent.includes('## Meta Tags') ||
@@ -86,16 +86,6 @@ export const preprocessRawResponse = (rawResponse: any) => {
           return extractedJson;
         } catch (err) {
           console.error("TESTING - Error parsing JSON from n8n output code block:", err);
-          // Try cleaning the JSON string
-          try {
-            const cleanedJson = jsonMatch[1]
-              .replace(/\\n/g, '')
-              .replace(/\\"/g, '"')
-              .replace(/\\/g, '\\\\');
-            return JSON.parse(cleanedJson);
-          } catch (cleanErr) {
-            console.error("TESTING - Failed to parse cleaned JSON from n8n output code block");
-          }
         }
       }
     }
@@ -110,15 +100,6 @@ export const preprocessRawResponse = (rawResponse: any) => {
           return JSON.parse(jsonMatch[1]);
         } catch (err) {
           console.error("TESTING - Failed to parse JSON from code block in raw response");
-          // Try to clean and parse again
-          try {
-            const cleanedJson = jsonMatch[1].replace(/\\n/g, '')
-                                            .replace(/\\"/g, '"')
-                                            .replace(/\\/g, '\\\\');
-            return JSON.parse(cleanedJson);
-          } catch (cleanErr) {
-            console.error("TESTING - Failed to clean and parse JSON from code block");
-          }
         }
       }
       
@@ -143,14 +124,6 @@ export const preprocessRawResponse = (rawResponse: any) => {
             return JSON.parse(jsonMatch[1]);
           } catch (err) {
             console.error("TESTING - Failed to parse JSON from code block in output");
-            try {
-              const cleanedJson = jsonMatch[1].replace(/\\n/g, '')
-                                            .replace(/\\"/g, '"')
-                                            .replace(/\\/g, '\\\\');
-              return JSON.parse(cleanedJson);
-            } catch (cleanErr) {
-              console.error("TESTING - Failed to clean and parse JSON from output");
-            }
           }
         }
       }
