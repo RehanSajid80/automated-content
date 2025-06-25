@@ -27,6 +27,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   const [isForceProcessing, setIsForceProcessing] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [showContentDialog, setShowContentDialog] = useState(false);
+  const [strategicSuggestions, setStrategicSuggestions] = useState<any[]>([]);
   
   const { generatedContent, isLoading: isAgentLoading, rawResponse, setGeneratedContent } = useN8nAgent();
   
@@ -35,7 +36,8 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     console.log("EnhancedAISuggestionsTab - generatedContent:", generatedContent);
     console.log("EnhancedAISuggestionsTab - isAgentLoading:", isAgentLoading);
     console.log("EnhancedAISuggestionsTab - rawResponse:", rawResponse);
-  }, [generatedContent, isAgentLoading, rawResponse]);
+    console.log("EnhancedAISuggestionsTab - strategicSuggestions:", strategicSuggestions);
+  }, [generatedContent, isAgentLoading, rawResponse, strategicSuggestions]);
   
   // Auto-process raw response if present and no generated content
   useEffect(() => {
@@ -44,6 +46,25 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
       processRawResponse();
     }
   }, [rawResponse, generatedContent]);
+
+  // Handle strategic suggestions from the form
+  const handleStrategicSuggestions = (suggestions: any[]) => {
+    console.log("EnhancedAISuggestionsTab: Received strategic suggestions:", suggestions);
+    setStrategicSuggestions(suggestions);
+    
+    // Convert strategic suggestions to structured format
+    const structuredSuggestions = suggestions.map(suggestion => ({
+      topicArea: suggestion.topicArea || "Strategic Content",
+      pillarContent: Array.isArray(suggestion.pillarContent) ? suggestion.pillarContent : [suggestion.pillarContent].filter(Boolean),
+      supportPages: Array.isArray(suggestion.supportPages) ? suggestion.supportPages : [suggestion.supportPages].filter(Boolean),
+      metaTags: suggestion.metaTags || [],
+      socialMedia: Array.isArray(suggestion.socialMedia) ? suggestion.socialMedia : [suggestion.socialMedia].filter(Boolean),
+      email: suggestion.email || [],
+      reasoning: suggestion.reasoning || {}
+    }));
+    
+    setGeneratedContent(structuredSuggestions);
+  };
   
   // Function to manually process raw response if needed
   const processRawResponse = () => {
@@ -224,10 +245,11 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   // Always show debug mode if there's raw content but no processed content
   const shouldAlwaysShowDebug = rawResponse && (!generatedContent || generatedContent.length === 0);
   
-  // Force showing suggestions if content is available
+  // Force showing suggestions if content is available (including strategic suggestions)
   const hasContent = Boolean(
     (rawResponse && typeof rawResponse === 'object') || 
-    (generatedContent && generatedContent.length > 0)
+    (generatedContent && generatedContent.length > 0) ||
+    (strategicSuggestions && strategicSuggestions.length > 0)
   );
                     
   console.log("EnhancedAISuggestionsTab: HasContent check:", hasContent, "Generated content:", generatedContent);
@@ -237,7 +259,9 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
       ? processContentForDisplay(generatedContent) 
       : rawResponse 
         ? processContentForDisplay(Array.isArray(rawResponse) ? rawResponse : [rawResponse]) 
-        : [] 
+        : strategicSuggestions.length > 0
+          ? strategicSuggestions
+          : []
     : [];
   
   console.log("EnhancedAISuggestionsTab: Structured suggestions:", structuredSuggestions);
@@ -261,7 +285,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
         />
         
         <div className="space-y-6">
-          <StrategicContentForm />
+          <StrategicContentForm onSuggestionsGenerated={handleStrategicSuggestions} />
           
           {(debugMode || shouldAlwaysShowDebug) && !isAgentLoading && !isForceProcessing && (
             <Card className="border-amber-500">
