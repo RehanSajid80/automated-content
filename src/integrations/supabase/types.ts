@@ -42,6 +42,32 @@ export type Database = {
         }
         Relationships: []
       }
+      cities: {
+        Row: {
+          country_id: number | null
+          id: number
+          name: string
+        }
+        Insert: {
+          country_id?: number | null
+          id?: never
+          name: string
+        }
+        Update: {
+          country_id?: number | null
+          id?: never
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_library: {
         Row: {
           content: string
@@ -78,6 +104,21 @@ export type Database = {
           title?: string | null
           topic_area?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      countries: {
+        Row: {
+          id: number
+          name: string
+        }
+        Insert: {
+          id?: never
+          name: string
+        }
+        Update: {
+          id?: never
+          name?: string
         }
         Relationships: []
       }
