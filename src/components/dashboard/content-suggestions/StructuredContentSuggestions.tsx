@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, FileSpreadsheet, Tag, Share2, Mail, Download, Copy, Star, ChevronDown, AlertCircle, Info, BookOpen } from "lucide-react";
+import { FileText, FileSpreadsheet, Tag, Share2, Mail, Download, Copy, Star, ChevronDown, AlertCircle, Info, BookOpen, Plus, Eye } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { personaTypes } from "@/data/personaTypes";
 import { contentGoals } from "@/data/contentGoals";
@@ -38,6 +38,7 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
   const [activeTab, setActiveTab] = useState("pillar");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showReasoning, setShowReasoning] = useState(false);
+  const [expandedPreviews, setExpandedPreviews] = useState<{[key: string]: boolean}>({});
   
   const personaName = personaTypes.find(p => p.id === persona)?.name || "All Personas";
   const goalName = contentGoals.find(g => g.id === goal)?.name || "General Content";
@@ -45,6 +46,43 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard!");
+  };
+  
+  const handleCreateContent = (contentType: string, contentItem: string) => {
+    toast.success(`Creating ${contentType} content...`, {
+      description: `Opening content creator for: ${contentItem.substring(0, 50)}...`
+    });
+    // TODO: Navigate to content creator with pre-filled data
+    console.log(`Creating ${contentType} content for:`, contentItem);
+  };
+
+  const togglePreview = (key: string) => {
+    setExpandedPreviews(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const generateSampleContent = (type: string, title: string): string => {
+    switch (type) {
+      case 'pillar':
+        return `# ${title}\n\n## Introduction\nThis comprehensive guide covers everything you need to know about ${title.toLowerCase()}...\n\n## Key Benefits\n- Improved efficiency\n- Cost reduction\n- Better organization\n\n## Implementation Steps\n1. Assessment phase\n2. Planning and strategy\n3. Execution and monitoring\n\n[Content continues for 1500+ words...]`;
+      
+      case 'support':
+        return `# ${title}\n\n## Quick Overview\nThis guide helps you understand ${title.toLowerCase()} in practical terms...\n\n## Step-by-Step Process\n- Define your requirements\n- Evaluate options\n- Make informed decisions\n\n## Best Practices\n- Regular monitoring\n- Continuous improvement\n- Stakeholder communication\n\n[Additional 500-800 words of detailed guidance...]`;
+      
+      case 'meta':
+        return `Title: ${title} | Office Space Software\nMeta Description: Learn how ${title.toLowerCase()} can transform your workplace efficiency. Get expert tips and implementation strategies.`;
+      
+      case 'social':
+        return `🏢 Ready to transform your workplace with ${title.toLowerCase()}? Our latest guide breaks down everything you need to know! \n\n✅ Proven strategies\n✅ Real-world examples\n✅ Expert insights\n\nRead more: [link] #WorkplaceManagement #OfficeSpace`;
+      
+      case 'email':
+        return `Subject: Transform Your Workplace with ${title}\n\nHi [First Name],\n\nAre you looking to improve your workplace efficiency? Our comprehensive guide on ${title.toLowerCase()} provides actionable strategies that leading companies use to optimize their operations.\n\nIn this guide, you'll discover:\n- Key implementation strategies\n- Common pitfalls to avoid\n- Real success stories\n\nDownload your free copy today!\n\nBest regards,\nThe Office Space Software Team`;
+      
+      default:
+        return 'Sample content preview...';
+    }
   };
   
   const handleExport = () => {
@@ -343,7 +381,39 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                             <Copy className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="flex justify-end">
+                        
+                        {/* Sample Content Preview */}
+                        <Collapsible 
+                          open={expandedPreviews[`pillar-${i}`]} 
+                          onOpenChange={() => togglePreview(`pillar-${i}`)}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="mb-3">
+                              <Eye className="h-4 w-4 mr-2" />
+                              {expandedPreviews[`pillar-${i}`] ? 'Hide' : 'Show'} Content Preview
+                              <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${expandedPreviews[`pillar-${i}`] ? 'rotate-180' : ''}`} />
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="bg-muted/20 p-4 rounded-md mb-4 text-sm">
+                              <pre className="whitespace-pre-wrap font-mono text-xs">
+                                {generateSampleContent('pillar', content)}
+                              </pre>
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                        
+                        <div className="flex justify-between items-center">
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            onClick={() => handleCreateContent('Pillar Content', content)}
+                            className="flex items-center gap-1"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Create Content
+                          </Button>
+                          
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -392,7 +462,39 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                             <Copy className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="flex justify-end">
+                        
+                        {/* Sample Content Preview */}
+                        <Collapsible 
+                          open={expandedPreviews[`support-${i}`]} 
+                          onOpenChange={() => togglePreview(`support-${i}`)}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="mb-3">
+                              <Eye className="h-4 w-4 mr-2" />
+                              {expandedPreviews[`support-${i}`] ? 'Hide' : 'Show'} Content Preview
+                              <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${expandedPreviews[`support-${i}`] ? 'rotate-180' : ''}`} />
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="bg-muted/20 p-4 rounded-md mb-4 text-sm">
+                              <pre className="whitespace-pre-wrap font-mono text-xs">
+                                {generateSampleContent('support', content)}
+                              </pre>
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                        
+                        <div className="flex justify-between items-center">
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            onClick={() => handleCreateContent('Support Page', content)}
+                            className="flex items-center gap-1"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Create Content
+                          </Button>
+                          
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -430,14 +532,47 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                         key={`meta-${i}`}
                         className="p-4 border-b last:border-b-0"
                       >
-                        <div className="flex justify-between items-start">
-                          <p className="text-sm">{content}</p>
+                        <div className="flex justify-between items-start mb-3">
+                          <p className="text-sm font-medium">{content}</p>
                           <Button 
                             size="icon" 
                             variant="ghost" 
                             onClick={() => handleCopyToClipboard(content)}
                           >
                             <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {/* Sample Content Preview */}
+                        <Collapsible 
+                          open={expandedPreviews[`meta-${i}`]} 
+                          onOpenChange={() => togglePreview(`meta-${i}`)}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="mb-3">
+                              <Eye className="h-4 w-4 mr-2" />
+                              {expandedPreviews[`meta-${i}`] ? 'Hide' : 'Show'} Meta Tags Preview
+                              <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${expandedPreviews[`meta-${i}`] ? 'rotate-180' : ''}`} />
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="bg-muted/20 p-4 rounded-md mb-4 text-sm">
+                              <pre className="whitespace-pre-wrap font-mono text-xs">
+                                {generateSampleContent('meta', content)}
+                              </pre>
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                        
+                        <div className="flex justify-end">
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            onClick={() => handleCreateContent('Meta Tags', content)}
+                            className="flex items-center gap-1"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Create Meta Tags
                           </Button>
                         </div>
                       </div>
@@ -482,33 +617,66 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                           
                           <p className="text-sm whitespace-pre-wrap mb-4">{contentString}</p>
                           
+                          {/* Sample Content Preview */}
+                          <Collapsible 
+                            open={expandedPreviews[`social-${i}`]} 
+                            onOpenChange={() => togglePreview(`social-${i}`)}
+                          >
+                            <CollapsibleTrigger asChild>
+                              <Button variant="ghost" size="sm" className="mb-3 w-full">
+                                <Eye className="h-4 w-4 mr-2" />
+                                {expandedPreviews[`social-${i}`] ? 'Hide' : 'Show'} Enhanced Preview
+                                <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${expandedPreviews[`social-${i}`] ? 'rotate-180' : ''}`} />
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="bg-muted/20 p-4 rounded-md mb-4 text-sm">
+                                <pre className="whitespace-pre-wrap font-mono text-xs">
+                                  {generateSampleContent('social', contentString)}
+                                </pre>
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                          
                           <div className="flex justify-between items-center mt-2">
                             <Button 
                               size="sm" 
-                              variant="outline" 
-                              onClick={() => toggleSelectItem(contentString)}
+                              variant="default"
+                              onClick={() => handleCreateContent('Social Media Post', contentString)}
                               className="flex items-center gap-1"
                             >
-                              {selectedItems.includes(contentString) ? (
-                                <>
-                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                  <span>Selected</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Star className="h-4 w-4" />
-                                  <span>Select</span>
-                                </>
-                              )}
+                              <Plus className="h-4 w-4" />
+                              Create Post
                             </Button>
                             
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              onClick={() => handleCopyToClipboard(contentString)}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => toggleSelectItem(contentString)}
+                                className="flex items-center gap-1"
+                              >
+                                {selectedItems.includes(contentString) ? (
+                                  <>
+                                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                    <span>Selected</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Star className="h-4 w-4" />
+                                    <span>Select</span>
+                                  </>
+                                )}
+                              </Button>
+                              
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                onClick={() => handleCopyToClipboard(contentString)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -546,7 +714,41 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                           <div className="p-4 bg-card">
                             <p className="text-sm whitespace-pre-wrap">{body}</p>
                           </div>
-                          <div className="p-3 border-t bg-background flex justify-end">
+                          
+                          {/* Sample Content Preview */}
+                          <Collapsible 
+                            open={expandedPreviews[`email-${i}`]} 
+                            onOpenChange={() => togglePreview(`email-${i}`)}
+                          >
+                            <div className="p-3 border-t">
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="w-full">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  {expandedPreviews[`email-${i}`] ? 'Hide' : 'Show'} Enhanced Email Preview
+                                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${expandedPreviews[`email-${i}`] ? 'rotate-180' : ''}`} />
+                                </Button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="bg-muted/20 p-4 rounded-md mt-3 text-sm">
+                                  <pre className="whitespace-pre-wrap font-mono text-xs">
+                                    {generateSampleContent('email', subject)}
+                                  </pre>
+                                </div>
+                              </CollapsibleContent>
+                            </div>
+                          </Collapsible>
+                          
+                          <div className="p-3 border-t bg-background flex justify-between items-center">
+                            <Button 
+                              size="sm" 
+                              variant="default"
+                              onClick={() => handleCreateContent('Email Campaign', `Subject: ${subject}\n\n${body}`)}
+                              className="flex items-center gap-1"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Create Email
+                            </Button>
+                            
                             <Button 
                               size="sm" 
                               variant="outline" 
