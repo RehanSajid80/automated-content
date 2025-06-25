@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Target, TrendingUp, Clock, Building2, Lightbulb, CheckCircle, Copy } from "lucide-react";
+import { Pencil, Target, TrendingUp, Clock, Building2, Lightbulb, CheckCircle, Copy, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useN8nAgent } from "@/hooks/useN8nAgent";
@@ -52,6 +52,8 @@ const ContentAdjustmentTab = () => {
   ];
 
   const formatOptions = [
+    { value: "email-series", label: "Email Series (5-part promotional sequence)" },
+    { value: "webinar-promo", label: "Webinar Promotional Content" },
     { value: "email", label: "Email (Short & Direct)" },
     { value: "social", label: "Social Media (Engaging & Brief)" },
     { value: "landing-page", label: "Landing Page (Comprehensive)" },
@@ -59,14 +61,12 @@ const ContentAdjustmentTab = () => {
     { value: "checklist", label: "Checklist (Actionable)" }
   ];
 
-  const examplePrompts = [
-    "Rewrite the introduction to speak directly to facilities managers in large enterprises.",
-    "Add examples relevant to hybrid workplace management in healthcare or higher education.",
-    "Turn this section into a 3-bullet checklist for optimizing space utilization.",
-    "Improve SEO by adding keywords like 'workspace management software', 'employee wayfinding', and 'return to office strategy'.",
-    "Make this section sound more consultative and data-backed for IT decision-makers.",
-    "Add ROI metrics and cost-benefit analysis for C-level executives.",
-    "Include employee satisfaction and wellness benefits for HR leaders."
+  const webinarPrompts = [
+    "Create a 5-part email series to promote a webinar series based on this content. Each email should build excitement and drive registrations.",
+    "Transform this content into promotional emails for a webinar video series. Include compelling subject lines and clear calls-to-action.",
+    "Generate 5 sequential promotional emails that turn this content into a webinar series. Focus on educational value and registration urgency.",
+    "Create webinar promotional content with 5 emails: announcement, benefits, speaker highlights, last chance, and follow-up.",
+    "Transform this into a webinar email sequence that builds anticipation, addresses pain points, and drives sign-ups.",
   ];
 
   useEffect(() => {
@@ -75,15 +75,32 @@ const ContentAdjustmentTab = () => {
 
   // Watch for changes in generated content or raw response
   useEffect(() => {
+    console.log("ContentAdjustmentTab: Checking for response updates");
+    console.log("Generated content:", generatedContent);
+    console.log("Raw response:", rawResponse);
+    
     if (generatedContent && generatedContent.length > 0) {
       const content = generatedContent[0];
+      console.log("Processing generated content:", content);
+      
       if (content.output) {
         setAdjustedContent(content.output);
         setShowAdjustedContent(true);
+        console.log("Content adjustment successful");
+      } else if (typeof content === 'string') {
+        setAdjustedContent(content);
+        setShowAdjustedContent(true);
       }
-    } else if (rawResponse && typeof rawResponse === 'object' && rawResponse.output) {
-      setAdjustedContent(rawResponse.output);
-      setShowAdjustedContent(true);
+    } else if (rawResponse) {
+      console.log("Processing raw response:", typeof rawResponse);
+      
+      if (typeof rawResponse === 'object' && rawResponse.output) {
+        setAdjustedContent(rawResponse.output);
+        setShowAdjustedContent(true);
+      } else if (typeof rawResponse === 'string') {
+        setAdjustedContent(rawResponse);
+        setShowAdjustedContent(true);
+      }
     }
   }, [generatedContent, rawResponse]);
 
@@ -118,6 +135,12 @@ const ContentAdjustmentTab = () => {
     setActiveContentType(contentType);
     const firstItemOfType = contentItems.find(item => item.content_type === contentType);
     setSelectedContent(firstItemOfType || null);
+  };
+
+  const handleQuickWebinarSetup = () => {
+    setAdjustmentPrompt("Create a 5-part email series to promote a webinar series based on this content. Each email should build excitement and drive registrations with compelling subject lines and clear calls-to-action.");
+    setSelectedFormat("email-series");
+    setSelectedTone("ceo-executive");
   };
 
   const handleAdjustContent = async () => {
@@ -161,18 +184,29 @@ const ContentAdjustmentTab = () => {
       
       toast({
         title: "Adjusting Content",
-        description: "Sending content to AI for adjustment..."
+        description: "Sending content to AI for webinar email series creation..."
       });
       
       const result = await sendToN8n(webhookPayload, 'content-adjustment');
+      
+      console.log("Content adjustment result:", result);
       
       if (result.error) {
         throw new Error(result.error);
       }
       
+      // Check if we got immediate content back
+      if (result.content && result.content.length > 0) {
+        const content = result.content[0];
+        if (content.output) {
+          setAdjustedContent(content.output);
+          setShowAdjustedContent(true);
+        }
+      }
+      
       toast({
-        title: "Content Adjusted Successfully",
-        description: "Your content has been enhanced based on your instructions"
+        title: "Request Sent Successfully",
+        description: "Your webinar email series is being generated. Please wait for the response..."
       });
       
     } catch (error) {
@@ -213,20 +247,49 @@ const ContentAdjustmentTab = () => {
         />
         
         <div className="space-y-6">
+          {/* Quick Webinar Setup */}
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                🎥 Quick Webinar Email Series Setup
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-blue-700 mb-4">
+                Want to create a 5-part email series to promote a webinar based on your content? Click the button below to auto-configure the settings.
+              </p>
+              <Button onClick={handleQuickWebinarSetup} className="bg-blue-600 hover:bg-blue-700">
+                🚀 Setup Webinar Email Series
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Response Status */}
+          {n8nLoading && (
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 text-yellow-800">
+                  <Clock className="h-4 w-4 animate-spin" />
+                  <span>Generating your webinar email series... Please wait.</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Adjusted Content Results */}
           {showAdjustedContent && adjustedContent && (
             <Card className="border-green-200 bg-green-50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-800">
                   <CheckCircle className="h-5 w-5" />
-                  ✨ Adjusted Content Results
+                  ✨ Your Webinar Email Series is Ready!
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-green-700 font-medium">
-                      Content has been successfully adjusted based on your instructions
+                      Your 5-part webinar promotional email series has been generated
                     </p>
                     <Button
                       variant="outline"
@@ -235,7 +298,7 @@ const ContentAdjustmentTab = () => {
                       className="flex items-center gap-2"
                     >
                       <Copy className="h-4 w-4" />
-                      Copy Content
+                      Copy All Emails
                     </Button>
                   </div>
                   <div className="p-4 bg-white rounded-lg border border-green-200 max-h-[400px] overflow-y-auto">
@@ -255,7 +318,7 @@ const ContentAdjustmentTab = () => {
                         });
                       }}
                     >
-                      Save Adjusted Content
+                      Save Email Series
                     </Button>
                     <Button
                       variant="outline"
@@ -347,18 +410,18 @@ const ContentAdjustmentTab = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5" />
-                  Content Adjustment Tools
+                  Webinar Email Series Configuration
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Tone Selection */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2">
-                    🎯 Target Persona
+                    🎯 Target Audience
                   </label>
                   <Select value={selectedTone} onValueChange={setSelectedTone}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select target persona..." />
+                      <SelectValue placeholder="Select target audience..." />
                     </SelectTrigger>
                     <SelectContent>
                       {toneOptions.map(option => (
@@ -373,7 +436,7 @@ const ContentAdjustmentTab = () => {
                 {/* Format Selection */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2">
-                    ⏱ Content Format
+                    📧 Email Format
                   </label>
                   <Select value={selectedFormat} onValueChange={setSelectedFormat}>
                     <SelectTrigger>
@@ -392,12 +455,12 @@ const ContentAdjustmentTab = () => {
                 {/* Custom Instructions */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2">
-                    ✍️ Adjustment Instructions
+                    ✍️ Webinar Instructions
                   </label>
                   <Textarea
                     value={adjustmentPrompt}
                     onChange={(e) => setAdjustmentPrompt(e.target.value)}
-                    placeholder="Describe how you want to adjust the content..."
+                    placeholder="Describe your webinar series and email requirements..."
                     className="min-h-[100px]"
                   />
                 </div>
@@ -407,23 +470,23 @@ const ContentAdjustmentTab = () => {
                   disabled={!selectedContent || !adjustmentPrompt.trim() || n8nLoading}
                   className="w-full"
                 >
-                  {n8nLoading ? "Adjusting Content..." : "✨ Adjust Content"}
+                  {n8nLoading ? "Creating Email Series..." : "🎥 Generate Webinar Email Series"}
                 </Button>
               </CardContent>
             </Card>
           </div>
 
-          {/* Example Prompts */}
+          {/* Webinar-Specific Example Prompts */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5" />
-                🧠 Example Prompts (OfficeSpace Focused)
+                🎥 Webinar Email Series Examples
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {examplePrompts.map((prompt, index) => (
+                {webinarPrompts.map((prompt, index) => (
                   <div
                     key={index}
                     className="p-3 border border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
@@ -455,41 +518,6 @@ const ContentAdjustmentTab = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Webhook Payload Preview */}
-          <Card className="bg-slate-50 border-dashed">
-            <CardHeader>
-              <CardTitle className="text-sm">🔧 Webhook Payload Preview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xs font-mono bg-white p-3 rounded border">
-                <pre>{JSON.stringify({
-                  requestType: 'contentAdjustment',
-                  contentId: selectedContent?.id || 'content-id-123',
-                  originalContent: {
-                    title: selectedContent?.title || 'Content Title',
-                    content: '(full content text)',
-                    contentType: selectedContent?.content_type || 'pillar',
-                    topicArea: selectedContent?.topic_area || 'workspace-management',
-                    keywords: selectedContent?.keywords || ['keyword1', 'keyword2']
-                  },
-                  adjustmentInstructions: {
-                    prompt: adjustmentPrompt || 'Adjustment instructions...',
-                    targetPersona: selectedTone || 'facility-manager',
-                    targetFormat: selectedFormat || 'email'
-                  },
-                  context: {
-                    source: 'content-adjustment-panel',
-                    timestamp: new Date().toISOString(),
-                    userId: 'user-123'
-                  }
-                }, null, 2)}</pre>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                This is the exact data structure that will be sent to your n8n webhook when you click "Adjust Content"
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </TabsContent>
