@@ -4,8 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TopicAreaSelector } from "./TopicAreaSelector";
 import SemrushIntegration from "./SemrushIntegration";
 import { KeywordData } from "@/utils/excelUtils";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface TopicKeywordFetcherProps {
   onKeywordsReceived: (keywords: KeywordData[], topicArea?: string, domain?: string) => void;
@@ -50,26 +48,6 @@ const TopicKeywordFetcher: React.FC<TopicKeywordFetcherProps> = ({
           onDomainChange={handleDomainChange}
           disabled={!selectedTopicArea.trim()}
         />
-        
-        <div className="pt-4 border-t">
-          <Button 
-            variant="outline" 
-            onClick={onToggleAdvanced}
-            className="w-full"
-          >
-            {showAdvanced ? (
-              <>
-                <ChevronUp className="mr-2 h-4 w-4" />
-                Hide Advanced Options
-              </>
-            ) : (
-              <>
-                <ChevronDown className="mr-2 h-4 w-4" />
-                Show Advanced Options
-              </>
-            )}
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
