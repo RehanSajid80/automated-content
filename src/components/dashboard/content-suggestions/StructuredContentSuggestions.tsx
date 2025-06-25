@@ -453,16 +453,20 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
               <TabsContent value="social" className="space-y-4">
                 {suggestion.socialPosts && suggestion.socialPosts.length > 0 ? (
                   <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {suggestion.socialPosts.map((content: string, i: number) => {
+                    {suggestion.socialPosts.map((content: any, i: number) => {
+                      // Convert content to string safely before using toLowerCase
+                      const contentString = typeof content === 'string' ? content : JSON.stringify(content);
+                      const contentLower = contentString.toLowerCase();
+                      
                       // Determine social media platform from content or index
                       let platform = "Social Post";
                       let icon = <Share2 className="h-4 w-4" />;
                       
-                      if (i === 0 || content.toLowerCase().includes("linkedin")) {
+                      if (i === 0 || contentLower.includes("linkedin")) {
                         platform = "LinkedIn";
-                      } else if (i === 1 || content.toLowerCase().includes("twitter") || content.toLowerCase().includes("x style")) {
+                      } else if (i === 1 || contentLower.includes("twitter") || contentLower.includes("x style")) {
                         platform = "Twitter/X";
-                      } else if (i === 2 || content.toLowerCase().includes("instagram") || content.toLowerCase().includes("facebook")) {
+                      } else if (i === 2 || contentLower.includes("instagram") || contentLower.includes("facebook")) {
                         platform = "Instagram/Facebook";
                       }
                       
@@ -476,16 +480,16 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                             <span className="ml-1">{platform}</span>
                           </Badge>
                           
-                          <p className="text-sm whitespace-pre-wrap mb-4">{content}</p>
+                          <p className="text-sm whitespace-pre-wrap mb-4">{contentString}</p>
                           
                           <div className="flex justify-between items-center mt-2">
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              onClick={() => toggleSelectItem(content)}
+                              onClick={() => toggleSelectItem(contentString)}
                               className="flex items-center gap-1"
                             >
-                              {selectedItems.includes(content) ? (
+                              {selectedItems.includes(contentString) ? (
                                 <>
                                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                                   <span>Selected</span>
@@ -501,7 +505,7 @@ export const StructuredContentSuggestions: React.FC<StructuredContentSuggestions
                             <Button 
                               size="icon" 
                               variant="ghost" 
-                              onClick={() => handleCopyToClipboard(content)}
+                              onClick={() => handleCopyToClipboard(contentString)}
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
