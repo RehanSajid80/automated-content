@@ -10,6 +10,38 @@ export const preprocessRawResponse = (rawResponse: any) => {
   console.log("TESTING - Preprocessing raw response:", typeof rawResponse);
   
   try {
+    // Handle the specific n8n response format with structured content sections
+    if (Array.isArray(rawResponse) && 
+        rawResponse.length === 1 && 
+        rawResponse[0].output && 
+        typeof rawResponse[0].output === 'string') {
+      
+      console.log("TESTING - Detected structured n8n content format");
+      const outputContent = rawResponse[0].output;
+      
+      // Check if this contains structured content sections
+      if (outputContent.includes('## Pillar Content:') || 
+          outputContent.includes('## Support Content:') ||
+          outputContent.includes('## Meta Tags') ||
+          outputContent.includes('## Social Media Posts') ||
+          outputContent.includes('## Email Campaign')) {
+        
+        console.log("TESTING - Found structured content sections, parsing...");
+        
+        // Parse the structured content into sections
+        const sections = {
+          pillarContent: extractSection(outputContent, '## Pillar Content:', '## Support Content:'),
+          supportContent: extractSection(outputContent, '## Support Content:', '## Meta Tags'),
+          metaTags: extractSection(outputContent, '## Meta Tags', '## Social Media Posts'),
+          socialMediaPosts: extractSection(outputContent, '## Social Media Posts', '## Email Campaign'),
+          emailSeries: extractSection(outputContent, '## Email Campaign', null)
+        };
+        
+        console.log("TESTING - Parsed structured sections:", Object.keys(sections).filter(key => sections[key]));
+        return sections;
+      }
+    }
+    
     // Direct handling for AI Content Suggestions format - check first
     if (typeof rawResponse === 'object' && (
       rawResponse.pillarContent !== undefined ||
@@ -133,4 +165,22 @@ export const preprocessRawResponse = (rawResponse: any) => {
     console.error("TESTING - Error preprocessing raw response:", error);
     return rawResponse;
   }
+};
+
+// Helper function to extract content sections from structured text
+const extractSection = (content: string, startMarker: string, endMarker: string | null): string => {
+  const startIndex = content.indexOf(startMarker);
+  if (startIndex === -1) return '';
+  
+  const contentStart = startIndex + startMarker.length;
+  let contentEnd = content.length;
+  
+  if (endMarker) {
+    const endIndex = content.indexOf(endMarker, contentStart);
+    if (endIndex !== -1) {
+      contentEnd = endIndex;
+    }
+  }
+  
+  return content.substring(contentStart, contentEnd).trim();
 };

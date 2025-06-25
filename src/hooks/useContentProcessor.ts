@@ -24,6 +24,28 @@ export const useContentProcessor = (generatedContent: any[]) => {
         const contentItem = generatedContent[0];
         console.log("Processing content item:", contentItem);
         
+        // Handle the new structured format from n8n response preprocessing
+        if (contentItem.pillarContent || contentItem.supportContent || 
+            contentItem.metaTags || contentItem.socialMediaPosts || contentItem.emailSeries) {
+          console.log("Found structured content format from preprocessing");
+          
+          const sections: ContentSections = {
+            pillar: contentItem.pillarContent || "",
+            support: contentItem.supportContent || "",
+            meta: typeof contentItem.metaTags === 'object' ? 
+              JSON.stringify(contentItem.metaTags, null, 2) : (contentItem.metaTags || ""),
+            social: Array.isArray(contentItem.socialMediaPosts) ? 
+              contentItem.socialMediaPosts.join("\n\n") : (contentItem.socialMediaPosts || "")
+          };
+          
+          console.log("Processed structured content sections:", 
+            Object.keys(sections).filter(key => sections[key].length > 0));
+          
+          setEditableContent(sections);
+          setContentProcessed(true);
+          return;
+        }
+        
         // Handle different content formats (output, content, or direct string)
         const output = contentItem.output || contentItem.content || "";
         if (!output) {
@@ -49,7 +71,12 @@ export const useContentProcessor = (generatedContent: any[]) => {
                           output.includes("### Meta Tags") || 
                           output.includes("# Meta Tags") ||
                           output.includes("### Social Media Posts") ||
-                          output.includes("# Social Media Posts");
+                          output.includes("# Social Media Posts") ||
+                          // Check for the new format markers
+                          output.includes("## Support Content:") ||
+                          output.includes("## Meta Tags") ||
+                          output.includes("## Social Media Posts") ||
+                          output.includes("## Email Campaign");
           
           let sections: ContentSections = {
             pillar: "",
@@ -65,7 +92,10 @@ export const useContentProcessor = (generatedContent: any[]) => {
             const fullContent = output.trim();
             
             // Extract pillar content (everything before any support content marker)
-            const supportMarkers = ["### Support Content", "# Support Content", "<h1>Common Questions"];
+            const supportMarkers = [
+              "### Support Content", "# Support Content", "<h1>Common Questions", 
+              "## Support Content:", "---\n\n## Support Content:"
+            ];
             let pillarContent = fullContent;
             
             for (const marker of supportMarkers) {
@@ -77,12 +107,12 @@ export const useContentProcessor = (generatedContent: any[]) => {
             sections.pillar = pillarContent.trim();
             
             // Extract support content
-            const supportStartRegex = /(### Support Content|# Support Content|<h1>Common Questions)/i;
-            const metaStartRegex = /(### Meta Tags|# Meta Tags)/i;
-            const socialStartRegex = /(### Social Media Posts|# Social Media Posts)/i;
+            const supportStartRegex = /(### Support Content|# Support Content|<h1>Common Questions|## Support Content:)/i;
+            const metaStartRegex = /(### Meta Tags|# Meta Tags|## Meta Tags)/i;
+            const socialStartRegex = /(### Social Media Posts|# Social Media Posts|## Social Media Posts)/i;
             
             if (supportStartRegex.test(fullContent)) {
-              const afterSupportMatch = fullContent.split(supportStartRegex)[1] || "";
+              const afterSupportMatch = fullContent.split(supportStartRegex)[2] || "";
               if (metaStartRegex.test(afterSupportMatch)) {
                 sections.support = afterSupportMatch.split(metaStartRegex)[0].trim();
               } else if (socialStartRegex.test(afterSupportMatch)) {
@@ -94,7 +124,7 @@ export const useContentProcessor = (generatedContent: any[]) => {
             
             // Extract meta content
             if (metaStartRegex.test(fullContent)) {
-              const afterMetaMatch = fullContent.split(metaStartRegex)[1] || "";
+              const afterMetaMatch = fullContent.split(metaStartRegex)[2] || "";
               if (socialStartRegex.test(afterMetaMatch)) {
                 sections.meta = afterMetaMatch.split(socialStartRegex)[0].trim();
               } else {
@@ -104,7 +134,16 @@ export const useContentProcessor = (generatedContent: any[]) => {
             
             // Extract social content
             if (socialStartRegex.test(fullContent)) {
-              sections.social = fullContent.split(socialStartRegex)[1].trim();
+              const socialContent = fullContent.split(socialStartRegex)[2];
+              if (socialContent) {
+                // Stop at email campaign section if it exists
+                const emailRegex = /(## Email Campaign)/i;
+                if (emailRegex.test(socialContent)) {
+                  sections.social = socialContent.split(emailRegex)[0].trim();
+                } else {
+                  sections.social = socialContent.trim();
+                }
+              }
             }
 
             // Log the parsed sections for debugging
