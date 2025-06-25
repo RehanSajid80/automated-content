@@ -90,10 +90,14 @@ export const useSemrushApi = (
   }, []);
 
   const fetchKeywords = async () => {
-    if (!domain.trim()) {
+    // Updated validation: require either domain OR keyword/topicArea
+    const hasKeyword = keyword.trim() || topicArea?.trim();
+    const hasDomain = domain.trim();
+    
+    if (!hasKeyword && !hasDomain) {
       toast({
         title: "Error",
-        description: "Please enter a domain URL",
+        description: "Please enter either a keyword/topic area or a domain URL",
         variant: "destructive",
       });
       return;
@@ -104,26 +108,31 @@ export const useSemrushApi = (
     setApiStatus(null);
 
     try {
-      const cleanDomain = extractDomain(domain);
       const currentKeywordLimit = await getKeywordLimit();
       
       // Use keyword if provided, otherwise empty string for domain analysis
-      const searchKeyword = keyword.trim();
+      const searchKeyword = keyword.trim() || topicArea?.trim() || '';
       
-      console.log(`Fetching ${searchKeyword ? 'related keywords for' : 'domain overview'} data for domain: ${cleanDomain}${searchKeyword ? ` with keyword: "${searchKeyword}"` : ''}`);
+      // Handle domain - can be empty now
+      let cleanDomain = '';
+      if (hasDomain) {
+        cleanDomain = extractDomain(domain);
+        
+        // Validate domain format only if domain is provided
+        const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
+        if (!domainRegex.test(cleanDomain)) {
+          throw new Error(`Invalid domain format: ${cleanDomain}. Please enter a valid domain like "example.com"`);
+        }
+      }
+      
+      console.log(`Fetching keywords for: ${searchKeyword ? `keyword: "${searchKeyword}"` : 'general search'}${cleanDomain ? ` and domain: ${cleanDomain}` : ''}`);
       console.log(`Requesting ${currentKeywordLimit} keywords from SEMrush API (from global settings)`);
 
-      // Validate domain format before making the call
-      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
-      if (!domainRegex.test(cleanDomain)) {
-        throw new Error(`Invalid domain format: ${cleanDomain}. Please enter a valid domain like "example.com"`);
-      }
-
-      // Call SEMrush API through edge function with keyword and domain
+      // Call SEMrush API through edge function with keyword and domain (domain can be empty)
       const { data, error } = await supabase.functions.invoke('semrush-keywords', {
         body: { 
           keyword: searchKeyword,
-          domain: cleanDomain,
+          domain: cleanDomain, // Can be empty string now
           limit: currentKeywordLimit,
           topicArea: topicArea || '' 
         }
@@ -148,7 +157,7 @@ export const useSemrushApi = (
         if (data.error.includes('NOTHING FOUND')) {
           errorMessage = searchKeyword 
             ? `No related keywords found for "${searchKeyword}". Try different or broader search terms.`
-            : `No organic keywords found for ${cleanDomain}. The domain may not have sufficient organic visibility.`;
+            : `No organic keywords found${cleanDomain ? ` for ${cleanDomain}` : ''}. Try different search terms.`;
         } else if (data.error.includes('Invalid API key')) {
           errorMessage = 'SEMrush API key is invalid. Please check your API key configuration.';
         } else if (data.error.includes('domain format')) {
@@ -180,13 +189,13 @@ export const useSemrushApi = (
         updateSemrushMetrics(false);
         const noResultsMessage = searchKeyword 
           ? `No related keywords found for "${searchKeyword}". Try broader or different terms.` 
-          : `No organic keywords found for ${cleanDomain}. The domain may not have sufficient organic visibility.`;
+          : `No organic keywords found${cleanDomain ? ` for ${cleanDomain}` : ''}. Try different search terms.`;
         setErrorMsg(noResultsMessage);
         toast({
           title: "No keywords found",
           description: searchKeyword 
             ? `Try using broader terms, check spelling, or use different keywords related to "${searchKeyword}"`
-            : `The domain may not have sufficient organic visibility or try adding a specific keyword`,
+            : `Try adding a specific keyword or domain for better results`,
           variant: "default",
         });
         setIsLoading(false);
@@ -205,17 +214,17 @@ export const useSemrushApi = (
         trend: kw.trend || 'neutral'
       }));
       
-      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for ${searchKeyword ? `keyword: "${searchKeyword}"` : 'domain analysis'} and domain: ${cleanDomain}`);
+      console.log(`Processed ${formattedKeywords.length} keywords from SEMrush for ${searchKeyword ? `keyword: "${searchKeyword}"` : 'general search'}${cleanDomain ? ` and domain: ${cleanDomain}` : ''}`);
       
       onKeywordsReceived(formattedKeywords);
       
       const statusMessage = data.fromCache ? "Loaded from cache" : "Success";
       const duplicatesInfo = data.duplicatesIgnored > 0 ? ` (${data.duplicatesIgnored} duplicates ignored)` : '';
-      const analysisType = searchKeyword ? `related keywords for "${searchKeyword}"` : 'domain overview';
+      const analysisType = searchKeyword ? `related keywords for "${searchKeyword}"` : 'general keywords';
       
       toast({
         title: statusMessage,
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} ${analysisType} keywords for ${cleanDomain} (limit: ${currentKeywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} ${analysisType}${cleanDomain ? ` for ${cleanDomain}` : ''} (limit: ${currentKeywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
       });
       
     } catch (error) {
