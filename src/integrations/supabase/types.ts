@@ -81,6 +81,48 @@ export type Database = {
         }
         Relationships: []
       }
+      semrush_keywords: {
+        Row: {
+          cache_key: string
+          cpc: number | null
+          created_at: string
+          difficulty: number | null
+          domain: string | null
+          id: string
+          keyword: string
+          topic_area: string | null
+          trend: string | null
+          updated_at: string
+          volume: number | null
+        }
+        Insert: {
+          cache_key: string
+          cpc?: number | null
+          created_at?: string
+          difficulty?: number | null
+          domain?: string | null
+          id?: string
+          keyword: string
+          topic_area?: string | null
+          trend?: string | null
+          updated_at?: string
+          volume?: number | null
+        }
+        Update: {
+          cache_key?: string
+          cpc?: number | null
+          created_at?: string
+          difficulty?: number | null
+          domain?: string | null
+          id?: string
+          keyword?: string
+          topic_area?: string | null
+          trend?: string | null
+          updated_at?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
       webhook_configs: {
         Row: {
           created_at: string
