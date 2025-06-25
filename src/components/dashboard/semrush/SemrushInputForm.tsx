@@ -39,7 +39,7 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Enter domain (required, e.g., officespacesoftware.com)"
+            placeholder="Enter domain (optional, e.g., officespacesoftware.com)"
             value={domain}
             onChange={(e) => onDomainChange(e.target.value)}
             disabled={disabled || isLoading}
@@ -48,11 +48,11 @@ const SemrushInputForm: React.FC<SemrushInputFormProps> = ({
           
           <Button 
             onClick={onFetchKeywords} 
-            disabled={isLoading || disabled || !domain.trim()}
+            disabled={isLoading || disabled}
             className="shrink-0"
             title={keyword.trim() 
               ? `Will fetch ${keywordLimit} keywords related to "${keyword}"`
-              : `Will fetch ${keywordLimit} keywords for the domain using Domain Overview`
+              : `Will fetch ${keywordLimit} keywords for general research`
             }
           >
             {isLoading ? (
