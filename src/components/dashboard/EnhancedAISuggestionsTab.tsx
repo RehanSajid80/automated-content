@@ -27,8 +27,9 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   const [isForceProcessing, setIsForceProcessing] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [showContentDialog, setShowContentDialog] = useState(false);
-  const [strategicSuggestions, setStrategicSuggestions] = useState<any[]>([]);
-  const [persistedSuggestions, setPersistedSuggestions] = useState<any[]>([]);
+  
+  // Single source of truth for all content suggestions
+  const [contentSuggestions, setContentSuggestions] = useState<any[]>([]);
   
   const { generatedContent, isLoading: isAgentLoading, rawResponse, setGeneratedContent } = useN8nAgent();
   
@@ -37,16 +38,14 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
     console.log("EnhancedAISuggestionsTab - generatedContent:", generatedContent);
     console.log("EnhancedAISuggestionsTab - isAgentLoading:", isAgentLoading);
     console.log("EnhancedAISuggestionsTab - rawResponse:", rawResponse);
-    console.log("EnhancedAISuggestionsTab - strategicSuggestions:", strategicSuggestions);
-    console.log("EnhancedAISuggestionsTab - persistedSuggestions:", persistedSuggestions);
-  }, [generatedContent, isAgentLoading, rawResponse, strategicSuggestions, persistedSuggestions]);
+    console.log("EnhancedAISuggestionsTab - contentSuggestions:", contentSuggestions);
+  }, [generatedContent, isAgentLoading, rawResponse, contentSuggestions]);
 
-  // Handle strategic suggestions from the form
+  // Handle strategic suggestions from the form - this is the primary entry point
   const handleStrategicSuggestions = (suggestions: any[]) => {
     console.log("EnhancedAISuggestionsTab: Received strategic suggestions:", suggestions);
-    setStrategicSuggestions(suggestions);
     
-    // Convert strategic suggestions to structured format and persist them
+    // Convert strategic suggestions to structured format
     const structuredSuggestions = suggestions.map(suggestion => ({
       topicArea: suggestion.topicArea || "Strategic Content",
       pillarContent: Array.isArray(suggestion.pillarContent) ? suggestion.pillarContent : [suggestion.pillarContent].filter(Boolean),
@@ -59,10 +58,20 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
       reasoning: suggestion.reasoning || {}
     }));
     
-    console.log("EnhancedAISuggestionsTab: Processed structured suggestions:", structuredSuggestions);
-    setPersistedSuggestions(structuredSuggestions);
+    console.log("EnhancedAISuggestionsTab: Setting structured suggestions:", structuredSuggestions);
+    setContentSuggestions(structuredSuggestions);
+    
+    // Also update the N8N agent state for consistency
     setGeneratedContent(structuredSuggestions);
   };
+
+  // Sync with N8N agent generated content when it changes
+  useEffect(() => {
+    if (generatedContent && generatedContent.length > 0 && contentSuggestions.length === 0) {
+      console.log("EnhancedAISuggestionsTab: Syncing N8N generated content to contentSuggestions");
+      setContentSuggestions(generatedContent);
+    }
+  }, [generatedContent, contentSuggestions.length]);
   
   // Function to manually process raw response if needed
   const processRawResponse = () => {
@@ -143,8 +152,8 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
       }
       
       console.log("EnhancedAISuggestionsTab: Setting processed content:", processedContent);
+      setContentSuggestions(processedContent);
       setGeneratedContent(processedContent);
-      setPersistedSuggestions(processedContent);
       toast.success("Content processed successfully");
     } catch (err) {
       console.error("EnhancedAISuggestionsTab: Error processing raw response:", err);
@@ -155,23 +164,12 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
   };
   
   // Always show debug mode if there's raw content but no processed content
-  const shouldAlwaysShowDebug = rawResponse && (!generatedContent || generatedContent.length === 0) && persistedSuggestions.length === 0;
+  const shouldAlwaysShowDebug = rawResponse && contentSuggestions.length === 0;
   
-  // Force showing suggestions if content is available (including strategic suggestions)
-  const hasContent = Boolean(
-    persistedSuggestions.length > 0 ||
-    (generatedContent && generatedContent.length > 0) ||
-    (strategicSuggestions && strategicSuggestions.length > 0)
-  );
+  // Check if we have content to display
+  const hasContent = contentSuggestions.length > 0;
                     
-  console.log("EnhancedAISuggestionsTab: HasContent check:", hasContent, "Persisted suggestions:", persistedSuggestions.length);
-  
-  // Use persisted suggestions as the primary source, fall back to generated content
-  const displaySuggestions = persistedSuggestions.length > 0 ? 
-    persistedSuggestions : 
-    (generatedContent && generatedContent.length > 0 ? generatedContent : []);
-  
-  console.log("EnhancedAISuggestionsTab: Display suggestions:", displaySuggestions);
+  console.log("EnhancedAISuggestionsTab: HasContent check:", hasContent, "Content suggestions:", contentSuggestions.length);
 
   const handleForceRefresh = () => {
     setForceRerender(prev => prev + 1);
@@ -236,10 +234,10 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           )}
           
           {/* Show generated content when available */}
-          {!isAgentLoading && !isForceProcessing && hasContent && displaySuggestions.length > 0 && (
+          {!isAgentLoading && !isForceProcessing && hasContent && (
             <StructuredContentSuggestions
-              key={`suggestions-${forceRerender}-${persistedSuggestions.length}`}
-              suggestions={displaySuggestions}
+              key={`suggestions-${forceRerender}-${contentSuggestions.length}`}
+              suggestions={contentSuggestions}
               persona="strategic-marketing"
               goal="content-suggestions"
               isLoading={false}
@@ -269,7 +267,7 @@ const EnhancedAISuggestionsTab: React.FC<EnhancedAISuggestionsTabProps> = ({
           <div className="overflow-auto flex-1 h-full">
             <DebugContentViewer 
               rawResponse={rawResponse}
-              processedContent={displaySuggestions.length > 0 ? displaySuggestions : (rawResponse ? [rawResponse] : [])}
+              processedContent={contentSuggestions.length > 0 ? contentSuggestions : (rawResponse ? [rawResponse] : [])}
             />
           </div>
         </DialogContent>
