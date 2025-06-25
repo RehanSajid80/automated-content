@@ -22,6 +22,9 @@ const ContentCard: React.FC<ContentCardProps> = ({ item, onCopy, onClick }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  console.log("ContentCard: Item data:", item);
+  console.log("ContentCard: Keywords from item:", item.keywords);
+
   const handleViewClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsLoading(true);
@@ -62,7 +65,7 @@ const ContentCard: React.FC<ContentCardProps> = ({ item, onCopy, onClick }) => {
           
           <ContentTopicArea topicArea={item.topic_area} />
           
-          <ContentKeywords keywords={item.keywords} />
+          <ContentKeywords keywords={item.keywords || []} />
           
           <ContentActions 
             onView={handleViewClick}

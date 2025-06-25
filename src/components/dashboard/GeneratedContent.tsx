@@ -13,6 +13,8 @@ interface GeneratedContentProps {
   activeTab: string;
   title?: string;
   onTitleChange?: (title: string) => void;
+  keywords?: string[];
+  topicArea?: string;
 }
 
 const GeneratedContent: React.FC<GeneratedContentProps> = ({
@@ -20,7 +22,9 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
   onContentChange,
   activeTab,
   title,
-  onTitleChange
+  onTitleChange,
+  keywords = [],
+  topicArea = 'workspace-management'
 }) => {
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -60,18 +64,18 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
         }
       }
       
-      console.log(`Saving content with type: ${activeTab} and title: ${contentTitle}`);
+      console.log(`Saving content with type: ${activeTab}, title: ${contentTitle}, keywords:`, keywords);
       
       const { data, error } = await supabase
         .from('content_library')
         .insert([
           {
             content: content,
-            content_type: activeTab, // Make sure we use the activeTab as the content_type
+            content_type: activeTab,
             is_saved: true,
             title: contentTitle,
-            topic_area: 'workspace-management',
-            keywords: [] // Empty array for now, can be updated later
+            topic_area: topicArea,
+            keywords: keywords || []
           }
         ])
         .select()
@@ -79,7 +83,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
       if (error) throw error;
 
-      console.log('Content saved successfully, dispatching content-updated event');
+      console.log('Content saved successfully with keywords:', keywords);
       
       // Dispatch event to refresh content lists and stats
       window.dispatchEvent(new CustomEvent('content-updated'));
@@ -141,6 +145,22 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
           />
           <div className="text-xs text-muted-foreground mt-1">
             A title will help you identify this content in your library
+          </div>
+        </div>
+      )}
+      
+      {keywords && keywords.length > 0 && (
+        <div className="mb-4">
+          <div className="text-xs text-muted-foreground mb-2">Keywords:</div>
+          <div className="flex flex-wrap gap-1">
+            {keywords.map((keyword, i) => (
+              <span 
+                key={i}
+                className="inline-flex text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground"
+              >
+                {keyword}
+              </span>
+            ))}
           </div>
         </div>
       )}
