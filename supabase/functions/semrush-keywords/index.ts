@@ -80,19 +80,25 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body - now expecting both keyword (optional) and domain
-    const { keyword, domain, limit = 100, topicArea } = await req.json();
-    console.log(`Request received for keyword: ${keyword || '(none)'}, domain: ${domain}, topic: ${topicArea}, limit: ${limit}`);
+    // Parse request body - now expecting keyword (required) and domain (optional)
+    const { keyword, domain = '', limit = 100, topicArea } = await req.json();
+    console.log(`Request received for keyword: ${keyword || '(none)'}, domain: ${domain || '(none)'}, topic: ${topicArea}, limit: ${limit}`);
 
-    if (!domain) {
-      throw new Error("Missing required parameter: domain");
+    // Require either keyword or domain, but not both
+    if (!keyword && !domain) {
+      throw new Error("Either keyword or domain parameter is required");
     }
 
     try {
-      const targetDomain = extractDomain(domain);
       const searchKeyword = keyword && keyword.trim() ? keyword.trim() : '';
+      let targetDomain = '';
       
-      console.log(`Using ${searchKeyword ? `keyword: "${searchKeyword}" for related keyword research` : 'domain overview for '}domain: ${targetDomain}, Topic Area: ${topicArea}`);
+      // Only process domain if it's provided
+      if (domain && domain.trim()) {
+        targetDomain = extractDomain(domain.trim());
+      }
+      
+      console.log(`Using ${searchKeyword ? `keyword: "${searchKeyword}" for related keyword research` : 'domain analysis for '}${targetDomain ? `domain: ${targetDomain}` : 'general search'}, Topic Area: ${topicArea}`);
       
       // Get SEMrush API key from global configuration
       console.log('Fetching SEMrush API key from global configuration...');
@@ -120,8 +126,10 @@ serve(async (req) => {
       if (searchKeyword) {
         // Always use phrase-related for keyword searches to get related keywords
         cacheKey = `phrase-related-${searchKeyword}`;
-      } else {
+      } else if (targetDomain) {
         cacheKey = `domain-${targetDomain}`;
+      } else {
+        cacheKey = `general-search`;
       }
       
       const existingKeywords = await getExistingKeywords(cacheKey, topicArea);
@@ -150,7 +158,9 @@ serve(async (req) => {
       if (allKeywords.length === 0) {
         const noDataMessage = searchKeyword 
           ? `No keywords found related to "${searchKeyword}". Try different or broader search terms.`
-          : `No organic keywords found for ${targetDomain} - domain may not have sufficient organic visibility`;
+          : targetDomain 
+            ? `No organic keywords found for ${targetDomain} - domain may not have sufficient organic visibility`
+            : 'No keywords found for the search criteria';
         
         console.log("No keywords returned from SEMrush API - " + noDataMessage);
         return new Response(
