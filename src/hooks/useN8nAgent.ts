@@ -34,14 +34,14 @@ export const useN8nAgent = () => {
 
   const sendToN8n = useCallback(async (
     payload: WebhookPayload | { customPayload?: any },
-    webhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' | boolean
+    webhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' | 'content-generation' | boolean
   ): Promise<N8nAgentResponse> => {
     setIsLoading(true);
     setError(null);
     
     try {
       // Resolve webhook type
-      let resolvedWebhookType: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' = 'content';
+      let resolvedWebhookType: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' | 'content-generation' = 'content';
       
       if (typeof webhookType === 'string') {
         resolvedWebhookType = webhookType;

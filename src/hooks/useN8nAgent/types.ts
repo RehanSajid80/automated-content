@@ -4,7 +4,7 @@ export interface N8nAgentPayload {
   topicArea?: string;
   targetUrl?: string;
   url?: string;
-  requestType?: 'contentSuggestions' | 'keywordAnalysis' | 'customKeywords' | 'contentAdjustment';
+  requestType?: 'contentSuggestions' | 'keywordAnalysis' | 'customKeywords' | 'contentAdjustment' | 'contentGeneration';
   contentType?: string;
   chatHistory?: any[];
   currentInstruction?: string;
@@ -12,6 +12,10 @@ export interface N8nAgentPayload {
   customPayload?: any;
   output_format?: any;
   customKeywords?: string[];
+  contentData?: any;
+  persona?: string;
+  goal?: string;
+  context?: any;
 }
 
 export interface WebhookPayload {
@@ -19,7 +23,7 @@ export interface WebhookPayload {
   topicArea?: string;
   targetUrl?: string;
   url?: string;
-  requestType?: 'contentSuggestions' | 'keywordAnalysis' | 'customKeywords' | 'contentAdjustment';
+  requestType?: 'contentSuggestions' | 'keywordAnalysis' | 'customKeywords' | 'contentAdjustment' | 'contentGeneration';
   contentType?: string;
   chatHistory?: any[];
   currentInstruction?: string;
@@ -27,6 +31,10 @@ export interface WebhookPayload {
   customPayload?: any;
   output_format?: any;
   customKeywords?: string[];
+  contentData?: any;
+  persona?: string;
+  goal?: string;
+  context?: any;
 }
 
 export interface N8nAgentResponse {

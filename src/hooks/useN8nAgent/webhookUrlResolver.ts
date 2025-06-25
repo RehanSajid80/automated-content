@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment'): Promise<string> => {
+export const resolveWebhookUrl = async (webhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment' | 'content-generation'): Promise<string> => {
   try {
     // Default to 'content' if no type specified
     const targetType = webhookType || 'content';
@@ -57,6 +57,8 @@ const getUrlKey = (type: string): string => {
       return 'customKeywordsWebhook';
     case 'content-adjustment':
       return 'contentAdjustmentWebhook';
+    case 'content-generation':
+      return 'contentGenerationWebhook';
     case 'keywords':
     default:
       return 'keywordWebhook';
@@ -71,6 +73,8 @@ const getFallbackWebhook = (type: string): string => {
       return 'https://officespacesoftware.app.n8n.cloud/webhook/custom-keywords';
     case 'content-adjustment':
       return 'https://officespacesoftware.app.n8n.cloud/webhook/content-adjustment';
+    case 'content-generation':
+      return 'https://officespacesoftware.app.n8n.cloud/webhook/content-generation';
     case 'keywords':
     default:
       return 'https://officespacesoftware.app.n8n.cloud/webhook-test/sync-keywords';
