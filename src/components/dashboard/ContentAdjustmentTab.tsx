@@ -61,12 +61,12 @@ const ContentAdjustmentTab = () => {
     { value: "checklist", label: "Checklist (Actionable)" }
   ];
 
-  const webinarPrompts = [
-    "Create a 5-part email series to promote a webinar series based on this content. Each email should build excitement and drive registrations.",
-    "Transform this content into promotional emails for a webinar video series. Include compelling subject lines and clear calls-to-action.",
-    "Generate 5 sequential promotional emails that turn this content into a webinar series. Focus on educational value and registration urgency.",
-    "Create webinar promotional content with 5 emails: announcement, benefits, speaker highlights, last chance, and follow-up.",
-    "Transform this into a webinar email sequence that builds anticipation, addresses pain points, and drives sign-ups.",
+  const contentPrompts = [
+    "Transform this content into a 5-part email series with compelling subject lines and clear calls-to-action.",
+    "Rewrite this content for social media with engaging and brief messaging.",
+    "Convert this into a comprehensive landing page with persuasive copy.",
+    "Create a blog post version that's educational and informative.",
+    "Turn this into an actionable checklist format.",
   ];
 
   useEffect(() => {
@@ -90,8 +90,8 @@ const ContentAdjustmentTab = () => {
         setShowAdjustedContent(true);
         
         toast({
-          title: "✨ Webinar Email Series Ready!",
-          description: "Your 5-part email series has been generated successfully"
+          title: "✨ Content Ready!",
+          description: "Your adjusted content has been generated successfully"
         });
         return;
       }
@@ -206,7 +206,7 @@ const ContentAdjustmentTab = () => {
       
       toast({
         title: "Adjusting Content",
-        description: "Sending content to AI for webinar email series creation..."
+        description: "Sending content to AI for processing..."
       });
       
       const result = await sendToN8n(webhookPayload, 'content-adjustment');
@@ -251,7 +251,7 @@ const ContentAdjustmentTab = () => {
       
       toast({
         title: "Request Sent Successfully",
-        description: "Your webinar email series is being generated. Please wait for the response..."
+        description: "Your content is being processed. Please wait for the response..."
       });
       
     } catch (error) {
@@ -298,7 +298,7 @@ const ContentAdjustmentTab = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-yellow-800">
                   <Clock className="h-4 w-4 animate-spin" />
-                  <span>Generating your webinar email series... Please wait.</span>
+                  <span>Processing your content adjustment... Please wait.</span>
                 </div>
               </CardContent>
             </Card>
@@ -310,14 +310,14 @@ const ContentAdjustmentTab = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-800">
                   <CheckCircle className="h-5 w-5" />
-                  ✨ Your Webinar Email Series is Ready!
+                  ✨ Your Adjusted Content is Ready!
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-green-700 font-medium">
-                      Your 5-part webinar promotional email series has been generated
+                      Your content has been successfully adjusted
                     </p>
                     <Button
                       variant="outline"
@@ -326,7 +326,7 @@ const ContentAdjustmentTab = () => {
                       className="flex items-center gap-2"
                     >
                       <Copy className="h-4 w-4" />
-                      Copy All Emails
+                      Copy Content
                     </Button>
                   </div>
                   <div className="p-4 bg-white rounded-lg border border-green-200 max-h-[500px] overflow-y-auto">
@@ -346,7 +346,7 @@ const ContentAdjustmentTab = () => {
                         });
                       }}
                     >
-                      Save Email Series
+                      Save Content
                     </Button>
                     <Button
                       variant="outline"
@@ -438,7 +438,7 @@ const ContentAdjustmentTab = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5" />
-                  Webinar Email Series Configuration
+                  Content Configuration
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -464,7 +464,7 @@ const ContentAdjustmentTab = () => {
                 {/* Format Selection */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2">
-                    📧 Email Format
+                    📄 Content Format
                   </label>
                   <Select value={selectedFormat} onValueChange={setSelectedFormat}>
                     <SelectTrigger>
@@ -483,12 +483,12 @@ const ContentAdjustmentTab = () => {
                 {/* Custom Instructions */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2">
-                    ✍️ Webinar Instructions
+                    ✍️ Adjustment Instructions
                   </label>
                   <Textarea
                     value={adjustmentPrompt}
                     onChange={(e) => setAdjustmentPrompt(e.target.value)}
-                    placeholder="Describe your webinar series and email requirements..."
+                    placeholder="Describe how you want to adjust this content..."
                     className="min-h-[100px]"
                   />
                 </div>
@@ -498,23 +498,23 @@ const ContentAdjustmentTab = () => {
                   disabled={!selectedContent || !adjustmentPrompt.trim() || n8nLoading}
                   className="w-full"
                 >
-                  {n8nLoading ? "Creating Email Series..." : "🎥 Generate Webinar Email Series"}
+                  {n8nLoading ? "Adjusting Content..." : "🎯 Adjust Content"}
                 </Button>
               </CardContent>
             </Card>
           </div>
 
-          {/* Webinar-Specific Example Prompts */}
+          {/* Content Adjustment Examples */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5" />
-                🎥 Webinar Email Series Examples
+                💡 Content Adjustment Examples
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {webinarPrompts.map((prompt, index) => (
+                {contentPrompts.map((prompt, index) => (
                   <div
                     key={index}
                     className="p-3 border border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
