@@ -5,7 +5,6 @@ import {
   Braces,
   Tag,
   FileText,
-  Share2,
   TrendingUp,
   BrainCircuit,
   Library,
@@ -62,16 +61,6 @@ export const navigationItems: NavigationSection[] = [
         title: "AI Suggestions",
         icon: <BrainCircuit className="h-5 w-5" />,
         href: "/?tab=ai-suggestions"
-      }
-    ]
-  },
-  {
-    title: "Social Media",
-    items: [
-      {
-        title: "Social Posts",
-        icon: <Share2 className="h-5 w-5" />,
-        href: "#"
       }
     ]
   },
