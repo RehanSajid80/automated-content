@@ -41,7 +41,7 @@ const KeywordResearchContent: React.FC<KeywordResearchContentProps> = ({
   };
 
   const handleSelectPriorityKeywords = (keywords: string[]) => {
-    // Clear current selections and select the AI recommended keywords
+    // Select each keyword that's not already selected
     keywords.forEach(keyword => {
       if (!selectedKeywords.includes(keyword)) {
         onKeywordToggle(keyword);
