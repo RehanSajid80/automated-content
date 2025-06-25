@@ -38,8 +38,19 @@ export const preprocessRawResponse = (rawResponse: any) => {
         };
         
         console.log("TESTING - Parsed structured sections:", Object.keys(sections).filter(key => sections[key]));
-        return sections;
+        
+        // Return in the expected format for useContentProcessor
+        return [{
+          output: outputContent, // Keep original for fallback
+          ...sections // Add parsed sections
+        }];
       }
+      
+      // If no structured sections found, return as-is but in array format
+      console.log("TESTING - No structured sections found, returning raw output");
+      return [{
+        output: outputContent
+      }];
     }
     
     // Direct handling for AI Content Suggestions format - check first
@@ -50,7 +61,7 @@ export const preprocessRawResponse = (rawResponse: any) => {
       rawResponse.emailSeries !== undefined
     )) {
       console.log("TESTING - Using direct AI Content Suggestions format object");
-      return rawResponse;
+      return [rawResponse];
     }
     
     // Handle array of AI Content Suggestions format
@@ -83,11 +94,16 @@ export const preprocessRawResponse = (rawResponse: any) => {
         try {
           const extractedJson = JSON.parse(jsonMatch[1]);
           console.log("TESTING - Successfully extracted JSON from n8n output code block");
-          return extractedJson;
+          return Array.isArray(extractedJson) ? extractedJson : [extractedJson];
         } catch (err) {
           console.error("TESTING - Error parsing JSON from n8n output code block:", err);
         }
       }
+      
+      // If no JSON code block found, return the output as content
+      return [{
+        output: outputStr
+      }];
     }
   
     // Standard processing for other formats
@@ -97,7 +113,8 @@ export const preprocessRawResponse = (rawResponse: any) => {
                         rawResponse.match(/```\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         try {
-          return JSON.parse(jsonMatch[1]);
+          const parsed = JSON.parse(jsonMatch[1]);
+          return Array.isArray(parsed) ? parsed : [parsed];
         } catch (err) {
           console.error("TESTING - Failed to parse JSON from code block in raw response");
         }
@@ -106,11 +123,17 @@ export const preprocessRawResponse = (rawResponse: any) => {
       // Try parsing as direct JSON
       if (rawResponse.trim().startsWith('{') || rawResponse.trim().startsWith('[')) {
         try {
-          return JSON.parse(rawResponse);
+          const parsed = JSON.parse(rawResponse);
+          return Array.isArray(parsed) ? parsed : [parsed];
         } catch (err) {
           console.error("TESTING - Failed to parse raw response as direct JSON");
         }
       }
+      
+      // Return string as output content
+      return [{
+        output: rawResponse
+      }];
     } else if (Array.isArray(rawResponse) && rawResponse.length > 0) {
       // Check if the array contains objects with an output property that might contain code blocks
       const firstItem = rawResponse[0];
@@ -121,22 +144,27 @@ export const preprocessRawResponse = (rawResponse: any) => {
                           firstItem.output.match(/```\s*([\s\S]*?)\s*```/);
         if (jsonMatch) {
           try {
-            return JSON.parse(jsonMatch[1]);
+            const parsed = JSON.parse(jsonMatch[1]);
+            return Array.isArray(parsed) ? parsed : [parsed];
           } catch (err) {
             console.error("TESTING - Failed to parse JSON from code block in output");
           }
         }
       }
+      
+      // Return array as-is if it looks like valid content
+      return rawResponse;
     } else if (rawResponse?.output && typeof rawResponse.output === 'string') {
       // Handle object with output property that might contain JSON
       console.log("TESTING - Found output property in object:", rawResponse.output.substring(0, 100));
       return preprocessRawResponse(rawResponse.output);
     }
     
-    return rawResponse;
+    // Fallback: return as array
+    return Array.isArray(rawResponse) ? rawResponse : [rawResponse];
   } catch (error) {
     console.error("TESTING - Error preprocessing raw response:", error);
-    return rawResponse;
+    return Array.isArray(rawResponse) ? rawResponse : [rawResponse];
   }
 };
 
