@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Lightbulb, Target, FileText, Share2, X } from "lucide-react";
+import { Lightbulb, Target, FileText, Share2, X, Sparkles } from "lucide-react";
 
 interface ContentStrategyRecommendation {
   priorityKeywords: string[];
@@ -21,16 +21,24 @@ interface AIContentStrategyPanelProps {
   recommendations: ContentStrategyRecommendation;
   onClose: () => void;
   onKeywordSelect?: (keywords: string[]) => void;
+  onCreateContent?: (keywords: string[]) => void;
 }
 
 export const AIContentStrategyPanel: React.FC<AIContentStrategyPanelProps> = ({
   recommendations,
   onClose,
-  onKeywordSelect
+  onKeywordSelect,
+  onCreateContent
 }) => {
   const handleSelectPriorityKeywords = () => {
     if (onKeywordSelect) {
       onKeywordSelect(recommendations.priorityKeywords);
+    }
+  };
+
+  const handleCreateContent = () => {
+    if (onCreateContent) {
+      onCreateContent(recommendations.priorityKeywords);
     }
   };
 
@@ -59,13 +67,24 @@ export const AIContentStrategyPanel: React.FC<AIContentStrategyPanelProps> = ({
               <Target className="h-4 w-4 text-green-500" />
               Priority Keywords ({recommendations.priorityKeywords.length})
             </h4>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSelectPriorityKeywords}
-            >
-              Select These Keywords
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSelectPriorityKeywords}
+              >
+                Select These Keywords
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={handleCreateContent}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                Create Content
+              </Button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {recommendations.priorityKeywords.map((keyword, index) => (

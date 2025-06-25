@@ -49,6 +49,13 @@ const KeywordResearchContent: React.FC<KeywordResearchContentProps> = ({
     });
   };
 
+  const handleCreateContentFromStrategy = (keywords: string[]) => {
+    // First select the keywords
+    handleSelectPriorityKeywords(keywords);
+    // Then trigger content generation
+    onGenerateContent(keywords);
+  };
+
   return (
     <>
       {/* AI Content Strategy Section */}
@@ -92,6 +99,7 @@ const KeywordResearchContent: React.FC<KeywordResearchContentProps> = ({
             recommendations={recommendations}
             onClose={clearRecommendations}
             onKeywordSelect={handleSelectPriorityKeywords}
+            onCreateContent={handleCreateContentFromStrategy}
           />
         </div>
       )}
