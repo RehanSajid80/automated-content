@@ -154,9 +154,9 @@ export const useSemrushApi = (
         
         // More specific error handling
         let errorMessage = data.error;
-        if (data.error.includes('NOTHING FOUND')) {
+        if (data.error.includes('NOTHING FOUND') || data.error.includes('No keywords found')) {
           errorMessage = searchKeyword 
-            ? `No related keywords found for "${searchKeyword}". Try different or broader search terms.`
+            ? `No keywords found for "${searchKeyword}". Try broader search terms like "office space", "workspace", or "asset management".`
             : `No organic keywords found${cleanDomain ? ` for ${cleanDomain}` : ''}. Try different search terms.`;
         } else if (data.error.includes('Invalid API key')) {
           errorMessage = 'SEMrush API key is invalid. Please check your API key configuration.';
@@ -167,10 +167,16 @@ export const useSemrushApi = (
         setErrorMsg(errorMessage);
         setApiStatus(data.apiKeyStatus || 'configured');
         
+        // Show suggestions if available
+        let description = errorMessage;
+        if (data.suggestions && data.suggestions.length > 0) {
+          description += '\n\nSuggestions:\n• ' + data.suggestions.join('\n• ');
+        }
+        
         toast({
-          title: "SEMrush API Error",
-          description: errorMessage,
-          variant: "destructive",
+          title: "No Keywords Found",
+          description: description,
+          variant: "default",
         });
         
         setIsLoading(false);
@@ -188,13 +194,13 @@ export const useSemrushApi = (
         console.warn('No keywords found in response:', data);
         updateSemrushMetrics(false);
         const noResultsMessage = searchKeyword 
-          ? `No related keywords found for "${searchKeyword}". Try broader or different terms.` 
+          ? `No keywords found for "${searchKeyword}". Try broader terms like "office space", "workspace", or "facility management".` 
           : `No organic keywords found${cleanDomain ? ` for ${cleanDomain}` : ''}. Try different search terms.`;
         setErrorMsg(noResultsMessage);
         toast({
           title: "No keywords found",
           description: searchKeyword 
-            ? `Try using broader terms, check spelling, or use different keywords related to "${searchKeyword}"`
+            ? `Try using broader terms like "office space", "workspace", or check spelling.`
             : `Try adding a specific keyword or domain for better results`,
           variant: "default",
         });
@@ -220,7 +226,7 @@ export const useSemrushApi = (
       
       const statusMessage = data.fromCache ? "Loaded from cache" : "Success";
       const duplicatesInfo = data.duplicatesIgnored > 0 ? ` (${data.duplicatesIgnored} duplicates ignored)` : '';
-      const analysisType = searchKeyword ? `related keywords for "${searchKeyword}"` : 'general keywords';
+      const analysisType = searchKeyword ? `keywords for "${searchKeyword}"` : 'general keywords';
       
       toast({
         title: statusMessage,

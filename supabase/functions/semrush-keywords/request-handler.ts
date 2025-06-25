@@ -65,7 +65,7 @@ export async function handleKeywordRequest(requestData: RequestData): Promise<Re
 
   if (allKeywords.length === 0) {
     const noDataMessage = searchKeyword 
-      ? `No keywords found related to "${searchKeyword}". Try different or broader search terms.`
+      ? `No keywords found related to "${searchKeyword}". This could mean the search term is too specific or doesn't have enough search volume. Try using broader, more general keywords or check spelling.`
       : targetDomain 
         ? `No organic keywords found for ${targetDomain} - domain may not have sufficient organic visibility`
         : 'No keywords found for the search criteria';
@@ -76,7 +76,13 @@ export async function handleKeywordRequest(requestData: RequestData): Promise<Re
         keywords: [], 
         remaining: globalKeywordLimit,
         error: noDataMessage,
-        apiKeyStatus: 'configured_but_no_data'
+        apiKeyStatus: 'configured_but_no_data',
+        suggestions: searchKeyword ? [
+          'Try broader search terms (e.g., "office space" instead of "ESG officespace")',
+          'Check spelling and try alternative keywords',
+          'Use single words or common phrases',
+          'Try industry-standard terminology'
+        ] : []
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

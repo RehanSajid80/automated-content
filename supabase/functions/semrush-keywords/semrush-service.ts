@@ -32,6 +32,12 @@ export async function fetchSemrushKeywords(
     throw new Error(`SEMrush API request failed: ${response.status}`);
   }
 
+  // Handle "NOTHING FOUND" as a special case - not an error, just no data
+  if (responseText.includes('ERROR 50 :: NOTHING FOUND')) {
+    console.log(`SEMrush API returned no data for search term: ${keyword || domain}`);
+    return 'NOTHING_FOUND'; // Return a special marker instead of throwing
+  }
+
   if (responseText.includes('ERROR')) {
     console.error(`SEMrush API returned error: ${responseText}`);
     throw new Error(`SEMrush API error: ${responseText}`);
@@ -41,6 +47,12 @@ export async function fetchSemrushKeywords(
 }
 
 export function processKeywords(csvData: string, cacheKey: string, topicArea: string = 'general'): any[] {
+  // Handle the special "NOTHING FOUND" case
+  if (csvData === 'NOTHING_FOUND') {
+    console.log('No keyword data to process - SEMrush returned NOTHING FOUND');
+    return [];
+  }
+
   const lines = csvData.trim().split('\n');
   console.log(`Processing ${lines.length} lines from SEMrush response`);
   
