@@ -1,114 +1,88 @@
 
-// Fetch keywords from SEMrush API using keyword research or domain overview
-export const fetchSemrushKeywords = async (keyword: string, limit: number, domain?: string) => {
-  const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY') || '';
-  
-  if (!semrushApiKey) {
-    throw new Error('SEMrush API key is not configured');
-  }
-  
+// Extract domain utility and SEMrush API service functions
+
+export async function fetchSemrushKeywords(
+  keyword: string, 
+  limit: number, 
+  domain: string,
+  apiKey: string
+): Promise<any> {
   let semrushUrl: string;
   
   if (keyword && keyword.trim()) {
-    // Always use phrase_related for keyword research to get related keywords
-    // This ensures we get keywords related to the input keyword regardless of domain
-    semrushUrl = `https://api.semrush.com/?type=phrase_related&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr&phrase=${encodeURIComponent(keyword)}&database=us&display_limit=${limit}`;
-    console.log(`Searching for keywords related to "${keyword}"${domain ? ` (domain context: ${domain})` : ''}`);
-  } else if (domain) {
-    // Use domain overview API to get organic keywords for the domain
-    semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${semrushApiKey}&export_columns=Ph,Nq,Cp,Co,Tr,Ur,Tg&domain=${encodeURIComponent(domain)}&database=us&display_limit=${limit}`;
-    console.log(`Fetching organic keywords for domain: ${domain}`);
+    // Use phrase-related report for keyword-based searches to get related keywords
+    semrushUrl = `https://api.semrush.com/?type=phrase_related&key=${apiKey}&phrase=${encodeURIComponent(keyword)}&database=us&export_columns=Ph,Nq,Cp,Kd&display_limit=${limit}`;
+    console.log(`Using phrase_related report for keyword: "${keyword}"`);
   } else {
-    throw new Error('Either keyword or domain must be provided');
+    // Use domain organic report for domain-only searches
+    semrushUrl = `https://api.semrush.com/?type=domain_organic&key=${apiKey}&domain=${encodeURIComponent(domain)}&database=us&export_columns=Ph,Nq,Cp,Kd&display_limit=${limit}`;
+    console.log(`Using domain_organic report for domain: "${domain}"`);
   }
-  
-  console.log(`Calling SEMrush API with limit: ${limit}`);
-  console.log(`SEMrush API URL (without key): ${semrushUrl.replace(semrushApiKey, 'HIDDEN_KEY')}`);
+
+  console.log(`Fetching from SEMrush API: ${semrushUrl.replace(apiKey, 'API_KEY_HIDDEN')}`);
   
   const response = await fetch(semrushUrl);
+  const responseText = await response.text();
   
+  console.log(`SEMrush API Response Status: ${response.status}`);
+  console.log(`SEMrush API Response (first 200 chars): ${responseText.substring(0, 200)}`);
+
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`SEMrush API error (${response.status}):`, errorText);
-    
-    // Check for common API key errors
-    if (response.status === 401 || errorText.includes('Invalid API key')) {
-      throw new Error(`SEMrush API authentication failed: Invalid API key`);
-    }
-    if (response.status === 403) {
-      throw new Error(`SEMrush API access denied: Check your API key permissions`);
-    }
-    
-    throw new Error(`Failed to fetch keywords from SEMrush API: ${errorText}`);
+    console.error(`SEMrush API error: ${response.status} - ${responseText}`);
+    throw new Error(`SEMrush API request failed: ${response.status}`);
   }
 
-  // Log the first part of the response to debug
-  const responseText = await response.text();
-  console.log(`SEMrush response first 200 chars: ${responseText.substring(0, 200)}...`);
-  console.log(`SEMrush response lines count: ${responseText.split('\n').length - 1}`);
-  
-  // Check for API error responses
   if (responseText.includes('ERROR')) {
-    console.error('SEMrush API returned an error:', responseText);
-    if (responseText.includes('NOTHING FOUND')) {
-      const searchType = keyword 
-        ? `keywords related to: "${keyword}"` 
-        : `domain: "${domain}"`;
-      throw new Error(`No data found for ${searchType}. Try different search terms or check if the domain has organic visibility.`);
-    }
+    console.error(`SEMrush API returned error: ${responseText}`);
     throw new Error(`SEMrush API error: ${responseText}`);
   }
-  
-  return responseText;
-};
 
-// Process SEMrush API response and format keywords
-export const processKeywords = (responseText: string, cacheKey: string, topicArea: string) => {
-  const lines = responseText.trim().split('\n');
+  return responseText;
+}
+
+export function processKeywords(csvData: string, cacheKey: string, topicArea: string = 'general'): any[] {
+  const lines = csvData.trim().split('\n');
+  console.log(`Processing ${lines.length} lines from SEMrush response`);
   
   if (lines.length <= 1) {
-    console.log(`No keywords found for cache key: ${cacheKey}`);
+    console.log('No keyword data found in SEMrush response');
     return [];
   }
+
+  const keywords: any[] = [];
   
-  // Log for debugging
-  console.log(`Processing ${lines.length - 1} keywords from SEMrush response`);
-  console.log(`Header line: ${lines[0]}`);
-  
-  const keywords = [];
-  
-  // Skip header line (index 0) and process data lines
+  // Skip header row and process data rows
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (!line) continue; // Skip empty lines
+    if (!line) continue;
     
-    // Handle both semicolon and tab delimiters
-    const values = line.includes(';') ? line.split(';') : line.split('\t');
-    
-    console.log(`Line ${i}: "${line}" -> ${values.length} columns: [${values.join(', ')}]`);
-    
-    if (values.length >= 3) {
-      const keyword = values[0]?.trim();
-      const volume = parseInt(values[1]?.trim()) || 0;
-      const cpc = parseFloat(values[2]?.trim()) || 0;
-      const competition = parseFloat(values[3]?.trim()) || 0;
+    try {
+      const columns = line.split(';');
       
-      if (keyword && keyword !== '') {
-        keywords.push({
-          domain: cacheKey, // Store the cache key (keyword-domain combination)
-          topic_area: topicArea || '',
-          keyword: keyword,
-          volume: volume,
-          difficulty: Math.round(competition * 100), // Convert competition to difficulty percentage
-          cpc: cpc,
-          trend: ['up', 'down', 'neutral'][Math.floor(Math.random() * 3)]
-        });
+      if (columns.length >= 4) {
+        const keyword = columns[0]?.replace(/"/g, '').trim();
+        const volume = parseInt(columns[1]) || 0;
+        const cpc = parseFloat(columns[2]) || 0;
+        const difficulty = parseInt(columns[3]) || 50;
+        
+        if (keyword && keyword.length > 0) {
+          keywords.push({
+            keyword,
+            volume,
+            cpc: parseFloat(cpc.toFixed(2)),
+            difficulty,
+            trend: volume > 1000 ? 'up' : volume > 100 ? 'neutral' : 'down',
+            cache_key: cacheKey,
+            topic_area: topicArea
+          });
+        }
       }
-    } else {
-      console.log(`Skipping line ${i} with insufficient columns: ${values.length}`);
+    } catch (error) {
+      console.error(`Error processing line ${i}: ${line}`, error);
+      continue;
     }
   }
   
-  console.log(`Successfully processed ${keywords.length} keywords for cache key: ${cacheKey} and topic: ${topicArea}`);
+  console.log(`Successfully processed ${keywords.length} keywords`);
   return keywords;
-};
+}

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,19 +35,7 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
         setStatus('connected');
         setApiKey("••••••••••••••••••••••••••");
       } else {
-        // Check if we have any SEMrush metrics (indicating the API key works)
-        const metrics = localStorage.getItem('semrush-api-metrics');
-        if (metrics) {
-          const parsedMetrics = JSON.parse(metrics);
-          if (parsedMetrics.successfulCalls > 0) {
-            setStatus('connected');
-            setApiKey("••••••••••••••••••••••••••");
-          } else {
-            setStatus('disconnected');
-          }
-        } else {
-          setStatus('disconnected');
-        }
+        setStatus('disconnected');
       }
     } catch (error) {
       console.error('Error checking SEMrush connection:', error);
@@ -56,7 +43,22 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
     }
   };
 
-  const loadKeywordLimit = () => {
+  const loadKeywordLimit = async () => {
+    try {
+      // Try to get global keyword limit first
+      const globalLimit = await getApiKey('semrush-keyword-limit');
+      if (globalLimit) {
+        const parsedLimit = parseInt(globalLimit, 10);
+        if (!isNaN(parsedLimit)) {
+          setKeywordLimit(parsedLimit);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading global keyword limit:', error);
+    }
+    
+    // Fallback to localStorage
     const savedLimit = localStorage.getItem('semrush-keyword-limit');
     if (savedLimit) {
       setKeywordLimit(parseInt(savedLimit, 10));
@@ -80,8 +82,8 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
       setApiKey("••••••••••••••••••••••••••");
       
       toast({
-        title: "SEMrush API Key Saved",
-        description: "Your SEMrush API key has been saved successfully",
+        title: "SEMrush API Key Saved Globally",
+        description: "Your SEMrush API key has been saved and is now available to all users worldwide",
       });
 
       if (onSaveConfig) {
@@ -99,15 +101,30 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
     }
   };
 
-  const handleSaveKeywordLimit = () => {
-    localStorage.setItem('semrush-keyword-limit', keywordLimit.toString());
-    toast({
-      title: "Settings Saved",
-      description: "Keyword limit has been updated",
-    });
-    
-    if (onSaveConfig) {
-      onSaveConfig();
+  const handleSaveKeywordLimit = async () => {
+    try {
+      // Save globally to database
+      await saveApiKey('semrush-keyword-limit', keywordLimit.toString(), 'SEMrush-Settings');
+      
+      // Keep localStorage as backup
+      localStorage.setItem('semrush-keyword-limit', keywordLimit.toString());
+      
+      toast({
+        title: "Settings Saved Globally",
+        description: "Keyword limit has been updated and is now available to all users worldwide",
+      });
+      
+      if (onSaveConfig) {
+        onSaveConfig();
+      }
+    } catch (error) {
+      console.error('Error saving keyword limit:', error);
+      // Fallback to localStorage only
+      localStorage.setItem('semrush-keyword-limit', keywordLimit.toString());
+      toast({
+        title: "Settings Saved Locally",
+        description: "Keyword limit has been updated (saved locally as backup)",
+      });
     }
   };
 
@@ -117,7 +134,7 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
         return (
           <Badge variant="default" className="ml-2 bg-green-100 text-green-800 border-green-200">
             <CheckCircle className="w-4 h-4 mr-1" />
-            Connected
+            Connected Globally
           </Badge>
         );
       case 'disconnected':
@@ -141,17 +158,17 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />
-          SEMrush Integration
+          Global SEMrush Integration
           {renderStatusBadge()}
         </CardTitle>
         <CardDescription>
-          SEMrush API integration for keyword research and competitive analysis
+          Global SEMrush API integration for keyword research. Settings are shared across all users worldwide.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="semrush-api-key" className="text-sm font-medium">
-            SEMrush API Key
+            SEMrush API Key (Global)
           </Label>
           <div className="flex gap-2">
             <Input
@@ -168,17 +185,25 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
               variant="outline"
               size="sm"
             >
-              {isLoading ? "Saving..." : "Save"}
+              {isLoading ? "Saving..." : "Save Globally"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Enter your SEMrush API key to enable keyword research functionality
+            This API key will be used by all users worldwide. Find your API key in the 
+            <a 
+              href="https://www.semrush.com/api-analytics/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline ml-1"
+            >
+              SEMrush API dashboard
+            </a>
           </p>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="keyword-limit" className="text-sm font-medium">
-            Keyword Fetch Limit
+            Global Keyword Fetch Limit
           </Label>
           <div className="flex gap-2">
             <Input
@@ -196,11 +221,11 @@ const SemrushConnection: React.FC<SemrushConnectionProps> = ({
               size="sm"
             >
               <Settings className="w-4 h-4 mr-2" />
-              Save
+              Save Globally
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Number of keywords to fetch when using "Fetch Keywords" (10-500)
+            Number of keywords to fetch globally for all users (10-500). This setting is shared worldwide.
           </p>
         </div>
       </CardContent>

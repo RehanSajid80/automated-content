@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { extractDomain } from "./domain-utils.ts"
 import { fetchSemrushKeywords, processKeywords } from "./semrush-service.ts"
 import { getExistingKeywords, deleteExistingKeywords, insertKeywords } from "./db-utils.ts"
@@ -10,6 +11,67 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Initialize Supabase client for reading global API keys
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Function to get global API key from database
+async function getGlobalApiKey(keyName: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('encrypted_key')
+      .eq('key_name', keyName)
+      .is('user_id', null) // Global keys have null user_id
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching global API key:', error);
+      return null;
+    }
+    
+    if (!data) {
+      console.log(`Global API key ${keyName} not found`);
+      return null;
+    }
+    
+    // Decrypt the key (simple base64 decoding)
+    try {
+      return atob(data.encrypted_key);
+    } catch {
+      // If decoding fails, return as-is (might not be encrypted)
+      return data.encrypted_key;
+    }
+  } catch (error) {
+    console.error('Error in getGlobalApiKey:', error);
+    return null;
+  }
+}
+
+// Function to get global keyword limit setting
+async function getGlobalKeywordLimit(): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('encrypted_key')
+      .eq('key_name', 'semrush-keyword-limit')
+      .is('user_id', null)
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    if (!error && data) {
+      const limit = parseInt(data.encrypted_key, 10);
+      return isNaN(limit) ? 100 : limit;
+    }
+  } catch (error) {
+    console.error('Error fetching global keyword limit:', error);
+  }
+  
+  return 100; // Default limit
+}
 
 // Main request handler
 serve(async (req) => {
@@ -32,14 +94,26 @@ serve(async (req) => {
       
       console.log(`Using ${searchKeyword ? `keyword: "${searchKeyword}" for related keyword research` : 'domain overview for '}domain: ${targetDomain}, Topic Area: ${topicArea}`);
       
-      // Check for API key
-      const semrushApiKey = Deno.env.get('SEMRUSH_API_KEY');
+      // Get SEMrush API key from global configuration
+      console.log('Fetching SEMrush API key from global configuration...');
+      const semrushApiKey = await getGlobalApiKey('semrush-api-key');
+      
       if (!semrushApiKey) {
-        console.error('SEMrush API key is not configured');
-        throw new Error('SEMrush API key is not configured');
+        console.error('SEMrush API key is not configured in global settings');
+        return new Response(
+          JSON.stringify({ 
+            error: 'SEMrush API key is not configured in global settings. Please configure it in the API Connections page.',
+            apiKeyStatus: 'missing'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
-      console.log('SEMrush API key is configured and available');
+      console.log('SEMrush API key found in global configuration');
+
+      // Get global keyword limit setting
+      const globalKeywordLimit = await getGlobalKeywordLimit();
+      console.log(`Using global keyword limit: ${globalKeywordLimit}`);
 
       // Create different cache keys for different search types
       let cacheKey: string;
@@ -57,7 +131,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             keywords: existingKeywords.slice(0, limit), // Respect the limit parameter
-            remaining: 100 - existingKeywords.length,
+            remaining: globalKeywordLimit - existingKeywords.length,
             fromCache: true,
             apiKeyStatus: 'configured'
           }),
@@ -67,10 +141,10 @@ serve(async (req) => {
 
       // Fetch and process new keywords from SEMrush
       const parsedLimit = parseInt(String(limit), 10);
-      const actualLimit = isNaN(parsedLimit) ? 100 : Math.max(30, Math.min(500, parsedLimit));
+      const actualLimit = isNaN(parsedLimit) ? globalKeywordLimit : Math.max(30, Math.min(500, parsedLimit));
       console.log(`Fetching ${actualLimit} keywords from SEMrush API for search: ${cacheKey} with key: ${semrushApiKey.substring(0, 8)}...`);
       
-      const semrushResponse = await fetchSemrushKeywords(searchKeyword, actualLimit, targetDomain);
+      const semrushResponse = await fetchSemrushKeywords(searchKeyword, actualLimit, targetDomain, semrushApiKey);
       const allKeywords = processKeywords(semrushResponse, cacheKey, topicArea);
 
       if (allKeywords.length === 0) {
@@ -82,7 +156,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             keywords: [], 
-            remaining: 100,
+            remaining: globalKeywordLimit,
             error: noDataMessage,
             apiKeyStatus: 'configured_but_no_data'
           }),
@@ -102,7 +176,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           keywords: allKeywords.slice(0, limit), // Return the full set up to the limit
-          remaining: 100 - allKeywords.length,
+          remaining: globalKeywordLimit - allKeywords.length,
           insertedCount: insertedKeywords.length,
           totalFetched: allKeywords.length,
           duplicatesIgnored: allKeywords.length - insertedKeywords.length,
@@ -116,7 +190,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: domainError.message || 'Invalid domain format',
-          apiKeyStatus: Deno.env.get('SEMRUSH_API_KEY') ? 'configured' : 'missing'
+          apiKeyStatus: 'configured'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -126,7 +200,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Unknown error occurred',
-        apiKeyStatus: Deno.env.get('SEMRUSH_API_KEY') ? 'configured' : 'missing'
+        apiKeyStatus: 'missing'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
