@@ -30,11 +30,30 @@ const ContentCard: React.FC<ContentCardProps> = ({ item, onCopy, onClick }) => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('content_library')
-        .select('content')
-        .eq('id', item.id)
-        .single();
+      let data, error;
+
+      // Check if this is a misc item (adjusted content) or regular content
+      if (item.content_type === 'misc') {
+        // Fetch from misc table
+        const result = await supabase
+          .from('misc')
+          .select('content')
+          .eq('id', item.id)
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      } else {
+        // Fetch from content_library table
+        const result = await supabase
+          .from('content_library')
+          .select('content')
+          .eq('id', item.id)
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
       
