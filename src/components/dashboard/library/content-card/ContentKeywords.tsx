@@ -9,9 +9,7 @@ const ContentKeywords: React.FC<ContentKeywordsProps> = ({ keywords }) => {
   console.log("ContentKeywords: Received keywords:", keywords);
   
   if (!keywords || keywords.length === 0) {
-    return (
-      <span className="text-xs text-muted-foreground italic">No keywords</span>
-    );
+    return null; // Don't show anything instead of "No keywords"
   }
 
   return (
