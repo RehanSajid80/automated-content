@@ -32,6 +32,7 @@ const ContentAdjustmentTab = () => {
   const [activeContentType, setActiveContentType] = useState("pillar");
   const [adjustedContent, setAdjustedContent] = useState<string>("");
   const [showAdjustedContent, setShowAdjustedContent] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { sendToN8n, isLoading: n8nLoading, generatedContent, rawResponse } = useN8nAgent();
 
@@ -163,6 +164,59 @@ const ContentAdjustmentTab = () => {
     setAdjustmentPrompt("Create a 5-part email series to promote a webinar series based on this content. Each email should build excitement and drive registrations with compelling subject lines and clear calls-to-action.");
     setSelectedFormat("email-series");
     setSelectedTone("ceo-executive");
+  };
+
+  const handleSaveContent = async () => {
+    if (!adjustedContent.trim()) {
+      toast({
+        title: "No Content to Save",
+        description: "Please generate some content first before saving",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      
+      // Generate a title based on the selected content or adjustment prompt
+      const title = selectedContent?.title ? 
+        `Adjusted: ${selectedContent.title}` : 
+        `Adjusted Content - ${new Date().toLocaleDateString()}`;
+
+      const { data, error } = await supabase
+        .from('misc')
+        .insert([
+          {
+            title: title,
+            content: adjustedContent,
+            original_content_id: selectedContent?.id || null,
+            adjustment_instructions: adjustmentPrompt || null,
+            target_persona: selectedTone || null,
+            target_format: selectedFormat || null
+          }
+        ])
+        .select();
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Content Saved!",
+        description: "Your adjusted content has been saved to the misc table"
+      });
+
+      console.log("Content saved successfully:", data);
+      
+    } catch (error) {
+      console.error("Error saving content:", error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save content. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAdjustContent = async () => {
@@ -338,15 +392,10 @@ const ContentAdjustmentTab = () => {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() => {
-                        // Save adjusted content logic here
-                        toast({
-                          title: "Save Feature",
-                          description: "Save functionality will be implemented soon"
-                        });
-                      }}
+                      onClick={handleSaveContent}
+                      disabled={isSaving}
                     >
-                      Save Content
+                      {isSaving ? "Saving..." : "Save Content"}
                     </Button>
                     <Button
                       variant="outline"

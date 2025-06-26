@@ -122,6 +122,42 @@ export type Database = {
         }
         Relationships: []
       }
+      misc: {
+        Row: {
+          adjustment_instructions: string | null
+          content: string
+          created_at: string
+          id: string
+          original_content_id: string | null
+          target_format: string | null
+          target_persona: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          adjustment_instructions?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          original_content_id?: string | null
+          target_format?: string | null
+          target_persona?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          adjustment_instructions?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          original_content_id?: string | null
+          target_format?: string | null
+          target_persona?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       semrush_keywords: {
         Row: {
           cache_key: string
