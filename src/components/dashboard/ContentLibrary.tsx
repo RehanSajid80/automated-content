@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +21,7 @@ const ITEMS_PER_PAGE = 9; // 3x3 grid
 
 const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
+  const [miscItems, setMiscItems] = useState<ContentItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -36,19 +36,22 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
     { id: "pillar", label: "Pillar Content" },
     { id: "support", label: "Support Pages" },
     { id: "meta", label: "Meta Tags" },
-    { id: "social", label: "Social Posts" }
+    { id: "social", label: "Social Posts" },
+    { id: "misc", label: "Adjusted Content" }
   ];
 
   const fetchContentItems = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch regular content library items
+      const { data: contentData, error: contentError } = await supabase
         .from('content_library')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching content:", error);
+      if (contentError) {
+        console.error("Error fetching content:", contentError);
         toast({
           title: "Error",
           description: "Failed to load content library",
@@ -57,9 +60,39 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
         return;
       }
 
-      if (data) {
-        setContentItems(data);
-        setFilteredItems(data);
+      // Fetch misc items
+      const { data: miscData, error: miscError } = await supabase
+        .from('misc')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (miscError) {
+        console.error("Error fetching misc content:", miscError);
+        toast({
+          title: "Error",
+          description: "Failed to load adjusted content",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (contentData) {
+        setContentItems(contentData);
+      }
+
+      if (miscData) {
+        // Transform misc items to match ContentItem interface
+        const transformedMiscItems: ContentItem[] = miscData.map(item => ({
+          id: item.id,
+          title: item.title,
+          content_type: 'misc',
+          topic_area: item.target_format || 'Adjusted Content',
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          keywords: [], // misc items don't have keywords
+          is_saved: true
+        }));
+        setMiscItems(transformedMiscItems);
       }
       
       setLastRefreshed(new Date().toISOString());
@@ -96,7 +129,8 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
   }, []);
 
   useEffect(() => {
-    let filtered = contentItems;
+    let allItems = [...contentItems, ...miscItems];
+    let filtered = allItems;
     
     // Filter by tab
     if (activeTab !== "all") {
@@ -115,17 +149,28 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
     
     setFilteredItems(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [activeTab, searchTerm, contentItems]);
+  }, [activeTab, searchTerm, contentItems, miscItems]);
 
   const copyContent = async (contentId: string) => {
     try {
-      const { data, error } = await supabase
+      // First try to get from content_library
+      let { data, error } = await supabase
         .from('content_library')
         .select('content')
         .eq('id', contentId)
         .single();
 
-      if (error) throw error;
+      // If not found, try misc table
+      if (error || !data) {
+        const { data: miscData, error: miscError } = await supabase
+          .from('misc')
+          .select('content')
+          .eq('id', contentId)
+          .single();
+        
+        if (miscError) throw miscError;
+        data = miscData;
+      }
 
       if (data?.content) {
         await navigator.clipboard.writeText(data.content);

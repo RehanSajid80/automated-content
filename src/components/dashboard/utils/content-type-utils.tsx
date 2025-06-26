@@ -1,5 +1,5 @@
 
-import { FileText, Tag, Share2 } from "lucide-react";
+import { FileText, Tag, Share2, Settings } from "lucide-react";
 import { ContentTypeConfig } from "../types/recent-content";
 
 export const getIcon = (type: string) => {
@@ -12,6 +12,8 @@ export const getIcon = (type: string) => {
       return <Tag size={16} />;
     case "social":
       return <Share2 size={16} />;
+    case "misc":
+      return <Settings size={16} />;
     default:
       return <FileText size={16} />;
   }
@@ -27,6 +29,8 @@ export const getTypeLabel = (type: string) => {
       return "Meta Tags";
     case "social":
       return "Social Posts";
+    case "misc":
+      return "Adjusted Content";
     default:
       return type;
   }
@@ -42,6 +46,8 @@ export const getTypeClass = (type: string) => {
       return "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400";
     case "social":
       return "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400";
+    case "misc":
+      return "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400";
     default:
       return "bg-primary/10 text-primary";
   }
