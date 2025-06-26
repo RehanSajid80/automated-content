@@ -1,10 +1,10 @@
+
 import React from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { ContentSelectionView } from "@/components/dashboard/ContentSelectionView";
 import ContentDetailView from "@/components/dashboard/ContentDetailView";
 import ContentLibrary from "@/components/dashboard/ContentLibrary";
-import ManualContentCreator from "@/components/dashboard/ManualContentCreator";
 import RecentContent from "@/components/dashboard/RecentContent";
 import ContentGenerator from "@/components/dashboard/ContentGenerator";
 
@@ -60,7 +60,6 @@ const ContentManagementTab: React.FC<ContentManagementTabProps> = ({
                 <h3 className="text-lg font-semibold mb-4">Content Generator</h3>
                 <ContentGenerator className="max-w-none" keywords={selectedKeywords} />
               </div>
-              <ManualContentCreator />
               <RecentContent key={`recent-${contentRefreshTrigger}`} />
             </>
           )}

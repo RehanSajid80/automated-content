@@ -5,7 +5,6 @@ import { KeywordData } from "@/utils/excelUtils";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatsSection from "@/components/dashboard/StatsSection";
 import ContentSection from "@/components/dashboard/ContentSection";
-import ManualContentCreator from "@/components/dashboard/ManualContentCreator";
 import RecentContent from "@/components/dashboard/RecentContent";
 import { ContentStats } from "@/hooks/useContentStats";
 
@@ -38,8 +37,6 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
             onKeywordsSelected={onKeywordsSelected}
             onKeywordDataUpdate={onKeywordDataUpdate}
           />
-          
-          <ManualContentCreator />
           
           <RecentContent />
         </div>
