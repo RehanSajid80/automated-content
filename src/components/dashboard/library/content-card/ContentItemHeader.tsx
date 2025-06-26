@@ -13,6 +13,17 @@ const ContentItemHeader: React.FC<ContentItemHeaderProps> = ({ item }) => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Extract job title from topic_area or target_persona for misc items
+  const getJobTitle = () => {
+    if (item.content_type === 'misc') {
+      // For misc items, use target_persona if available, otherwise target_format
+      return item.topic_area || 'Adjusted Content';
+    }
+    return item.topic_area;
+  };
+
+  const jobTitle = getJobTitle();
+
   return (
     <div className="flex items-start mb-4">
       <div className={cn(
@@ -23,6 +34,9 @@ const ContentItemHeader: React.FC<ContentItemHeaderProps> = ({ item }) => {
       </div>
       <div className="flex-1 min-w-0">
         <h4 className="font-medium text-sm line-clamp-2">{item.title || "Untitled Content"}</h4>
+        {jobTitle && (
+          <p className="text-xs font-medium text-blue-600 mt-1">{jobTitle}</p>
+        )}
         <p className="text-xs text-muted-foreground mt-1">
           {getTypeLabel(item.content_type)} • {formatDate(item.created_at)}
         </p>
