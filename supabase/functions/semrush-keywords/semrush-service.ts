@@ -38,6 +38,11 @@ export async function fetchSemrushKeywords(
     return 'NOTHING_FOUND'; // Return a special marker instead of throwing
   }
 
+  if (responseText.includes('ERROR 132 :: API UNITS BALANCE IS ZERO')) {
+    console.error(`SEMrush API units balance is zero: ${responseText}`);
+    throw new Error(`SEMrush API credits have been exhausted. Please check your SEMrush account balance and top up your API units to continue using keyword research features.`);
+  }
+
   if (responseText.includes('ERROR')) {
     console.error(`SEMrush API returned error: ${responseText}`);
     throw new Error(`SEMrush API error: ${responseText}`);
