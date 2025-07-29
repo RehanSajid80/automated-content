@@ -128,27 +128,43 @@ Your meta tags should prioritize click-through rate while maintaining keyword re
       break;
 
     case "support":
-      systemPrompt = "You are a technical documentation specialist for enterprise software. You create clear, comprehensive support documentation that helps users troubleshoot issues and maximize their use of the software.";
-      userPrompt = `Create a detailed support guide about "${mainKeyword}" for office space management software users.
+      systemPrompt = "You are a workplace technology expert writing for OfficeSpace Software. Your writing is conversational yet authoritative, data-driven, and solution-focused. You explain complex concepts in accessible terms while maintaining credibility through specific statistics and real-world examples.";
+      userPrompt = `Create an in-depth support guide about "${mainKeyword}" using OfficeSpace Software's distinctive voice and structure.
+
+TONE & STYLE REQUIREMENTS:
+- Conversational yet professional (use phrases like "now what?" or "here's the thing")
+- Lead with compelling statistics and industry insights
+- Problem-solution narrative structure
+- Technical concepts explained in accessible language
+- Concrete benefits and outcomes, not just features
+- Strong, actionable conclusions
 
 DOCUMENT STRUCTURE:
-1. Overview and key concepts (with clear definitions)
-2. Step-by-step instructions for common tasks related to ${mainKeyword}
-3. Frequently asked questions with comprehensive answers
-4. Troubleshooting section addressing common issues and their solutions
-5. Best practices and optimization tips
-6. Related features and integration possibilities
+1. **Key Takeaways** section with 4-5 bullet points highlighting main insights with specific data points
+2. **Problem Context** section with industry context and challenges (include relevant statistics)
+3. **Why Traditional Approaches Fall Short** explaining current pain points
+4. **OfficeSpace Solution** section detailing how the software addresses these challenges
+5. **How It Works** with specific examples and outcomes
+6. **Real-World Benefits** for different user types (workplace teams, employees, facilities)
+7. **Getting Started** with clear next steps and call-to-action
 
 CONTENT REQUIREMENTS:
-- Include specific examples of how to use the features
-- Create detailed step-by-step instructions with numbered steps
-- Include pro tips and warnings where appropriate
-- Use clear, concise language accessible to both technical and non-technical users
+- Include specific percentages, statistics, and data points throughout
+- Reference real customer examples and use cases
+- Use descriptive, engaging subheadings that tell a story
 - Naturally incorporate these keywords: ${keywords.join(", ")}
-- Format in proper Markdown with appropriate headings, lists, and code blocks where needed
-- For technical instructions, provide specific UI navigation paths (e.g., "Settings > Users > Permissions")
+- Include concrete examples of outcomes (e.g., "Walk into a room and it books itself")
+- End with specific implementation steps and contact information
+- Maintain focus on practical value and business impact
 
-The final document should be comprehensive, easy to follow, and serve as a valuable reference for users at different expertise levels.`;
+WRITING STYLE:
+- Use active voice and direct language
+- Break up text with bullet points and numbered lists
+- Include rhetorical questions to engage readers
+- Use metaphors and analogies to explain complex concepts
+- Focus on outcomes and benefits rather than just features
+
+The content should read like authoritative industry analysis while remaining approachable and actionable for facility managers and workplace teams.`;
       break;
 
     default:
