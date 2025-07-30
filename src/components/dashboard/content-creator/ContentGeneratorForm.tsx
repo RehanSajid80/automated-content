@@ -3,17 +3,20 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { LoadingState } from "./LoadingState";
-import { Globe, ExternalLink, Loader2 } from "lucide-react";
+import { Globe, ExternalLink, Loader2, Brain } from "lucide-react";
 
 interface ContentGeneratorFormProps {
   activeTab: string;
   keywords: string;
   targetUrl: string;
   socialContext?: string;
+  useRAG: boolean;
   onKeywordsChange: (value: string) => void;
   onUrlChange: (value: string) => void;
   onSocialContextChange: (value: string) => void;
+  onRAGToggle: (value: boolean) => void;
   onGenerate: () => void;
   onSuggestUrl: () => void;
   isGenerating: boolean;
@@ -26,9 +29,11 @@ export const ContentGeneratorForm: React.FC<ContentGeneratorFormProps> = ({
   keywords,
   targetUrl,
   socialContext,
+  useRAG,
   onKeywordsChange,
   onUrlChange,
   onSocialContextChange,
+  onRAGToggle,
   onGenerate,
   onSuggestUrl,
   isGenerating,
@@ -85,6 +90,22 @@ export const ContentGeneratorForm: React.FC<ContentGeneratorFormProps> = ({
           />
         </div>
       )}
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Brain className="text-blue-500" size={16} />
+            <span className="text-sm font-medium">Use RAG (Style Learning)</span>
+          </div>
+          <Switch
+            checked={useRAG}
+            onCheckedChange={onRAGToggle}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Use your existing content library to learn style patterns and maintain consistency
+        </p>
+      </div>
       
       <Button 
         onClick={onGenerate}

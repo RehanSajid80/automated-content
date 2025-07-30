@@ -353,6 +353,26 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: string
       }
+      match_content_embeddings: {
+        Args: {
+          query_embedding: string
+          match_threshold?: number
+          match_count?: number
+          content_type_filter?: string
+          topic_area_filter?: string
+        }
+        Returns: {
+          id: string
+          content_id: string
+          content_text: string
+          content_type: string
+          topic_area: string
+          keywords: string[]
+          metadata: Json
+          similarity: number
+          content_library: Json
+        }[]
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown

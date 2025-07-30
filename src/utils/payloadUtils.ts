@@ -18,6 +18,7 @@ interface ContentPayload {
   target_url?: string;
   url?: string;
   social_context?: string;
+  use_rag?: boolean;
   output_format?: any; // Adding this property to fix the type error
 }
 
@@ -42,6 +43,7 @@ export const createContentPayload = (data: Partial<ContentPayload>): ContentPayl
     target_url: data.target_url || "",
     url: data.url || "",
     social_context: data.social_context || "",
+    use_rag: data.use_rag !== undefined ? data.use_rag : true, // Default to true
     output_format: data.output_format || undefined
   };
 };

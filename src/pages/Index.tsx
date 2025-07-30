@@ -8,6 +8,7 @@ import ContentAdjustmentTab from "@/components/dashboard/ContentAdjustmentTab";
 import KeywordResearch from "@/components/dashboard/KeywordResearch";
 import EnhancedAISuggestionsTab from "@/components/dashboard/EnhancedAISuggestionsTab";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { RAGManagement } from "@/components/dashboard/RAGManagement";
 import { useContentStats } from "@/hooks/useContentStats";
 import { useNavigationEvents } from "@/hooks/useNavigationEvents";
 
@@ -99,6 +100,16 @@ const Index = () => {
       />
       
       <ContentAdjustmentTab />
+      
+      <TabsContent value="rag-management" className="m-0">
+        <div className="container py-8 px-4 md:px-6 lg:px-8">
+          <DashboardHeader 
+            title="RAG Management"
+            description="Manage your content knowledge base and AI learning system"
+          />
+          <RAGManagement />
+        </div>
+      </TabsContent>
       
       <EnhancedAISuggestionsTab keywordData={keywordData} />
     </DashboardLayout>

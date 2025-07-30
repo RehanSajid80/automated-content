@@ -61,6 +61,11 @@ export const navigationItems: NavigationSection[] = [
         title: "AI Suggestions",
         icon: <BrainCircuit className="h-5 w-5" />,
         href: "/?tab=ai-suggestions"
+      },
+      {
+        title: "RAG Management",
+        icon: <BrainCircuit className="h-5 w-5" />,
+        href: "/?tab=rag-management"
       }
     ]
   },

@@ -29,6 +29,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   const [keywords, setKeywords] = useState("");
   const [socialContext, setSocialContext] = useState("");
   const [localContentTitle, setLocalContentTitle] = useState("");
+  const [useRAG, setUseRAG] = useState(true); // Default to using RAG
   
   const {
     targetUrl,
@@ -106,6 +107,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       url: targetUrl,
       // Add social context if provided
       social_context: socialContext,
+      // Add RAG preference
+      use_rag: useRAG,
       // Add expected output format instructions
       output_format: {
         pillarContent: "A full article in plain text (1200-1500 words), no HTML. Use clear text headings, examples, and actionable insights.",
@@ -258,9 +261,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
               keywords={keywords}
               targetUrl={targetUrl}
               socialContext={socialContext}
+              useRAG={useRAG}
               onKeywordsChange={setKeywords}
               onUrlChange={setTargetUrl}
               onSocialContextChange={setSocialContext}
+              onRAGToggle={setUseRAG}
               onGenerate={handleGenerate}
               onSuggestUrl={handleSuggestUrlClick}
               isGenerating={isGenerating || isN8nLoading}
