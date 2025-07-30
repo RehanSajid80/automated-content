@@ -64,46 +64,51 @@ Format in proper Markdown with clear H1, H2, H3 headings, lists, and emphasis. T
       break;
 
     case "social":
-      systemPrompt = "You are a social media content strategist for B2B SaaS companies specializing in workplace technology. You create engaging, shareable content that drives engagement and demonstrates thought leadership. You incorporate relevant emojis to improve engagement while maintaining professionalism.";
-      userPrompt = `Create a set of 6 engaging social media posts about "${mainKeyword}" - 3 for LinkedIn and 3 for Twitter.
+      systemPrompt = "You are a social media content strategist for OfficeSpace Software. You create engaging LinkedIn posts that mirror the company's conversational yet professional tone, using creative formatting, relevant emojis, and compelling storytelling to drive engagement.";
+      userPrompt = `Create 2-3 engaging LinkedIn posts about "${mainKeyword}" following OfficeSpace Software's distinctive social media style.
 
-FOR EACH PLATFORM:
-- Create 1 educational post sharing a valuable insight or tip
-- Create 1 thought leadership post positioning the brand as an industry expert
-- Create 1 engagement post asking questions or encouraging discussion
+STYLE REFERENCE - Imitate these examples:
+
+**Example 1**
+☀️ Days are heating up, but your workplace mojo doesn't have to melt.
+
+In our July newsletter:
+🔹 Beat the heat (and bad chairs).
+🔹 Design more inclusive floor plans.
+🔹 Get total visibility into space use and assets.
+
+🧠 Ready for a five‑minute brain‑boost by the pool?
+
+**Example 2**
+🚪✨Imagine walking into a meeting room and—𝘱𝘪𝘯𝘨—it's already booked. Or, sitting at a desk and—𝘱𝘪𝘯𝘨—you're checked in. No apps, no taps.
+
+That's the magic of presence data and OfficeSpace's Universal Presence API: a single, secure connection that turns every badge swipe, Wi-Fi ping, or sensor signal (from equipment you already own!) into self-booking spaces and rock-solid utilization insights.
+
+Employees dive straight into work.
+
+**Example 3**
+📦 Tired of chasing assets around the office?
+
+OfficeSpace's asset tracking tools bring total clarity to your workplace. Know where everything is—without the manual audits.
+
+Best time to post: Thursday at 10 AM
+
+FORMATTING REQUIREMENTS:
+- Start with an engaging emoji that relates to the content
+- Use conversational, friendly language with personality
+- Include creative formatting (italics, em dashes, bullet points with emoji)
+- Use 🔹 for bullet points when listing features/benefits
+- Include vivid imagery and "imagine" scenarios
+- End with a short, punchy conclusion or CTA
+- Format posts in plain text with no HTML
+- Include best posting time recommendation
 
 CONTENT REQUIREMENTS:
-- Each post should be unique and incorporate different aspects of these keywords: ${keywords.join(", ")}
-- LinkedIn posts should be professional, detailed (200-300 characters), and include relevant emojis (2-3 per post) from this set:
-  🏢 (office building)
-  📊 (analytics/data)
-  💡 (insights/ideas)
-  ✨ (highlights/features)
-  🚀 (growth/success)
-  📈 (positive trends)
-  🎯 (targets/goals)
-  🤝 (partnerships/collaboration)
-  💼 (business/workplace)
-  ⭐ (excellence/quality)
-  ✅ (completion/success)
-  🔑 (key points/solutions)
-  
-- Twitter posts should be concise (under 280 characters) and use casual but professional emojis (1-2 per post) from this set:
-  📱 (mobile/tech)
-  🔍 (search/discover)
-  💫 (innovation)
-  🎉 (celebration)
-  👥 (teams/people)
-  📍 (location)
-  💪 (empowerment)
-  🌟 (highlights)
-  ⚡ (quick tips)
-  🎪 (workspace)
-  
-- Include relevant hashtags tailored to each platform (3-5 per post)
-- Each post should start with the most relevant emoji for its content
-- Space emojis naturally throughout the text, don't cluster them
-- Include a strong call-to-action in each post
+- Naturally incorporate these keywords: ${keywords.join(", ")}
+- Focus on employee benefits and workplace transformation
+- Use OfficeSpace-specific terminology and features
+- Include concrete outcomes and benefits
+- Make it feel authentic to the OfficeSpace brand voice
 
 ${socialContext ? `\nADDITIONAL CONTEXT:\n${socialContext}` : ''}`;
       break;
