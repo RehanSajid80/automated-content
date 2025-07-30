@@ -15,6 +15,9 @@ interface ContentPayload {
   brand_voice: string;
   unique_points: string;
   internal_links: string;
+  target_url?: string;
+  url?: string;
+  social_context?: string;
   output_format?: any; // Adding this property to fix the type error
 }
 
@@ -36,6 +39,9 @@ export const createContentPayload = (data: Partial<ContentPayload>): ContentPayl
     brand_voice: data.brand_voice || "",
     unique_points: data.unique_points || "",
     internal_links: data.internal_links || "",
+    target_url: data.target_url || "",
+    url: data.url || "",
+    social_context: data.social_context || "",
     output_format: data.output_format || undefined
   };
 };

@@ -101,6 +101,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
       primary_keyword: keywords,
       related_keywords: keywords,
       tone: "Friendly and informative",
+      // Add the target URL to the payload
+      target_url: targetUrl,
+      url: targetUrl,
+      // Add social context if provided
+      social_context: socialContext,
       // Add expected output format instructions
       output_format: {
         pillarContent: "A full article in plain text (1200-1500 words), no HTML. Use clear text headings, examples, and actionable insights.",
