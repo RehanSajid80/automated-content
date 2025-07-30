@@ -63,6 +63,7 @@ export const useN8nAgent = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload),
+        signal: AbortSignal.timeout(120000), // 2 minute timeout
       });
 
       if (!response.ok) {
