@@ -71,12 +71,17 @@ export const RAGManagement: React.FC = () => {
     setEmbeddingProgress(0);
 
     try {
+      console.log('Starting bulk embedding generation...');
+      
       const response = await supabase.functions.invoke('content-embeddings', {
         body: { action: 'bulk_generate' }
       });
 
+      console.log('Edge function response:', response);
+
       if (response.error) {
-        throw new Error(response.error.message);
+        console.error('Edge function error:', response.error);
+        throw new Error(response.error.message || 'Edge function failed');
       }
 
       setEmbeddingProgress(100);
