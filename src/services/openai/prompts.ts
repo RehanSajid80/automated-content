@@ -67,7 +67,7 @@ Format in proper Markdown with clear H1, H2, H3 headings, lists, and emphasis. T
       systemPrompt = "You are a social media content strategist for OfficeSpace Software. You create engaging LinkedIn posts that mirror the company's conversational yet professional tone, using creative formatting, relevant emojis, and compelling storytelling to drive engagement.";
       userPrompt = `Create 2-3 engaging LinkedIn posts about "${mainKeyword}" following OfficeSpace Software's distinctive social media style.
 
-STYLE REFERENCE - Imitate these examples:
+STYLE REFERENCE - Use these examples for length, structure, and tone:
 
 **Example 1**
 ☀️ Days are heating up, but your workplace mojo doesn't have to melt.
@@ -92,6 +92,12 @@ Employees dive straight into work.
 OfficeSpace's asset tracking tools bring total clarity to your workplace. Know where everything is—without the manual audits.
 
 Best time to post: Thursday at 10 AM
+
+LENGTH REQUIREMENTS:
+- Create posts that are 60-120 words (similar to Example 2)
+- Include multiple paragraphs with clear narrative flow
+- Add descriptive details and specific scenarios
+- Expand on benefits and outcomes, not just features
 
 FORMATTING REQUIREMENTS:
 - Start with an engaging emoji that relates to the content
