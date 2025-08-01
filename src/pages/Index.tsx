@@ -9,6 +9,7 @@ import KeywordResearch from "@/components/dashboard/KeywordResearch";
 import EnhancedAISuggestionsTab from "@/components/dashboard/EnhancedAISuggestionsTab";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { RAGManagement } from "@/components/dashboard/RAGManagement";
+import { ContentIdeasGenerator } from "@/components/dashboard/content-ideas/ContentIdeasGenerator";
 import { useContentStats } from "@/hooks/useContentStats";
 import { useNavigationEvents } from "@/hooks/useNavigationEvents";
 
@@ -108,6 +109,16 @@ const Index = () => {
             description="Manage your content knowledge base and AI learning system"
           />
           <RAGManagement />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="content-ideas" className="m-0">
+        <div className="container py-8 px-4 md:px-6 lg:px-8">
+          <DashboardHeader 
+            title="Content Ideas Generator"
+            description="Generate specific, actionable content ideas for OfficeSpace marketing"
+          />
+          <ContentIdeasGenerator />
         </div>
       </TabsContent>
       

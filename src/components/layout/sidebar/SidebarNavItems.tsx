@@ -8,7 +8,8 @@ import {
   TrendingUp,
   BrainCircuit,
   Library,
-  Pencil
+  Pencil,
+  Lightbulb
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -61,6 +62,11 @@ export const navigationItems: NavigationSection[] = [
         title: "AI Suggestions",
         icon: <BrainCircuit className="h-5 w-5" />,
         href: "/?tab=ai-suggestions"
+      },
+      {
+        title: "Content Ideas",
+        icon: <Lightbulb className="h-5 w-5" />,
+        href: "/?tab=content-ideas"
       },
       {
         title: "RAG Management",
