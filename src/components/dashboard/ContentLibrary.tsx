@@ -7,6 +7,7 @@ import ContentRefreshManager from "./ContentViewRefreshManager";
 import ContentFilter from "./library/ContentFilter";
 import ContentTabs from "./library/ContentTabs";
 import ContentGrid from "./library/ContentGrid";
+import { QuickContentAdder } from "./library/QuickContentAdder";
 import { ContentItem, ContentLibraryProps } from "./types/content-library";
 import {
   Pagination,
@@ -240,11 +241,14 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
     <div className={cn("space-y-6 w-full", className)}>
       <div className="flex items-center justify-between w-full">
         <h2 className="text-xl font-semibold">Content Library</h2>
-        <ContentRefreshManager 
-          isRefreshing={isRefreshing}
-          onRefresh={refreshContent}
-          lastRefreshed={lastRefreshed || undefined}
-        />
+        <div className="flex items-center gap-3">
+          <QuickContentAdder onContentAdded={refreshContent} />
+          <ContentRefreshManager 
+            isRefreshing={isRefreshing}
+            onRefresh={refreshContent}
+            lastRefreshed={lastRefreshed || undefined}
+          />
+        </div>
       </div>
       
       <ContentFilter searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
