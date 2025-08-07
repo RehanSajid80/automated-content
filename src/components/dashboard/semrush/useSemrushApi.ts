@@ -6,18 +6,20 @@ import { KeywordData } from "@/utils/excelUtils";
 import { getApiKey } from "@/utils/apiKeyUtils";
 
 // Function to update SEMrush API metrics
-const updateSemrushMetrics = (success: boolean) => {
+const updateSemrushMetrics = (success: boolean, creditsUsed: number = 1) => {
   const metrics = localStorage.getItem('semrush-api-metrics');
   let currentMetrics = metrics ? JSON.parse(metrics) : {
     totalCalls: 0,
     successfulCalls: 0,
     failedCalls: 0,
+    totalCreditsUsed: 0,
     lastCall: null
   };
 
   currentMetrics.totalCalls += 1;
   if (success) {
     currentMetrics.successfulCalls += 1;
+    currentMetrics.totalCreditsUsed = (currentMetrics.totalCreditsUsed || 0) + creditsUsed;
   } else {
     currentMetrics.failedCalls += 1;
   }
@@ -209,7 +211,9 @@ export const useSemrushApi = (
       }
 
       console.log(`Received ${keywordsArray.length} keywords from SEMrush API`);
-      updateSemrushMetrics(true);
+      // Each successful SEMrush API call uses 1 credit for most reports
+      const creditsUsed = data.creditsUsed || 1;
+      updateSemrushMetrics(true, creditsUsed);
 
       // Format keywords consistently before passing them to the callback
       const formattedKeywords: KeywordData[] = keywordsArray.map(kw => ({

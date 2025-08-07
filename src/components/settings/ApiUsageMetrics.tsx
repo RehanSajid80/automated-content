@@ -16,6 +16,7 @@ const ApiUsageMetrics = () => {
         totalCalls: 0,
         successfulCalls: 0,
         failedCalls: 0,
+        totalCreditsUsed: 0,
         lastCall: null
       };
     }
@@ -66,7 +67,7 @@ const ApiUsageMetrics = () => {
           {/* SEMrush Metrics */}
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">SEMrush API Usage</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="p-4 border rounded-lg">
                 <p className="text-sm text-muted-foreground mb-1">Total Calls</p>
                 <p className="text-2xl font-bold">{semrushMetrics.totalCalls}</p>
@@ -78,6 +79,10 @@ const ApiUsageMetrics = () => {
               <div className="p-4 border rounded-lg">
                 <p className="text-sm text-muted-foreground mb-1">Failed</p>
                 <p className="text-2xl font-bold text-red-600">{semrushMetrics.failedCalls}</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Credits Used</p>
+                <p className="text-2xl font-bold text-blue-600">{semrushMetrics.totalCreditsUsed || 0}</p>
               </div>
             </div>
             {semrushMetrics.lastCall && (
