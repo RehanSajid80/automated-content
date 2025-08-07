@@ -211,7 +211,10 @@ export const useSemrushApi = (
       }
 
       console.log(`Received ${keywordsArray.length} keywords from SEMrush API`);
-      // Each successful SEMrush API call uses 1 credit for most reports
+      console.log(`🔢 SEMrush API Calls Made: ${data.semrushApiCalls || 'Unknown'}`);
+      console.log(`💳 Credits Used: ${data.creditsUsed || 1}`);
+      
+      // Track the exact number of API calls and credits used
       const creditsUsed = data.creditsUsed || 1;
       updateSemrushMetrics(true, creditsUsed);
 
@@ -231,10 +234,12 @@ export const useSemrushApi = (
       const statusMessage = data.fromCache ? "Loaded from cache" : "Success";
       const duplicatesInfo = data.duplicatesIgnored > 0 ? ` (${data.duplicatesIgnored} duplicates ignored)` : '';
       const analysisType = searchKeyword ? `keywords for "${searchKeyword}"` : 'general keywords';
+      const apiCallInfo = data.semrushApiCalls !== undefined ? ` • ${data.semrushApiCalls} SEMrush API call${data.semrushApiCalls !== 1 ? 's' : ''} made` : '';
+      const creditsInfo = data.creditsUsed !== undefined ? ` • ${data.creditsUsed} credit${data.creditsUsed !== 1 ? 's' : ''} used` : '';
       
       toast({
         title: statusMessage,
-        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} ${analysisType}${cleanDomain ? ` for ${cleanDomain}` : ''} (limit: ${currentKeywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo} ${data.remaining || 100} API calls remaining today.`,
+        description: `${data.fromCache ? "Retrieved" : "Fetched"} ${formattedKeywords.length} ${analysisType}${cleanDomain ? ` for ${cleanDomain}` : ''} (limit: ${currentKeywordLimit}). ${data.insertedCount !== undefined ? `${data.insertedCount} new entries saved.` : ''}${duplicatesInfo}${apiCallInfo}${creditsInfo}`,
       });
       
     } catch (error) {

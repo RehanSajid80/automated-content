@@ -49,7 +49,9 @@ export async function handleKeywordRequest(requestData: RequestData): Promise<Re
         keywords: existingKeywords.slice(0, limit), // Respect the limit parameter
         remaining: globalKeywordLimit - existingKeywords.length,
         fromCache: true,
-        apiKeyStatus: 'configured'
+        apiKeyStatus: 'configured',
+        semrushApiCalls: 0, // No API call made - served from cache
+        creditsUsed: 0 // No credits used when serving from cache
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -58,9 +60,11 @@ export async function handleKeywordRequest(requestData: RequestData): Promise<Re
   // Fetch and process new keywords from SEMrush
   const parsedLimit = parseInt(String(limit), 10);
   const actualLimit = isNaN(parsedLimit) ? globalKeywordLimit : Math.max(30, Math.min(500, parsedLimit));
-  console.log(`Fetching ${actualLimit} keywords from SEMrush API for search: ${cacheKey} with key: ${semrushApiKey.substring(0, 8)}...`);
+  console.log(`📡 MAKING SEMRUSH API CALL #1 - Fetching ${actualLimit} keywords from SEMrush API for search: ${cacheKey} with key: ${semrushApiKey.substring(0, 8)}...`);
   
   const semrushResponse = await fetchSemrushKeywords(searchKeyword, actualLimit, targetDomain, semrushApiKey);
+  console.log(`✅ SEMRUSH API CALL COMPLETED - Total API calls made: 1`);
+  
   const allKeywords = processKeywords(semrushResponse, cacheKey, topicArea);
 
   if (allKeywords.length === 0) {
@@ -104,7 +108,9 @@ export async function handleKeywordRequest(requestData: RequestData): Promise<Re
       insertedCount: insertedKeywords.length,
       totalFetched: allKeywords.length,
       duplicatesIgnored: allKeywords.length - insertedKeywords.length,
-      apiKeyStatus: 'working'
+      apiKeyStatus: 'working',
+      semrushApiCalls: 1, // Exactly 1 API call made to SEMrush
+      creditsUsed: 1 // Standard SEMrush credit usage per API call
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
