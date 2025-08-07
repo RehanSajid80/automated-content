@@ -6,6 +6,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatsSection from "@/components/dashboard/StatsSection";
 import ContentSection from "@/components/dashboard/ContentSection";
 import RecentContent from "@/components/dashboard/RecentContent";
+import SemrushCacheManager from "@/components/dashboard/SemrushCacheManager";
 import { ContentStats } from "@/hooks/useContentStats";
 
 interface DashboardTabProps {
@@ -37,6 +38,8 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
             onKeywordsSelected={onKeywordsSelected}
             onKeywordDataUpdate={onKeywordDataUpdate}
           />
+          
+          <SemrushCacheManager />
           
           <RecentContent />
         </div>

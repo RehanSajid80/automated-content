@@ -1,7 +1,6 @@
 
 import React from 'react';
 import StatsCard from './StatsCard';
-import SemrushStatsCard from './SemrushStatsCard';
 import { FileText, Tag, Share2, Building2 } from 'lucide-react';
 import { ContentStats } from '@/hooks/useContentStats';
 import { toast } from "@/components/ui/use-toast";
@@ -25,47 +24,39 @@ const StatsSection: React.FC<StatsSectionProps> = ({ stats }) => {
   };
 
   return (
-    <div className="space-y-6 mb-8">
-      {/* Content Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
-          title="Pillar Content"
-          value={stats.pillarCount.toString()}
-          icon={<FileText size={20} />}
-          trend={getTrendInfo(stats.pillarCount).trend}
-          trendValue={getTrendInfo(stats.pillarCount).message}
-          delay="animation-delay-100"
-        />
-        <StatsCard
-          title="Support Pages"
-          value={stats.supportCount.toString()}
-          icon={<Building2 size={20} />}
-          trend={getTrendInfo(stats.supportCount).trend}
-          trendValue={getTrendInfo(stats.supportCount).message}
-          delay="animation-delay-200"
-        />
-        <StatsCard
-          title="Meta Tags"
-          value={stats.metaCount.toString()}
-          icon={<Tag size={20} />}
-          trend={getTrendInfo(stats.metaCount).trend}
-          trendValue={getTrendInfo(stats.metaCount).message}
-          delay="animation-delay-300"
-        />
-        <StatsCard
-          title="Social Posts"
-          value={stats.socialCount.toString()}
-          icon={<Share2 size={20} />}
-          trend={getTrendInfo(stats.socialCount).trend}
-          trendValue={getTrendInfo(stats.socialCount).message}
-          delay="animation-delay-400"
-        />
-      </div>
-      
-      {/* SEMrush API Usage */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <SemrushStatsCard />
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <StatsCard
+        title="Pillar Content"
+        value={stats.pillarCount.toString()}
+        icon={<FileText size={20} />}
+        trend={getTrendInfo(stats.pillarCount).trend}
+        trendValue={getTrendInfo(stats.pillarCount).message}
+        delay="animation-delay-100"
+      />
+      <StatsCard
+        title="Support Pages"
+        value={stats.supportCount.toString()}
+        icon={<Building2 size={20} />}
+        trend={getTrendInfo(stats.supportCount).trend}
+        trendValue={getTrendInfo(stats.supportCount).message}
+        delay="animation-delay-200"
+      />
+      <StatsCard
+        title="Meta Tags"
+        value={stats.metaCount.toString()}
+        icon={<Tag size={20} />}
+        trend={getTrendInfo(stats.metaCount).trend}
+        trendValue={getTrendInfo(stats.metaCount).message}
+        delay="animation-delay-300"
+      />
+      <StatsCard
+        title="Social Posts"
+        value={stats.socialCount.toString()}
+        icon={<Share2 size={20} />}
+        trend={getTrendInfo(stats.socialCount).trend}
+        trendValue={getTrendInfo(stats.socialCount).message}
+        delay="animation-delay-400"
+      />
     </div>
   );
 };
