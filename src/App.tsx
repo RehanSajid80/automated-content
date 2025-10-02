@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-ro
 import Index from "./pages/Index";
 import ContentLibraryPage from "./pages/ContentLibraryPage";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
 import ApiConnectionsManager from "./components/settings/ApiConnectionsManager";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
@@ -49,6 +50,7 @@ const App = () => (
           <RouteChangeHandler />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/library" element={<ContentLibraryPage />} />
             <Route path="/api-connections" element={<ApiConnectionsManager />} />
             <Route path="*" element={<NotFound />} />
