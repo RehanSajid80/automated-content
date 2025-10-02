@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { LogIn } from "lucide-react";
 import DesktopNavigation from "./header/DesktopNavigation";
 import MobileMenu from "./header/MobileMenu";
 import ContentCreatorButton from "./header/ContentCreatorButton";
@@ -19,6 +21,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Sync the current tab with URL location
   useEffect(() => {
@@ -55,6 +58,16 @@ const Header: React.FC<HeaderProps> = ({
         <DesktopNavigation activeTab={activeTab} onTabChange={onTabChange} />
         
         <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/auth')}
+            className="hidden md:flex items-center gap-2"
+          >
+            <LogIn className="h-4 w-4" />
+            Sign In
+          </Button>
+          
           <ContentCreatorButton className="hidden md:flex" />
           
           <MobileMenu 
