@@ -49,15 +49,20 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-3">
-          <div className="flex flex-col items-center gap-2">
-            <h1 className="text-3xl font-bold text-primary">OfficeSpace</h1>
-            <p className="text-sm text-muted-foreground font-medium">Content Creation</p>
+        <CardHeader className="text-center space-y-4 pb-8">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/officespace-logo.png" 
+              alt="OfficeSpace Logo" 
+              className="h-12"
+            />
           </div>
-          <CardTitle className="text-xl">Welcome</CardTitle>
-          <CardDescription>Sign in to your account or create a new one</CardDescription>
+          <div>
+            <CardTitle className="text-2xl mb-2">Welcome Back</CardTitle>
+            <CardDescription>Sign in to continue to Content Creation</CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <GoogleSignInButton />
           
           <div className="relative my-6">
