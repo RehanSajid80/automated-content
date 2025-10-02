@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 import DesktopNavigation from "./header/DesktopNavigation";
 import MobileMenu from "./header/MobileMenu";
 import ContentCreatorButton from "./header/ContentCreatorButton";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 interface HeaderProps {
   className?: string;
@@ -20,8 +21,24 @@ const Header: React.FC<HeaderProps> = ({
   onTabChange 
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const location = useLocation();
-  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Get current user
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
   
   // Sync the current tab with URL location
   useEffect(() => {
@@ -58,17 +75,9 @@ const Header: React.FC<HeaderProps> = ({
         <DesktopNavigation activeTab={activeTab} onTabChange={onTabChange} />
         
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/auth')}
-            className="hidden md:flex items-center gap-2"
-          >
-            <LogIn className="h-4 w-4" />
-            Sign In
-          </Button>
-          
           <ContentCreatorButton className="hidden md:flex" />
+          
+          {user && <UserMenu user={user} />}
           
           <MobileMenu 
             activeTab={activeTab} 

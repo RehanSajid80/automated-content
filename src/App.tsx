@@ -10,6 +10,7 @@ import ContentLibraryPage from "./pages/ContentLibraryPage";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ApiConnectionsManager from "./components/settings/ApiConnectionsManager";
+import { AuthGuard } from "./components/auth/AuthGuard";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 // Create a new query client instance
@@ -49,10 +50,10 @@ const App = () => (
         <BrowserRouter>
           <RouteChangeHandler />
           <Routes>
-            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/library" element={<ContentLibraryPage />} />
-            <Route path="/api-connections" element={<ApiConnectionsManager />} />
+            <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />
+            <Route path="/library" element={<AuthGuard><ContentLibraryPage /></AuthGuard>} />
+            <Route path="/api-connections" element={<AuthGuard><ApiConnectionsManager /></AuthGuard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
