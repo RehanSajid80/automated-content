@@ -156,7 +156,12 @@ export const useSemrushApi = (
         
         // More specific error handling
         let errorMessage = data.error;
-        if (data.error.includes('NOTHING FOUND') || data.error.includes('No keywords found')) {
+        let errorTitle = "Error Fetching Keywords";
+        
+        if (data.error.includes('API UNITS BALANCE IS ZERO') || data.error.includes('ERROR 132')) {
+          errorTitle = "SEMrush API Credits Depleted";
+          errorMessage = 'Your SEMrush API account has run out of credits. Please add more API units to your SEMrush account or contact your SEMrush administrator to continue using keyword research.';
+        } else if (data.error.includes('NOTHING FOUND') || data.error.includes('No keywords found')) {
           errorMessage = searchKeyword 
             ? `No keywords found for "${searchKeyword}". Try broader search terms like "office space", "workspace", or "asset management".`
             : `No organic keywords found${cleanDomain ? ` for ${cleanDomain}` : ''}. Try different search terms.`;
@@ -176,9 +181,9 @@ export const useSemrushApi = (
         }
         
         toast({
-          title: "No Keywords Found",
+          title: errorTitle,
           description: description,
-          variant: "default",
+          variant: "destructive",
         });
         
         setIsLoading(false);
