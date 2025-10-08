@@ -45,23 +45,21 @@ export const ContentListItem = ({ content, onCopy, onClick }: ContentListItemPro
           )}
         </div>
         
-        <div className="mt-2 flex flex-wrap gap-1">
-          {content.keywords && content.keywords.length > 0 ? (
-            content.keywords.slice(0, 3).map((keyword, i) => (
+        {content.keywords && content.keywords.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {content.keywords.slice(0, 3).map((keyword, i) => (
               <span 
                 key={i}
                 className="inline-flex text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground"
               >
                 {keyword}
               </span>
-            ))
-          ) : (
-            <span className="text-xs text-muted-foreground italic">No keywords</span>
-          )}
-          {content.keywords && content.keywords.length > 3 && (
-            <span className="text-xs text-muted-foreground">+{content.keywords.length - 3} more</span>
-          )}
-        </div>
+            ))}
+            {content.keywords.length > 3 && (
+              <span className="text-xs text-muted-foreground">+{content.keywords.length - 3} more</span>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>

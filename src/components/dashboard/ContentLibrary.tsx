@@ -38,6 +38,8 @@ const ContentLibrary: React.FC<ContentLibraryProps> = ({ className }) => {
     { id: "support", label: "Support Pages" },
     { id: "meta", label: "Meta Tags" },
     { id: "social", label: "Social Posts" },
+    { id: "email", label: "Email Content" },
+    { id: "content-idea", label: "Content Ideas" },
     { id: "misc", label: "Adjusted Content" }
   ];
 
