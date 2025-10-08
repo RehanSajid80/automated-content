@@ -6,4 +6,4 @@ export interface WebhookConfig {
   contentAdjustmentWebhook: string;
 }
 
-export type WebhookType = 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment';
+export type WebhookType = 'content' | 'custom-keywords' | 'content-adjustment';

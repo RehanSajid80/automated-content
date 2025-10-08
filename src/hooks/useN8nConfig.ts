@@ -59,7 +59,7 @@ export const useN8nConfig = () => {
 
   const saveWebhookUrl = async (
     url: string, 
-    type: WebhookType = 'keywords'
+    type: WebhookType = 'content'
   ): Promise<boolean> => {
     setIsLoading(true);
     
@@ -71,9 +71,6 @@ export const useN8nConfig = () => {
         setWebhooks(prev => {
           const updated = { ...prev };
           switch (type) {
-            case 'keywords':
-              updated.keywordWebhook = url;
-              break;
             case 'content':
               updated.contentWebhook = url;
               break;

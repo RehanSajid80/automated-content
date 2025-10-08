@@ -12,8 +12,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface WebhookConnectionProps {
   onSaveWebhook?: () => void;
-  activeWebhookType?: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment';
-  onWebhookTypeChange?: (type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment') => void;
+  activeWebhookType?: 'content' | 'custom-keywords' | 'content-adjustment';
+  onWebhookTypeChange?: (type: 'content' | 'custom-keywords' | 'content-adjustment') => void;
 }
 
 const WebhookConnection: React.FC<WebhookConnectionProps> = ({
@@ -55,9 +55,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
     setContentAdjustmentWebhookUrl(contentAdjustmentUrl);
     
     // Set status based on active webhook type
-    if (activeWebhookType === 'keywords') {
-      setStatus(keywordWebhookUrl ? 'connected' : 'disconnected');
-    } else if (activeWebhookType === 'content') {
+    if (activeWebhookType === 'content') {
       setStatus(contentGenUrl ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'content-adjustment') {
       setStatus(contentAdjustmentUrl ? 'connected' : 'disconnected');
@@ -76,10 +74,7 @@ const WebhookConnection: React.FC<WebhookConnectionProps> = ({
   const handleSaveWebhook = async () => {
     setStatus('checking');
     
-    if (activeWebhookType === 'keywords' && webhookUrl) {
-      const success = await saveWebhookUrl(webhookUrl, 'keywords');
-      setStatus(success ? 'connected' : 'disconnected');
-    } else if (activeWebhookType === 'content' && contentWebhookUrl) {
+    if (activeWebhookType === 'content' && contentWebhookUrl) {
       const success = await saveWebhookUrl(contentWebhookUrl, 'content');
       setStatus(success ? 'connected' : 'disconnected');
     } else if (activeWebhookType === 'custom-keywords' && customKeywordsWebhookUrl) {

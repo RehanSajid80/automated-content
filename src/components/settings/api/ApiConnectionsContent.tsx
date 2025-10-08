@@ -12,8 +12,8 @@ interface ApiConnectionsContentProps {
   openaiStatus: 'checking' | 'connected' | 'disconnected';
   onSaveOpenaiKey: () => void;
   onOpenaiKeyChange: (key: string) => void;
-  activeWebhookType: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment';
-  onWebhookTypeChange: (type: 'keywords' | 'content' | 'custom-keywords' | 'content-adjustment') => void;
+  activeWebhookType: 'content' | 'custom-keywords' | 'content-adjustment';
+  onWebhookTypeChange: (type: 'content' | 'custom-keywords' | 'content-adjustment') => void;
   onSemrushConfigSave: () => void;
 }
 

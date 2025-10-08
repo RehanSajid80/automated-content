@@ -11,7 +11,9 @@ const ApiUsageMetrics = () => {
   // Get SEMrush metrics from localStorage
   const getSemrushMetrics = () => {
     const metrics = localStorage.getItem('semrush-api-metrics');
+    console.log('📊 Reading SEMrush metrics from localStorage:', metrics);
     if (!metrics) {
+      console.log('⚠️ No SEMrush metrics found in localStorage');
       return {
         totalCalls: 0,
         successfulCalls: 0,
@@ -20,10 +22,15 @@ const ApiUsageMetrics = () => {
         lastCall: null
       };
     }
-    return JSON.parse(metrics);
+    const parsed = JSON.parse(metrics);
+    console.log('✅ Parsed SEMrush metrics:', parsed);
+    return parsed;
   };
 
   const semrushMetrics = getSemrushMetrics();
+  
+  console.log('📈 OpenAI metrics:', openAIMetrics);
+  console.log('📈 SEMrush metrics:', semrushMetrics);
 
   return (
     <div className="space-y-6">

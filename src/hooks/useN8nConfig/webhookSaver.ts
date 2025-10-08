@@ -5,7 +5,7 @@ import { WebhookType, WebhookConfig } from "./types";
 
 export const saveWebhookUrl = async (
   url: string, 
-  type: WebhookType = 'keywords'
+  type: WebhookType = 'content'
 ): Promise<boolean> => {
   if (!url || url.trim() === '') {
     toast.error("Webhook URL cannot be empty");
@@ -30,7 +30,7 @@ export const saveWebhookUrl = async (
     const webhookData = {
       type: type,
       url: url,
-      webhook_type: type === 'keywords' ? 'keyword-sync' : type, // Legacy compatibility
+      webhook_type: type,
       webhook_url: url,
       is_global: true, // Mark as global configuration
       is_active: true
@@ -85,9 +85,6 @@ const saveToLocalStorage = (url: string, type: WebhookType) => {
     let webhooks = saved ? JSON.parse(saved) : {};
     
     switch (type) {
-      case 'keywords':
-        webhooks.keywordWebhook = url;
-        break;
       case 'content':
         webhooks.contentWebhook = url;
         break;
