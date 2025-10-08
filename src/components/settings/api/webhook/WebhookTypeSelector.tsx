@@ -19,10 +19,6 @@ export const WebhookTypeSelector: React.FC<WebhookTypeSelectorProps> = ({
       className="flex flex-col space-y-1 mb-4"
     >
       <div className="flex items-center space-x-2">
-        <RadioGroupItem value="keywords" id="keywords" />
-        <Label htmlFor="keywords">Keyword Sync Webhook</Label>
-      </div>
-      <div className="flex items-center space-x-2">
         <RadioGroupItem value="content" id="content" />
         <Label htmlFor="content">Content Generation Webhook</Label>
       </div>

@@ -34,7 +34,7 @@ const ApiUsageMetrics = () => {
             API Usage Metrics
           </CardTitle>
           <CardDescription>
-            Track your API calls and usage across different services
+            Track your API calls and usage across different services. Metrics shown are cumulative lifetime totals since first use.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
