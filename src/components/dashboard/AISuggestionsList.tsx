@@ -3,8 +3,10 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Building2, Tag, Share2 } from "lucide-react";
+import { FileText, Building2, Tag, Share2, Save } from "lucide-react";
 import { AISuggestion, AISuggestionsListProps } from "./types/aiSuggestions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const contentTypeIcons = {
   pillar: <FileText className="h-4 w-4" />,
@@ -25,6 +27,38 @@ export const AISuggestionsList: React.FC<AISuggestionsListProps> = ({
   onSelect,
   isLoading = false
 }) => {
+  const saveSuggestionToLibrary = async (suggestion: AISuggestion) => {
+    try {
+      const formattedContent = `
+# ${suggestion.title}
+
+${suggestion.description}
+
+## Keywords
+${suggestion.keywords.join(', ')}
+      `.trim();
+
+      const { error } = await supabase
+        .from('content_library')
+        .insert({
+          title: suggestion.title,
+          content: formattedContent,
+          content_type: suggestion.contentType,
+          keywords: suggestion.keywords,
+          is_saved: true
+        });
+
+      if (error) throw error;
+
+      toast.success("Saved!", {
+        description: "AI suggestion saved to your library",
+      });
+    } catch (error) {
+      console.error("Error saving suggestion:", error);
+      toast.error("Failed to save suggestion");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -67,13 +101,23 @@ export const AISuggestionsList: React.FC<AISuggestionsListProps> = ({
               )}
             </div>
             
-            <Button 
-              onClick={() => onSelect(suggestion)} 
-              variant="outline" 
-              className="w-full mt-2"
-            >
-              Select This Suggestion
-            </Button>
+            <div className="flex gap-2 mt-2">
+              <Button 
+                onClick={() => saveSuggestionToLibrary(suggestion)} 
+                variant="outline" 
+                className="flex-1"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+              <Button 
+                onClick={() => onSelect(suggestion)} 
+                variant="default" 
+                className="flex-1"
+              >
+                Select
+              </Button>
+            </div>
           </div>
         </Card>
       ))}

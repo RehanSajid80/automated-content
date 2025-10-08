@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, Sparkles, Copy, RefreshCw } from "lucide-react";
+import { Lightbulb, Sparkles, Copy, RefreshCw, Save } from "lucide-react";
 import { TopicAreaSelector } from "../TopicAreaSelector";
 import { PersonaSelector } from "../content-suggestions/PersonaSelector";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey, API_KEYS } from "@/utils/apiKeyUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContentIdea {
   title: string;
@@ -146,6 +147,60 @@ export const ContentIdeasGenerator: React.FC = () => {
     }
   };
 
+  const saveIdeaToLibrary = async (idea: ContentIdea) => {
+    try {
+      const formattedContent = `
+# ${idea.title}
+
+## Description
+${idea.description}
+
+## Content Type
+${idea.contentType}
+
+## Target Audience
+${idea.targetAudience}
+
+## Difficulty Level
+${idea.difficulty} (${idea.timeToCreate})
+
+## Key Points to Cover
+${idea.keyPoints.map(point => `• ${point}`).join('\n')}
+
+## Call to Action
+${idea.callToAction}
+
+## Keywords
+${idea.keywords.join(', ')}
+      `.trim();
+
+      const { error } = await supabase
+        .from('content_library')
+        .insert({
+          title: idea.title,
+          content: formattedContent,
+          content_type: 'content-idea',
+          topic_area: topicArea,
+          keywords: idea.keywords,
+          is_saved: true
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Saved!",
+        description: "Content idea saved to your library",
+      });
+    } catch (error) {
+      console.error("Error saving content idea:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save content idea",
+        variant: "destructive",
+      });
+    }
+  };
+
   const copyIdeaToClipboard = (idea: ContentIdea) => {
     const formattedIdea = `
 Title: ${idea.title}
@@ -265,14 +320,22 @@ Keywords: ${idea.keywords.join(', ')}
                       <CardTitle className="text-lg leading-tight mb-2">{idea.title}</CardTitle>
                       <CardDescription className="text-sm">{idea.description}</CardDescription>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyIdeaToClipboard(idea)}
-                      className="ml-4 shrink-0"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2 ml-4 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => saveIdeaToLibrary(idea)}
+                      >
+                        <Save className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyIdeaToClipboard(idea)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
